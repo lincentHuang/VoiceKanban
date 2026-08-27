@@ -56,3 +56,13 @@ body {
 .shadow-glass-elevated {
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(255, 255, 255, 0.9) inset;
 }
+
+/* Mobile Trello-style DnD Touch Optimizations */
+[data-dnd-kit-draggable],
+.touch-card {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+

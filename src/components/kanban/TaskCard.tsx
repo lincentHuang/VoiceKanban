@@ -24,12 +24,14 @@ interface TaskCardProps {
   task: Task;
   variant?: "card" | "row";
   inboxWidth?: number;
+  isOverlay?: boolean;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   variant = "card",
   inboxWidth = 320,
+  isOverlay = false,
 }) => {
   const {
     toggleTaskComplete,
@@ -40,6 +42,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     toggleTaskSelection,
   } = useKanbanStore();
 
+  const sortable = useSortable({
+    id: task.id,
+    data: {
+      type: "Task",
+      task,
+    },
+    disabled: isMultiSelectMode || isOverlay,
+  });
+
   const {
     attributes,
     listeners,
@@ -47,19 +58,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({
-    id: task.id,
-    data: {
-      type: "Task",
-      task,
-    },
-    disabled: isMultiSelectMode,
-  });
+  } = isOverlay
+    ? {
+        attributes: {},
+        listeners: {},
+        setNodeRef: undefined,
+        transform: null,
+        transition: undefined,
+        isDragging: false,
+      }
+    : sortable;
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-  };
+  const style = isOverlay
+    ? undefined
+    : {
+        transform: CSS.Translate.toString(transform),
+        transition,
+      };
 
   const isSelected = selectedTaskIds.includes(task.id);
 
@@ -119,7 +134,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         {...attributes}
         {...listeners}
         onClick={handleCardClick}
-        className={`group relative bg-white/95 dark:bg-slate-850 backdrop-blur-md rounded-xl px-3 py-2 shadow-2xs hover:shadow-card-hover border transition-all select-none cursor-grab active:cursor-grabbing flex items-center justify-between gap-2.5 ${
+        className={`group relative bg-white/95 dark:bg-slate-850 backdrop-blur-md rounded-xl px-3 py-2 shadow-2xs hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${
           isSelected
             ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
             : "border-slate-200/80 dark:border-slate-700/80 hover:border-orange-400 dark:hover:border-slate-600"
@@ -270,7 +285,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       {...attributes}
       {...listeners}
       onClick={handleCardClick}
-      className={`group relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover border transition-all select-none cursor-grab active:cursor-grabbing ${
+      className={`group relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${
         isSelected
           ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
           : "border-slate-100 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600"

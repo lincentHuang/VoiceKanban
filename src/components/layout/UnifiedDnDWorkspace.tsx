@@ -6,7 +6,8 @@ import {
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   pointerWithin,
@@ -45,10 +46,19 @@ export const UnifiedDnDWorkspace: React.FC = () => {
 
   const columns = getActiveBoardColumns();
 
+  // Multi-sensor configuration:
+  // 1. MouseSensor: 3px movement for instant snappy drag on desktop
+  // 2. TouchSensor: 250ms long press delay with 5px tolerance on mobile to prevent scrolling conflict
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 3, // 3px threshold for fast responsive dragging
+        distance: 3, // 3px threshold for fast responsive desktop dragging
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // 250ms long-press on mobile touch
+        tolerance: 5, // 5px tolerance during hold to avoid canceling on tiny finger tremor
       },
     })
   );
@@ -88,6 +98,13 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     const { active } = event;
     const task = tasks.find((t) => t.id === active.id);
     if (task) {
+      // Haptic feedback on mobile touch long-press drag start
+      if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(30);
+        } catch {}
+      }
+
       setActiveTask(task);
       setActiveDragTaskId(task.id);
       setActiveDragVariant(task.columnId === "inbox" && inboxWidth >= 420 ? "row" : "card");
@@ -217,6 +234,14 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       id="voice-kanban-unified-dnd"
       sensors={sensors}
       collisionDetection={collisionDetectionStrategy}
+      autoScroll={{
+        threshold: {
+          x: 0.2, // 20% width from left/right edges triggers horizontal scrolling
+          y: 0.15,
+        },
+        acceleration: 15,
+        interval: 10,
+      }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -248,12 +273,13 @@ export const UnifiedDnDWorkspace: React.FC = () => {
                   : "246px",
               transformOrigin: "center center",
             }}
-            className="scale-105 rotate-1.5 shadow-2xl opacity-95 pointer-events-none transition-transform duration-75 select-none cursor-grabbing"
+            className="scale-105 rotate-2 shadow-2xl rounded-2xl ring-2 ring-orange-500/30 pointer-events-none transition-transform duration-75 select-none cursor-grabbing opacity-100"
           >
             <TaskCard
               task={activeTask}
               variant={activeDragVariant}
               inboxWidth={inboxWidth}
+              isOverlay={true}
             />
           </div>
         ) : null}

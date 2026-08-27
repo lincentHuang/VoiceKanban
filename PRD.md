@@ -1,36 +1,36 @@
-# VoiceKanban 手機版體驗重構與收件匣多選規格書 (PRD.md v2.19.0)
+# VoiceKanban 手機版長按拖曳與雙向自動滾動規格書 (PRD.md v2.21.0)
 
-> **版本**：v2.19.0 (Mobile UX Dock Redesign & Inbox Multi-Select Mode)  
+> **版本**：v2.21.0 (Mobile DragOverlay Fix & Trello Silk-Smooth Experience)  
 > **負責人**：`@PM`  
 > **核心目標**：
-> 1. **手機版 Bottom Dock 簡化與重構**：手機版（`< sm`）隱藏「行事曆」與「表格」模式，僅保留「收件匣」、「看板」、「清單」與「自訂欄位設定」，徹底解決按鈕擠壓與懸浮語音鈕重疊問題。
-> 2. **手機版收件匣全畫面切換**：手機版開啟收件匣時，直接全螢幕顯示收件匣頁面，隱藏左右分割條與看板，解決原本 320px 側欄擠壓與右側跑版問題。
-> 3. **收件匣多選模式 (Multi-Select Mode)**：收件匣新增多選按鈕與批次操作支援（批次移動至看板欄位、批次標記完成、批次優先級、批次刪除）。
+> 1. **修復長按卡片消失問題 (DragOverlay Isolation)**：徹底修復在 `DragOverlay` 內重疊呼叫 `useSortable` 導致的雙重位移（Double Translation）與 25% 半透明虛線問題。透過 `isOverlay` 隔離屬性，保證懸浮卡片在長按瞬間立體浮起、精準跟隨手指。
+> 2. **Trello 等級絲滑懸浮視覺體驗 (Trello-like Floating Visuals)**：
+>    - 手機長按 250ms 觸發微震動提示 (`navigator.vibrate(30)`)。
+>    - 懸浮卡片呈現 `scale-105` 放大、`rotate-2` 輕微傾斜與 `shadow-2xl` 深度立體光影。
+>    - 原位置保留平滑虛線插槽（`drop-slot-placeholder`），跨欄與欄內拖曳插槽即時切換。
+> 3. **看板邊緣雙向智慧自動滾動 (Horizontal Auto-Scrolling)**：拖曳卡片靠近螢幕左右邊緣（20% 區域）時，以加速度平滑捲動看板，支援跨多欄位單手流暢操作。
 
 ---
 
 ## 🎯 核心規格與驗收標準 (AC)
 
-### 1. 手機版 Bottom Dock 簡約佈局 (Mobile Dock Redesign)
+### 1. 手機端長按懸浮卡片保證可見 (DragOverlay Visibility Guarantee)
 - **驗收標準 (AC)**：
-  - [AC-1.1] 手機版（螢幕寬度 `< 640px`）自動隱藏「行事曆 (Calendar)」與「表格 (Table)」模式按鈕，僅保留「收件匣」、「看板」、「清單」與流程設定。
-  - [AC-1.2] 桌機版（`>= 640px`）完整保留所有檢視模式按鈕（收件匣、看板、行事曆、表格、清單）。
-  - [AC-1.3] 手機版 Dock 寬度適中置中，與右下角語音懸浮按鈕（Voice FAB）完全分離不重疊。
-  - [AC-1.4] 在手機版點擊「收件匣」時呈現收件匣 Active 狀態；點擊「看板」或「清單」時自動切換並高亮對應分頁。
+  - [AC-1.1] 長按 250ms 觸發拖曳時，手指正下方立即浮現完整的實體卡片，100% 不透明、清晰可見，絕不發生卡片消失或飛出螢幕外的異常。
+  - [AC-1.2] 懸浮卡片不受 `useSortable` 重複 transform 影響，精準吸附於觸控點中心。
+  - [AC-1.3] 觸發拖曳瞬間發出微震動反饋（Haptic Feedback），並禁止系統長按文字選取彈窗。
 
 ---
 
-### 2. 手機版收件匣全畫面無縫切換 (Mobile Fullscreen Inbox & Anti-Overflow)
+### 2. Trello 級絲滑視覺與插槽互動 (Silky Trello Experience)
 - **驗收標準 (AC)**：
-  - [AC-2.1] 手機版開啟收件匣時，收件匣以 `100%` 寬度全螢幕展示，不再與看板左右擠壓並排，徹底解決邊界被截斷跑版問題。
-  - [AC-2.2] 手機版隱藏桌面版專用的可拖曳分割線（WorkspaceSplitter）。
-  - [AC-2.3] 收件匣頂部的返回/收合按鈕（`<ChevronLeft />`）在手機版點擊時能直接返回看板檢視。
+  - [AC-2.1] 懸浮卡片具備微傾斜（`rotate-2`）與加深投影（`shadow-2xl ring-2 ring-orange-500/30`），呈現自然懸浮感。
+  - [AC-2.2] 欄位中的目標插入位置即時呈現專用虛線佔位方塊（`drop-slot-placeholder`）。
+  - [AC-2.3] 放開手指時具備平滑 180ms 歸位動畫（`dropAnimation`），無生硬跳動。
 
 ---
 
-### 3. 收件匣多選模式與批次操作 (Inbox Multi-Select & Batch Actions)
+### 3. 雙向邊緣自動平滑滾動 (Edge Auto-Scrolling)
 - **驗收標準 (AC)**：
-  - [AC-3.1] 收件匣 Header 工具列新增「多選 (Multi-Select)」切換按鈕，支援一鍵進入/退出多選模式。
-  - [AC-3.2] 進入多選模式後，收件匣卡片即時顯示選取 Checkbox，點擊卡片任何處可勾選/取消勾選。
-  - [AC-3.3] 底部彈出 `BatchActionBar`，支援收件匣選取卡片之批次操作：移動至待辦/進行中/已完成、批次優先級、批次標記完成、批次刪除。
-  - [AC-3.4] 提供「全選收件匣」快捷操作與「取消選取」清理功能。
+  - [AC-3.1] 拖曳卡片至看板左右邊界 20% 範圍內時，看板自動向左或向右平滑滾動。
+  - [AC-3.2] 釋放卡片或移開邊緣時立即停止滾動。
