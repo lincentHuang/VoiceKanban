@@ -61,7 +61,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
       ref={setNodeRef}
       className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-full backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden ${
         isOver
-          ? "border-orange-400 bg-orange-50/90 dark:bg-orange-950/80 ring-2 ring-orange-400/40 scale-[1.01]"
+          ? "border-orange-400 bg-orange-50/90 dark:bg-orange-950/80 ring-2 ring-orange-400/40"
           : "border-slate-200/80 dark:border-slate-800"
       }`}
     >
@@ -128,7 +128,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
       </div>
 
       {/* Cards Scrollable Container (Dynamic viewport height adaptation with Drop Insertion Slot) */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 custom-scrollbar min-h-0">
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {filteredTasks.map((task, idx) => (
             <React.Fragment key={task.id}>
@@ -155,7 +155,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
           <div
             className={`h-28 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-xs gap-1.5 p-3 text-center transition-all duration-200 ${
               isCurrentColumnOver
-                ? "border-orange-500 bg-orange-50/80 dark:bg-orange-950/60 ring-4 ring-orange-500/20 text-orange-600 dark:text-orange-300 scale-[1.02] shadow-inner"
+                ? "border-orange-500 bg-orange-50/80 dark:bg-orange-950/60 ring-2 ring-orange-500/30 text-orange-600 dark:text-orange-300 shadow-inner"
                 : "border-slate-200/80 dark:border-slate-800 text-slate-400"
             }`}
           >

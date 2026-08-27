@@ -281,7 +281,7 @@ export const SidebarInbox: React.FC = () => {
       </div>
 
       {/* Cards List in Inbox (Droppable & Sortable with Adaptive Row Layout & Drop Insertion Slot) */}
-      <div className={`flex-1 overflow-y-auto my-2.5 pr-1 custom-scrollbar min-h-0 ${!isMobile && inboxWidth >= 420 ? "space-y-2" : "space-y-2.5"}`}>
+      <div className={`flex-1 overflow-y-auto overflow-x-hidden my-2.5 pr-1 custom-scrollbar min-h-0 ${!isMobile && inboxWidth >= 420 ? "space-y-2" : "space-y-2.5"}`}>
         <SortableContext items={inboxTaskIds} strategy={verticalListSortingStrategy}>
           {filteredInboxTasks.map((task, idx) => (
             <React.Fragment key={task.id}>
@@ -311,7 +311,7 @@ export const SidebarInbox: React.FC = () => {
           <div
             className={`h-36 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${
               isInboxOver
-                ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/60 ring-4 ring-blue-500/20 text-blue-600 dark:text-blue-300 scale-[1.02] shadow-inner"
+                ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500/30 text-blue-600 dark:text-blue-300 shadow-inner"
                 : "border-slate-200 dark:border-slate-800 text-slate-400"
             }`}
           >
