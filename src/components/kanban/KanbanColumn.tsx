@@ -142,7 +142,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
             </React.Fragment>
           ))}
 
-          {insertIndex === filteredTasks.length && (
+          {filteredTasks.length > 0 && insertIndex === filteredTasks.length && (
             <div
               key="drop-slot-placeholder-end"
               className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400/70 bg-orange-50/40 dark:bg-orange-950/30 my-1 transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
@@ -151,15 +151,27 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
         </SortableContext>
 
         {/* Empty State */}
-        {filteredTasks.length === 0 && !isCurrentColumnOver && (
-          <div className="h-28 border-2 border-dashed border-slate-200/80 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-400 text-xs gap-1.5 p-3 text-center">
-            <span>尚無卡片</span>
-            <button
-              onClick={handleAddTaskClick}
-              className="text-orange-500 font-medium hover:underline text-[11px]"
-            >
-              + 點此快速建立
-            </button>
+        {filteredTasks.length === 0 && (
+          <div
+            className={`h-28 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-xs gap-1.5 p-3 text-center transition-all duration-200 ${
+              isCurrentColumnOver
+                ? "border-orange-500 bg-orange-50/80 dark:bg-orange-950/60 ring-4 ring-orange-500/20 text-orange-600 dark:text-orange-300 scale-[1.02] shadow-inner"
+                : "border-slate-200/80 dark:border-slate-800 text-slate-400"
+            }`}
+          >
+            {isCurrentColumnOver ? (
+              <span className="font-bold text-sm">✨ 放開以移入此欄位</span>
+            ) : (
+              <>
+                <span>尚無卡片</span>
+                <button
+                  onClick={handleAddTaskClick}
+                  className="text-orange-500 font-medium hover:underline text-[11px]"
+                >
+                  + 點此快速建立
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

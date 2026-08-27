@@ -9,6 +9,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  pointerWithin,
+  rectIntersection,
   closestCorners,
   DragOverlay,
 } from "@dnd-kit/core";
@@ -50,6 +52,37 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       },
     })
   );
+
+  // Custom collision detection: prioritize items under pointer, fallback to container, then rectIntersection, then closestCorners
+  const collisionDetectionStrategy = (args: Parameters<typeof closestCorners>[0]) => {
+    // 1. First check if pointer is directly within any droppable
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      // Prioritize Sortable Task over Column container if pointer is directly on a task
+      const taskCollision = pointerCollisions.find(
+        (c) => c.data?.droppableContainer?.data?.current?.type === "Task"
+      );
+      if (taskCollision) {
+        return [taskCollision];
+      }
+      return pointerCollisions;
+    }
+
+    // 2. Check bounding rect intersection (useful when pointer moves fast or over margins)
+    const rectCollisions = rectIntersection(args);
+    if (rectCollisions.length > 0) {
+      const taskCollision = rectCollisions.find(
+        (c) => c.data?.droppableContainer?.data?.current?.type === "Task"
+      );
+      if (taskCollision) {
+        return [taskCollision];
+      }
+      return rectCollisions;
+    }
+
+    // 3. Fallback to closestCorners
+    return closestCorners(args);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -114,16 +147,16 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     setDragOverLocation(null);
 
     const { active, over } = event;
-    if (!over) return;
+    if (!over && !finalLocation) return;
 
     const activeId = active.id as string;
-    const overId = over.id as string;
+    const overId = over?.id as string | undefined;
 
     const activeTask = tasks.find((t) => t.id === activeId);
     if (!activeTask) return;
 
-    const isOverColumn = columns.some((col) => col.id === overId) || overId === "inbox";
-    const overTask = tasks.find((t) => t.id === overId);
+    const isOverColumn = overId ? columns.some((col) => col.id === overId) || overId === "inbox" : false;
+    const overTask = overId ? tasks.find((t) => t.id === overId) : undefined;
 
     const targetColumnId =
       finalLocation?.columnId || (isOverColumn ? (overId as ColumnId) : overTask?.columnId);
@@ -183,7 +216,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     <DndContext
       id="voice-kanban-unified-dnd"
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetectionStrategy}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}

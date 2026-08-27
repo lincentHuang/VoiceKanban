@@ -299,7 +299,7 @@ export const SidebarInbox: React.FC = () => {
             </React.Fragment>
           ))}
 
-          {insertIndex === filteredInboxTasks.length && (
+          {filteredInboxTasks.length > 0 && insertIndex === filteredInboxTasks.length && (
             <div
               key="drop-slot-inbox-end"
               className="h-10 w-full rounded-xl border-2 border-dashed border-blue-400/70 bg-blue-50/40 dark:bg-blue-950/30 my-1 transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
@@ -307,10 +307,25 @@ export const SidebarInbox: React.FC = () => {
           )}
         </SortableContext>
 
-        {filteredInboxTasks.length === 0 && !isInboxOver && (
-          <div className="h-36 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-400 text-xs gap-1.5 p-4 text-center">
-            <span>收件匣已清空 ✨</span>
-            <p className="text-[11px] text-slate-400">可將外部卡片拖曳入此暫存，或直接語音輸入</p>
+        {filteredInboxTasks.length === 0 && (
+          <div
+            className={`h-36 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${
+              isInboxOver
+                ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/60 ring-4 ring-blue-500/20 text-blue-600 dark:text-blue-300 scale-[1.02] shadow-inner"
+                : "border-slate-200 dark:border-slate-800 text-slate-400"
+            }`}
+          >
+            {isInboxOver ? (
+              <>
+                <span className="font-bold text-sm">📥 放開以移至收件匣</span>
+                <p className="text-[11px] text-blue-500/80">卡片將存入全域收件匣</p>
+              </>
+            ) : (
+              <>
+                <span>收件匣已清空 ✨</span>
+                <p className="text-[11px] text-slate-400">可將外部卡片拖曳入此暫存，或直接語音輸入</p>
+              </>
+            )}
           </div>
         )}
       </div>
