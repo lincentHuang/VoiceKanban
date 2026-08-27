@@ -1,36 +1,43 @@
-# VoiceKanban 手機版長按拖曳與雙向自動滾動規格書 (PRD.md v2.21.0)
+# VoiceKanban 看板卡片子任務展開與即時完成規格書 (PRD.md v2.23.0)
 
-> **版本**：v2.21.0 (Mobile DragOverlay Fix & Trello Silk-Smooth Experience)  
+> **版本**：v2.23.0 (Kanban Card Subtask Inline Expansion & Interactive Completion)  
 > **負責人**：`@PM`  
-> **核心目標**：
-> 1. **修復長按卡片消失問題 (DragOverlay Isolation)**：徹底修復在 `DragOverlay` 內重疊呼叫 `useSortable` 導致的雙重位移（Double Translation）與 25% 半透明虛線問題。透過 `isOverlay` 隔離屬性，保證懸浮卡片在長按瞬間立體浮起、精準跟隨手指。
-> 2. **Trello 等級絲滑懸浮視覺體驗 (Trello-like Floating Visuals)**：
->    - 手機長按 250ms 觸發微震動提示 (`navigator.vibrate(30)`)。
->    - 懸浮卡片呈現 `scale-105` 放大、`rotate-2` 輕微傾斜與 `shadow-2xl` 深度立體光影。
->    - 原位置保留平滑虛線插槽（`drop-slot-placeholder`），跨欄與欄內拖曳插槽即時切換。
-> 3. **看板邊緣雙向智慧自動滾動 (Horizontal Auto-Scrolling)**：拖曳卡片靠近螢幕左右邊緣（20% 區域）時，以加速度平滑捲動看板，支援跨多欄位單手流暢操作。
+> **決策共識 (Grill Me 結論)**：
+> 1. **展開樣式 (Q1-A)**：卡片內嵌平滑向下展開（Accordion/Card Expansion），直接呈現每項子任務項目，並提供展開/收合切換。
+> 2. **操作功能 (Q2-B)**：支援瀏覽與即時點擊 Checkbox 完成/取消完成；維持極簡，新增/編輯子任務仍透過詳細編輯彈窗進行。
+> 3. **全數完成行為 (Q3-A)**：當子任務全部打勾時，徽章與進度條轉為綠色滿額樣式並觸發微型慶祝彩花（Confetti），母任務維持當前欄位與狀態不自動轉移，由使用者自主控制。
+> 4. **適用範圍 (Q4-B)**：主要應用於標準看板直式卡片（TaskCard vertical card variant）。
 
 ---
 
 ## 🎯 核心規格與驗收標準 (AC)
 
-### 1. 手機端長按懸浮卡片保證可見 (DragOverlay Visibility Guarantee)
-- **驗收標準 (AC)**：
-  - [AC-1.1] 長按 250ms 觸發拖曳時，手指正下方立即浮現完整的實體卡片，100% 不透明、清晰可見，絕不發生卡片消失或飛出螢幕外的異常。
-  - [AC-1.2] 懸浮卡片不受 `useSortable` 重複 transform 影響，精準吸附於觸控點中心。
-  - [AC-1.3] 觸發拖曳瞬間發出微震動反饋（Haptic Feedback），並禁止系統長按文字選取彈窗。
+### 1. 子任務徽章互動與展開切換 (AC-1)
+- **[AC-1.1]** 當卡片包含子任務清單（`task.checklist.length > 0`）時，底部子任務徽章（`☑️ X/Y`）具備可點擊互動樣式（Hover 效果、Cursor Pointer、Tooltip 提示「點擊展開/收合子任務」）。
+- **[AC-1.2]** 點擊子任務徽章時，觸發子任務列表平滑向下展開，並停止事件冒泡（`stopPropagation`），**絕不誤觸**打開 TaskCard 的編輯彈窗，亦不觸發拖曳（DnD）。
+- **[AC-1.3]** 展開後，徽章顯示為 Active 啟用狀態（例如高亮背景與折疊箭頭指示），再次點擊即可平滑收合。
 
 ---
 
-### 2. Trello 級絲滑視覺與插槽互動 (Silky Trello Experience)
-- **驗收標準 (AC)**：
-  - [AC-2.1] 懸浮卡片具備微傾斜（`rotate-2`）與加深投影（`shadow-2xl ring-2 ring-orange-500/30`），呈現自然懸浮感。
-  - [AC-2.2] 欄位中的目標插入位置即時呈現專用虛線佔位方塊（`drop-slot-placeholder`）。
-  - [AC-2.3] 放開手指時具備平滑 180ms 歸位動畫（`dropAnimation`），無生硬跳動。
+### 2. 子任務即時勾選與進度反饋 (AC-2)
+- **[AC-2.1]** 展開區域內列出該卡片的所有子任務，每個項目包含：
+  - 獨立的勾選按鈕（Checkbox / CheckSquare）
+  - 子任務文字（完成時呈現刪除線 `line-through` 與柔和文字色彩）
+- **[AC-2.2]** 點擊任何子任務 Checkbox，立即呼叫 `toggleChecklistItem(taskId, itemId)` 更新 Zustand store 及觸發同步。
+- **[AC-2.3]** 點擊 Checkbox 時嚴格阻擋事件冒泡（`onPointerDown` 與 `onClick` 皆 `stopPropagation`），防止觸發卡片點擊與拖曳。
+- **[AC-2.4]** 當最後一個未完成子任務被勾選為完成時，觸發慶祝彩花效果（`confetti`）並將徽章更新為 `☑️ Y/Y` 全滿綠色樣式。
 
 ---
 
-### 3. 雙向邊緣自動平滑滾動 (Edge Auto-Scrolling)
-- **驗收標準 (AC)**：
-  - [AC-3.1] 拖曳卡片至看板左右邊界 20% 範圍內時，看板自動向左或向右平滑滾動。
-  - [AC-3.2] 釋放卡片或移開邊緣時立即停止滾動。
+### 3. 五種狀態完整涵蓋 (AC-3)
+- **[AC-3.1]** **Active 展開狀態**：流暢過渡顯示子任務清單，具備細緻的邊框與背景層次（支援深色模式 Dark Mode）。
+- **[AC-3.2]** **Empty 空狀態**：若卡片沒有子任務，不顯示可展開徽章；展開區不出現多餘空白。
+- **[AC-3.3]** **Success 完成狀態**：子任務勾選後即時反映完成進度條與百分比徽章。
+- **[AC-3.4]** **Loading / Optimistic 更新狀態**：點擊立即無延遲樂觀更新本地 UI，背景非同步持久化與雲端同步。
+- **[AC-3.5]** **Error 防呆狀態**：無效項目或刪除之項目具備安全防護，不造成組件崩潰。
+
+---
+
+### 4. 邊界與無障礙體驗 (AC-4)
+- **[AC-4.1]** 多選模式（`isMultiSelectMode`）或卡片拖曳期間，展開狀態正常保持且操作不衝突。
+- **[AC-4.2]** 支援鍵盤可聚焦（Accessibility ARIA 標籤與鍵盤 Enter / Space 操作支援）。

@@ -114,6 +114,7 @@ interface KanbanStoreState {
   setIsAddTaskModalOpen: (open: boolean) => void;
   addTaskDefaultColumn: ColumnId;
   setAddTaskDefaultColumn: (col: ColumnId) => void;
+  openAddTaskModal: (columnId?: ColumnId) => void;
 
   // BYOK Settings
   byokConfig: BYOKConfig;
@@ -372,8 +373,15 @@ export const useKanbanStore = create<KanbanStoreState>()(
       // Tasks
       tasks: INITIAL_TASKS,
       addTask: (taskData) => {
+        const effectiveBoardId =
+          taskData.columnId === "inbox" ? "global" : taskData.boardId || get().activeBoardId;
+
         const currentTasksInCol = get()
-          .tasks.filter((t) => t.boardId === taskData.boardId && t.columnId === taskData.columnId)
+          .tasks.filter((t) =>
+            taskData.columnId === "inbox"
+              ? t.columnId === "inbox"
+              : t.boardId === effectiveBoardId && t.columnId === taskData.columnId
+          )
           .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
 
         const lastKey = currentTasksInCol.length > 0 ? currentTasksInCol[currentTasksInCol.length - 1].orderKey : null;
@@ -383,7 +391,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           title: taskData.title,
           description: taskData.description || "",
-          boardId: taskData.boardId,
+          boardId: effectiveBoardId,
           columnId: taskData.columnId,
           orderKey: newOrderKey,
           priority: taskData.priority,
@@ -700,8 +708,13 @@ export const useKanbanStore = create<KanbanStoreState>()(
       setIsSettingsModalOpen: (isSettingsModalOpen) => set({ isSettingsModalOpen }),
       isAddTaskModalOpen: false,
       setIsAddTaskModalOpen: (isAddTaskModalOpen) => set({ isAddTaskModalOpen }),
-      addTaskDefaultColumn: "inbox",
+      addTaskDefaultColumn: "todo",
       setAddTaskDefaultColumn: (addTaskDefaultColumn) => set({ addTaskDefaultColumn }),
+      openAddTaskModal: (columnId) => {
+        const activeCols = get().getActiveBoardColumns();
+        const defaultCol = columnId || activeCols[0]?.id || "todo";
+        set({ addTaskDefaultColumn: defaultCol, isAddTaskModalOpen: true });
+      },
 
       // BYOK
       byokConfig: {

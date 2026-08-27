@@ -19,11 +19,30 @@ export const AddTaskModal: React.FC = () => {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [columnId, setColumnId] = useState<ColumnId>(addTaskDefaultColumn);
+  const [columnId, setColumnId] = useState<ColumnId>(() => {
+    const validCols = columns.map((c) => c.id);
+    if (addTaskDefaultColumn === "inbox" || validCols.includes(addTaskDefaultColumn)) {
+      return addTaskDefaultColumn;
+    }
+    return validCols[0] || "todo";
+  });
   const [isStarred, setIsStarred] = useState(false);
   const [dueDate, setDueDate] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Synchronize columnId with addTaskDefaultColumn whenever modal opens or column changes
+  React.useEffect(() => {
+    if (isAddTaskModalOpen) {
+      const validCols = columns.map((c) => c.id);
+      if (addTaskDefaultColumn === "inbox" || validCols.includes(addTaskDefaultColumn)) {
+        setColumnId(addTaskDefaultColumn);
+      } else {
+        setColumnId(validCols[0] || "todo");
+      }
+    }
+  }, [isAddTaskModalOpen, addTaskDefaultColumn, columns]);
 
   if (!isAddTaskModalOpen) return null;
 
@@ -40,26 +59,31 @@ export const AddTaskModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
 
-    addTask({
-      title: title.trim(),
-      description: description.trim(),
-      boardId: activeBoardId,
-      columnId,
-      isStarred,
-      tags,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null, // Default null if empty
-      completed: columnId === "done",
-    });
+    setIsSubmitting(true);
+    try {
+      addTask({
+        title: title.trim(),
+        description: description.trim(),
+        boardId: columnId === "inbox" ? "global" : activeBoardId,
+        columnId,
+        isStarred,
+        tags,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null, // Default null if empty
+        completed: columnId === "done",
+      });
 
-    // Reset and close
-    setTitle("");
-    setDescription("");
-    setIsStarred(false);
-    setDueDate("");
-    setTags([]);
-    setIsAddTaskModalOpen(false);
+      // Reset and close
+      setTitle("");
+      setDescription("");
+      setIsStarred(false);
+      setDueDate("");
+      setTags([]);
+      setIsAddTaskModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -121,11 +145,16 @@ export const AddTaskModal: React.FC = () => {
                 onChange={(e) => setColumnId(e.target.value as ColumnId)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200"
               >
-                {columns.map((col) => (
-                  <option key={col.id} value={col.id}>
-                    {col.icon} {col.title}
-                  </option>
-                ))}
+                <optgroup label="📋 當前看板欄位">
+                  {columns.map((col) => (
+                    <option key={col.id} value={col.id}>
+                      {col.icon} {col.title}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="📥 暫存箱">
+                  <option value="inbox">📥 側邊欄收件匣 (Inbox)</option>
+                </optgroup>
               </select>
             </div>
 
@@ -226,9 +255,12 @@ export const AddTaskModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-base44-orange hover:bg-base44-orangeHover text-white text-xs sm:text-sm font-bold shadow-md"
+              disabled={isSubmitting || !title.trim()}
+              className={`px-5 py-2 rounded-xl bg-base44-orange hover:bg-base44-orangeHover text-white text-xs sm:text-sm font-bold shadow-md transition-all ${
+                isSubmitting || !title.trim() ? "opacity-60 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.98]"
+              }`}
             >
-              建立卡片
+              {isSubmitting ? "建立中..." : "建立卡片"}
             </button>
           </div>
         </form>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Task } from "@/core/types/task";
@@ -17,6 +17,8 @@ import {
   CheckSquare,
   Square,
   Star,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -40,7 +42,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     isMultiSelectMode,
     selectedTaskIds,
     toggleTaskSelection,
+    toggleChecklistItem,
   } = useKanbanStore();
+
+  const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
 
   const sortable = useSortable({
     id: task.id,
@@ -102,13 +107,33 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     toggleTaskComplete(task.id);
   };
 
-  // Smart Due Date Status with simplified Date only & dynamic color
-  const dueDateStatus = getDueDateStatus(task.dueDate, task.completed);
-
   // Checklist counts
   const totalChecklist = task.checklist ? task.checklist.length : 0;
   const completedChecklist = task.checklist ? task.checklist.filter((i) => i.completed).length : 0;
   const isChecklistAllDone = totalChecklist > 0 && totalChecklist === completedChecklist;
+
+  const handleToggleSubtasksExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSubtasksExpanded((prev) => !prev);
+  };
+
+  const handleSubtaskToggle = (e: React.MouseEvent, itemId: string, currentCompleted: boolean) => {
+    e.stopPropagation();
+    if (!currentCompleted && completedChecklist + 1 === totalChecklist) {
+      try {
+        confetti({
+          particleCount: 30,
+          spread: 50,
+          origin: { y: 0.8 },
+          colors: ["#10B981", "#3B82F6", "#F59E0B"],
+        });
+      } catch {}
+    }
+    toggleChecklistItem(task.id, itemId);
+  };
+
+  // Smart Due Date Status with simplified Date only & dynamic color
+  const dueDateStatus = getDueDateStatus(task.dueDate, task.completed);
 
   const hasTags = task.tags && task.tags.length > 0;
   const hasBottomBadges =
@@ -119,10 +144,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   // --- HORIZONTAL ROW / STRIP VARIANT (with Progressive Disclosure) ---
   if (variant === "row") {
-    // Determine level of detail based on available width:
-    // Small (< 520px): Only Title (min 100px) + Star + Complete button
-    // Medium (520px - 650px): Title + Star + 1-2 Tags + Checklist + Complete + Edit
-    // Large (>= 650px): Everything (Title + All Tags + Checklist + Due Date + Complete + Edit)
     const isSmallRow = inboxWidth < 520;
     const isMediumRow = inboxWidth >= 520 && inboxWidth < 650;
     const isLargeRow = inboxWidth >= 650;
@@ -436,7 +457,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Bottom Metadata Badges (Only displayed when metadata exists) */}
         {hasBottomBadges && (
-          <div className="flex items-center gap-3 mt-3 pt-2 border-t border-slate-100/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2.5 mt-3 pt-2 border-t border-slate-100/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400">
             {/* Description note icon */}
             {task.description && (
               <span className="flex items-center gap-1" title="有備註說明">
@@ -452,21 +473,32 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </span>
             )}
 
-            {/* Checklist progress pill */}
+            {/* Interactive Checklist Expansion Button */}
             {totalChecklist > 0 && (
-              <span
-                className={`flex items-center gap-1 font-medium px-1.5 py-0.5 rounded-md ${
-                  isChecklistAllDone
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-bold"
-                    : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={handleToggleSubtasksExpand}
+                className={`flex items-center gap-1 font-medium px-2 py-0.5 rounded-lg transition-all cursor-pointer group/badge select-none ${
+                  isSubtasksExpanded
+                    ? "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 ring-1 ring-blue-400/50 shadow-2xs"
+                    : isChecklistAllDone
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold"
+                    : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
                 }`}
-                title={`子任務完成進度: ${completedChecklist}/${totalChecklist}`}
+                title={isSubtasksExpanded ? "收合子任務列表" : `點擊展開子任務 (${completedChecklist}/${totalChecklist})`}
+                aria-expanded={isSubtasksExpanded}
               >
                 <CheckSquare2 className="w-3.5 h-3.5" />
                 <span>
                   {completedChecklist}/{totalChecklist}
                 </span>
-              </span>
+                {isSubtasksExpanded ? (
+                  <ChevronUp className="w-3 h-3 ml-0.5 opacity-75" />
+                ) : (
+                  <ChevronDown className="w-3 h-3 ml-0.5 opacity-75 group-hover/badge:translate-y-0.5 transition-transform" />
+                )}
+              </button>
             )}
 
             {/* Due date badge (Formatted with only Date and dynamic urgency color) */}
@@ -481,6 +513,68 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 </span>
               </span>
             )}
+          </div>
+        )}
+
+        {/* Inline Expanded Subtasks Container (Accordion) */}
+        {isSubtasksExpanded && totalChecklist > 0 && (
+          <div
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150"
+          >
+            {/* Progress Header & Mini Bar */}
+            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 dark:text-slate-400 px-0.5">
+              <span>子任務進度</span>
+              <span className={isChecklistAllDone ? "text-emerald-600 dark:text-emerald-400 font-bold" : ""}>
+                {Math.round((completedChecklist / totalChecklist) * 100)}%
+              </span>
+            </div>
+            <div className="w-full h-1 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  isChecklistAllDone ? "bg-emerald-500" : "bg-blue-500"
+                }`}
+                style={{ width: `${(completedChecklist / totalChecklist) * 100}%` }}
+              />
+            </div>
+
+            {/* Subtask Items List */}
+            <div className="space-y-1 pt-1 max-h-48 overflow-y-auto custom-scrollbar pr-0.5">
+              {task.checklist?.map((item) => (
+                <div
+                  key={item.id}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => handleSubtaskToggle(e, item.id, item.completed)}
+                  className={`flex items-start gap-2 p-1.5 rounded-lg text-xs transition-colors cursor-pointer group/item select-none ${
+                    item.completed
+                      ? "bg-slate-50/70 dark:bg-slate-900/40 text-slate-400 dark:text-slate-500"
+                      : "hover:bg-slate-100/90 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => handleSubtaskToggle(e, item.id, item.completed)}
+                    className="mt-0.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors shrink-0"
+                    aria-label={item.completed ? `取消完成 ${item.title}` : `標記完成 ${item.title}`}
+                  >
+                    {item.completed ? (
+                      <CheckSquare className="w-3.5 h-3.5 fill-emerald-500 text-white dark:fill-emerald-600" />
+                    ) : (
+                      <Square className="w-3.5 h-3.5 group-hover/item:text-emerald-500" />
+                    )}
+                  </button>
+                  <span
+                    className={`flex-1 break-words leading-tight text-[11px] ${
+                      item.completed ? "line-through text-slate-400 dark:text-slate-500" : "font-normal"
+                    }`}
+                  >
+                    {item.title}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

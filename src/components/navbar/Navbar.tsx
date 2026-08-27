@@ -32,7 +32,7 @@ export const Navbar: React.FC = () => {
     logout,
     syncState,
     triggerSync,
-    setIsAddTaskModalOpen,
+    openAddTaskModal,
     setIsColumnManagerOpen,
   } = useKanbanStore();
 
@@ -105,7 +105,7 @@ export const Navbar: React.FC = () => {
       <div className="flex items-center gap-2 shrink-0">
         {/* Quick Add Button */}
         <button
-          onClick={() => setIsAddTaskModalOpen(true)}
+          onClick={() => openAddTaskModal()}
           className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
           <Plus className="w-3.5 h-3.5" />

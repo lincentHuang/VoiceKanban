@@ -16,7 +16,7 @@ export const TableView: React.FC = () => {
     deleteTask,
     updateTask,
     setEditingTaskId,
-    setIsAddTaskModalOpen,
+    openAddTaskModal,
     searchQuery,
     tagFilter,
   } = useKanbanStore();
@@ -69,7 +69,7 @@ export const TableView: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setIsAddTaskModalOpen(true)}
+            onClick={() => openAddTaskModal()}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-xs transition-all"
           >
             <Plus className="w-3.5 h-3.5" />

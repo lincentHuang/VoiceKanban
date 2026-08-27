@@ -23,7 +23,7 @@ export const SubHeaderToolbar: React.FC = () => {
     tagFilter,
     setTagFilter,
     setIsColumnManagerOpen,
-    setIsAddTaskModalOpen,
+    openAddTaskModal,
     isInboxSidebarOpen,
     setIsInboxSidebarOpen,
   } = useKanbanStore();
@@ -120,7 +120,7 @@ export const SubHeaderToolbar: React.FC = () => {
 
           {/* Quick Add Task */}
           <button
-            onClick={() => setIsAddTaskModalOpen(true)}
+            onClick={() => openAddTaskModal()}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-xs transition-all"
           >
             <Plus className="w-3.5 h-3.5" />

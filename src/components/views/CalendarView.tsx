@@ -22,7 +22,6 @@ export const CalendarView: React.FC = () => {
     activeBoardId,
     setEditingTaskId,
     addTask,
-    setIsAddTaskModalOpen,
   } = useKanbanStore();
 
   const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 1)); // August 2026 as per user screenshot

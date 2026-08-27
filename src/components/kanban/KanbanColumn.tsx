@@ -24,8 +24,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
   });
 
   const {
-    setAddTaskDefaultColumn,
-    setIsAddTaskModalOpen,
+    openAddTaskModal,
     isMultiSelectMode,
     toggleTaskSelection,
     selectedTaskIds,
@@ -36,8 +35,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleAddTaskClick = () => {
-    setAddTaskDefaultColumn(column.id);
-    setIsAddTaskModalOpen(true);
+    openAddTaskModal(column.id);
   };
 
   const handleSelectAllInColumn = () => {

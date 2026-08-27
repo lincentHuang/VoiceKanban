@@ -25,11 +25,11 @@ export const QuickPromptHero: React.FC = () => {
     e.preventDefault();
     if (!promptText.trim()) return;
 
-    // Fast quick task addition
+    // Fast quick task addition to inbox (temporary staging)
     addTask({
       title: promptText.trim(),
       description: "透過快速輸入建立",
-      boardId: activeBoardId,
+      boardId: "global",
       columnId: "inbox",
       priority: "medium",
       tags: ["QuickAdd"],
