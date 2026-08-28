@@ -22,6 +22,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { formatSyncTime } from "@/core/utils/dateUtils";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export const Navbar: React.FC = () => {
   const {
@@ -82,12 +83,7 @@ export const Navbar: React.FC = () => {
     <header className="w-full h-12 bg-transparent px-3 sm:px-5 flex items-center justify-between gap-3 shrink-0 z-30">
       {/* Left: Logo & Brand */}
       <div className="flex items-center gap-2 shrink-0">
-        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-xs">
-          <span className="text-white text-xs sm:text-sm font-black tracking-tighter">VK</span>
-        </div>
-        <span className="font-black text-slate-900 dark:text-white text-sm sm:text-base tracking-tight hidden sm:inline-block">
-          VoiceKanban
-        </span>
+        <BrandLogo bgVariant="white" size="sm" showBadge={false} />
         {isGuest && (
           <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-[10px] font-bold text-amber-800 dark:text-amber-300">
             <Sparkles className="w-2.5 h-2.5 text-amber-600" />
