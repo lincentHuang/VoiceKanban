@@ -21,9 +21,9 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   className = "",
 }) => {
   const iconSizes = {
-    sm: "w-7 h-7 rounded-xl",
-    md: "w-8 h-8 rounded-xl",
-    lg: "w-14 h-14 rounded-2xl",
+    sm: "w-7 h-7 ",
+    md: "w-8 h-8 ",
+    lg: "w-14 h-14 ",
   };
 
   const textSizes = {
@@ -42,9 +42,8 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   const content = (
     <div
-      className={`inline-flex items-center select-none ${
-        variant === "vertical" ? "flex-col gap-2 text-center" : "flex-row gap-2.5"
-      } ${className}`}
+      className={`inline-flex items-center select-none ${variant === "vertical" ? "flex-col gap-2 text-center" : "flex-row gap-2.5"
+        } ${className}`}
     >
       <img
         src={iconSrc}
