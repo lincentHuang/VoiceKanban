@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Column, Task } from "@/core/types/task";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { TaskCard } from "./TaskCard";
 import { ColumnActionMenu } from "./ColumnActionMenu";
-import { Plus, MoreHorizontal, CheckSquare } from "lucide-react";
+import { Plus, MoreHorizontal, CheckSquare, Mic, X } from "lucide-react";
 
 interface KanbanColumnProps {
   column: Column;
@@ -29,9 +29,26 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
     isMultiSelectMode,
     toggleTaskSelection,
     selectedTaskIds,
+    addTask,
+    activeBoardId,
   } = useKanbanStore();
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAddingCard, setIsAddingCard] = useState(false);
+  const [newCardTitle, setNewCardTitle] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isAddingCard) {
+      inputRef.current?.focus();
+      // Scroll to bottom of column so the input is immediately visible
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
+    }
+  }, [isAddingCard]);
 
   const handleVoiceAddClick = () => {
     openVoiceForColumn(column.id);
@@ -49,12 +66,45 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
     });
   };
 
+  const handleAddCardSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const title = newCardTitle.trim();
+    if (!title || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      addTask({
+        title,
+        columnId: column.id,
+        boardId: activeBoardId,
+        completed: false,
+        tags: [],
+        dueDate: null,
+      });
+      setNewCardTitle("");
+      // Keep focus for continuous adding
+      setTimeout(() => {
+        inputRef.current?.focus();
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
+      }, 50);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelAdd = () => {
+    setIsAddingCard(false);
+    setNewCardTitle("");
+  };
+
   const taskIds = tasks.map((t) => t.id);
 
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-full backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden ${
+      className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-full h-fit backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden ${
         isOver
           ? "border-orange-400 bg-orange-50/90 dark:bg-orange-950/80 ring-2 ring-orange-400/40"
           : "border-slate-200/80 dark:border-slate-800"
@@ -68,11 +118,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
         />
       )}
 
-      {/* Column Header (Fixed shrink-0) */}
+      {/* Column Header (Fixed shrink-0, top "+" removed as requested) */}
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-800/60 px-1 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-base">{column.icon}</span>
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate">
             {column.title}
           </h3>
           <span className="ml-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs shadow-2xs">
@@ -92,69 +142,103 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
             </button>
           )}
 
-          {/* Add Task Plus - Direct Voice Input */}
-          <button
-            onClick={handleVoiceAddClick}
-            className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors"
-            title={`在「${column.title}」用語音新增卡片`}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-
           {/* Column Action Hamburger Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors"
-              title="列表選項與顏色"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-
-            {isMenuOpen && (
-              <ColumnActionMenu
-                column={column}
-                onClose={() => setIsMenuOpen(false)}
-                onAddTask={handleManualAddClick}
-              />
-            )}
-          </div>
+          <ColumnActionMenu
+            column={column}
+            onAddTask={() => setIsAddingCard(true)}
+          />
         </div>
       </div>
 
       {/* Cards Scrollable Container */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 custom-scrollbar min-h-0">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 custom-scrollbar min-h-0"
+      >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} />
           ))}
         </SortableContext>
 
-        {/* Empty State */}
-        {tasks.length === 0 && (
-          <div
-            className={`h-28 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-xs gap-1.5 p-3 text-center transition-all duration-200 ${
-              isOver
-                ? "border-orange-500 bg-orange-50/80 dark:bg-orange-950/60 ring-2 ring-orange-500/30 text-orange-600 dark:text-orange-300 shadow-inner"
-                : "border-slate-200/80 dark:border-slate-800 text-slate-400"
-            }`}
-          >
-            {isOver ? (
-              <span className="font-bold text-sm">✨ 放開以移入此欄位</span>
-            ) : (
-              <>
-                <span>尚無卡片</span>
-                <button
-                  onClick={handleVoiceAddClick}
-                  className="text-orange-500 font-medium hover:underline text-[11px] flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" /> 語音快速建立
-                </button>
-              </>
-            )}
+        {/* Drop Highlight during Drag & Drop */}
+        {isOver && tasks.length === 0 && (
+          <div className="h-16 border-2 border-dashed border-orange-500 bg-orange-50/80 dark:bg-orange-950/60 rounded-xl flex items-center justify-center text-xs font-bold text-orange-600 dark:text-orange-300 shadow-inner my-1">
+            ✨ 放開以移入此欄位
+          </div>
+        )}
+
+        {/* Inline Add Card Active Form (Matches Media 4) */}
+        {isAddingCard && (
+          <div className="pt-1 animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white dark:bg-slate-800/90 rounded-xl p-2.5 shadow-sm border border-blue-400/80 dark:border-blue-500/60 ring-2 ring-blue-500/20">
+              <textarea
+                ref={inputRef}
+                value={newCardTitle}
+                onChange={(e) => setNewCardTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddCardSubmit();
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    handleCancelAdd();
+                  }
+                }}
+                placeholder="輸入標題或貼上連結"
+                rows={2}
+                className="w-full bg-transparent text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none resize-none leading-relaxed"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center gap-2 mt-2 pb-1">
+              <button
+                type="button"
+                onClick={() => handleAddCardSubmit()}
+                disabled={!newCardTitle.trim() || isSubmitting}
+                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-xs disabled:opacity-50 transition-colors flex items-center gap-1"
+              >
+                {isSubmitting ? (
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : null}
+                <span>新增卡片</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelAdd}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors"
+                title="取消 (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Column Footer: Bottom Add Card & Voice Button Bar (Matches Media 3 & Media 4) */}
+      {!isAddingCard && (
+        <div className="pt-2 mt-1 border-t border-slate-100/60 dark:border-slate-800/80 flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsAddingCard(true)}
+            className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white transition-colors text-left group"
+          >
+            <Plus className="w-4 h-4 text-slate-500 group-hover:text-slate-800 dark:group-hover:text-white" />
+            <span>新增卡片</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleVoiceAddClick}
+            className="p-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/60 border border-orange-200/60 dark:border-orange-900/40 transition-colors shadow-2xs"
+            title={`在「${column.title}」使用語音模式新增`}
+          >
+            <Mic className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
+

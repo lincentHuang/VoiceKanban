@@ -32,7 +32,7 @@ export const INITIAL_TASKS: Task[] = [
     description: `評估接入第三方匯率 API，並在個人生活看板中增加月度統計圖表。\n\n- **透過規劃列表和使用卡片功能**，運用看板組織待處理事項\n- **透過將日曆連接至 Trello**，並排程時間以專注於完成工作\n- 並排查看收件匣、看板和規劃工具，將所有資訊整合在一起`,
     boardId: "board-work",
     columnId: "inbox",
-    orderKey: "a0",
+    orderKey: "001000",
     isStarred: true, // ⭐ Starred
     tags: ["Feature", "Finance"],
     dueDate: null, // No date by default
@@ -52,7 +52,7 @@ export const INITIAL_TASKS: Task[] = [
     description: `並排查看收件匣、看板和規劃工具，將所有資訊整合在一起以組織待處理事項。\n\n![Trello Preview](https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=60)\n\n• 支援 Markdown 粗體與清單\n• 支援貼上圖片與本地上傳`,
     boardId: "board-work",
     columnId: "todo",
-    orderKey: "b0",
+    orderKey: "001000",
     isStarred: true, // ⭐ Starred
     tags: ["Trello", "UX"],
     dueDate: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
@@ -73,7 +73,7 @@ export const INITIAL_TASKS: Task[] = [
     description: "接收音訊 Blob 並以 Structured Output 解析為繁體中文結構化待辦事項。",
     boardId: "board-work",
     columnId: "in_progress",
-    orderKey: "c0",
+    orderKey: "001000",
     isStarred: false,
     tags: ["AI", "Gemini"],
     dueDate: null, // Clean, no date
@@ -92,7 +92,7 @@ export const INITIAL_TASKS: Task[] = [
     description: "若有自備 API Key 可享受極速無限制語音請求速率。",
     boardId: "board-work",
     columnId: "waiting",
-    orderKey: "d0",
+    orderKey: "001000",
     isStarred: false,
     tags: ["BYOK"],
     dueDate: null,
@@ -107,7 +107,7 @@ export const INITIAL_TASKS: Task[] = [
     description: "對齊 Base 44 設計語彙，包含雙層磨砂質感與酸橙綠焦點線條。",
     boardId: "board-work",
     columnId: "done",
-    orderKey: "e0",
+    orderKey: "001000",
     isStarred: false,
     tags: [],
     dueDate: null,

@@ -6,6 +6,16 @@ import { ColumnId } from "@/core/types/task";
 import { DateTimePicker } from "../common/DateTimePicker";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import { X, Calendar, Tag, Star, Plus } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectGroup,
+  SelectSeparator,
+} from "@/components/ui/select";
 
 export const AddTaskModal: React.FC = () => {
   const {
@@ -160,22 +170,29 @@ export const AddTaskModal: React.FC = () => {
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 目標欄位
               </label>
-              <select
+              <Select
                 value={columnId}
-                onChange={(e) => setColumnId(e.target.value as ColumnId)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200"
+                onValueChange={(val) => setColumnId(val as ColumnId)}
               >
-                <optgroup label="📋 當前看板欄位">
-                  {columns.map((col) => (
-                    <option key={col.id} value={col.id}>
-                      {col.icon} {col.title}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="📥 暫存箱">
-                  <option value="inbox">📥 側邊欄收件匣 (Inbox)</option>
-                </optgroup>
-              </select>
+                <SelectTrigger className="w-full h-10 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium">
+                  <SelectValue placeholder="選擇目標欄位" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>📋 當前看板欄位</SelectLabel>
+                    {columns.map((col) => (
+                      <SelectItem key={col.id} value={col.id}>
+                        {col.icon} {col.title}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectSeparator />
+                  <SelectGroup>
+                    <SelectLabel>📥 暫存箱</SelectLabel>
+                    <SelectItem value="inbox">📥 側邊欄收件匣 (Inbox)</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

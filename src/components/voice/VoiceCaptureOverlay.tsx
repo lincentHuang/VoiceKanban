@@ -31,6 +31,13 @@ import {
   Volume2,
 } from "lucide-react";
 import confetti from "canvas-confetti";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export const VoiceCaptureOverlay: React.FC = () => {
   const {
@@ -651,34 +658,42 @@ export const VoiceCaptureOverlay: React.FC = () => {
                   <Layers className="w-3.5 h-3.5 text-slate-400" />
                   目標看板
                 </label>
-                <select
+                <Select
                   value={editBoardId}
-                  onChange={(e) => setEditBoardId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                  onValueChange={(val) => setEditBoardId(val)}
                 >
-                  {boards.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.icon} {b.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {boards.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.icon} {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
                   目標欄位
                 </label>
-                <select
+                <Select
                   value={editColumnId}
-                  onChange={(e) => setEditColumnId(e.target.value as ColumnId)}
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                  onValueChange={(val) => setEditColumnId(val as ColumnId)}
                 >
-                  {DEFAULT_COLUMNS.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.icon} {c.title}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEFAULT_COLUMNS.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.icon} {c.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -689,15 +704,19 @@ export const VoiceCaptureOverlay: React.FC = () => {
                   <Flag className="w-3.5 h-3.5 text-slate-400" />
                   優先等級
                 </label>
-                <select
+                <Select
                   value={editPriority}
-                  onChange={(e) => setPriority(e.target.value as Priority)}
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                  onValueChange={(val) => setPriority(val as Priority)}
                 >
-                  <option value="high">🔴 高優先級 (High)</option>
-                  <option value="medium">🟡 中優先級 (Medium)</option>
-                  <option value="low">🟢 低優先級 (Low)</option>
-                </select>
+                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">🔴 高優先級 (High)</SelectItem>
+                    <SelectItem value="medium">🟡 中優先級 (Medium)</SelectItem>
+                    <SelectItem value="low">🟢 低優先級 (Low)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

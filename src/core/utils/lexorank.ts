@@ -21,20 +21,27 @@ export function generateOrderKeyBetween(prevKey?: string | null, nextKey?: strin
 
   // Insert at top (before first item)
   if (!prevKey && nextKey) {
-    const nextVal = parseInt(nextKey, 36) || DEFAULT_STEP;
+    const nextVal = parseInt(nextKey.slice(0, 6), 36) || DEFAULT_STEP;
     if (nextVal > 1) {
       const newVal = Math.floor(nextVal / 2);
-      return newVal.toString(36).padStart(6, "0");
+      const res = newVal.toString(36).padStart(6, "0");
+      if (res < nextKey) return res;
     }
-    // Prefix with a smaller character if hitting floor
     return "0" + nextKey;
   }
 
-  // Insert at bottom (after last item)
+  // Insert at bottom (after last item) - ensure strictly greater than prevKey in string comparison
   if (prevKey && !nextKey) {
-    const prevVal = parseInt(prevKey, 36) || DEFAULT_STEP;
-    const newVal = prevVal + DEFAULT_STEP;
-    return newVal.toString(36).padStart(6, "0");
+    const prevVal = parseInt(prevKey, 36);
+    if (!isNaN(prevVal) && prevVal > 0) {
+      const newVal = prevVal + DEFAULT_STEP;
+      const res = newVal.toString(36).padStart(Math.max(6, prevKey.length), "0");
+      if (res > prevKey) {
+        return res;
+      }
+    }
+    // Guarantee lexicographical increment
+    return prevKey + "z";
   }
 
   // Insert between prevKey and nextKey
@@ -44,10 +51,13 @@ export function generateOrderKeyBetween(prevKey?: string | null, nextKey?: strin
 
     if (!isNaN(prevVal) && !isNaN(nextVal) && nextVal - prevVal > 1) {
       const midVal = Math.floor((prevVal + nextVal) / 2);
-      return midVal.toString(36).padStart(6, "0");
+      const res = midVal.toString(36).padStart(Math.max(6, prevKey.length), "0");
+      if (res > prevKey && res < nextKey) {
+        return res;
+      }
     }
 
-    // If numerical gap is 0 or 1, append a mid-character for string-based fraction
+    // String fraction insertion
     return prevKey + MID_CHAR;
   }
 

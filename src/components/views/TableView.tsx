@@ -6,6 +6,13 @@ import { Task, ColumnId } from "@/core/types/task";
 import { isoToDateTimeLocal, getDueDateStatus } from "@/core/utils/dateUtils";
 import { Check, Calendar, Trash2, Edit3, CheckSquare2, Plus, Star } from "lucide-react";
 import confetti from "canvas-confetti";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export const TableView: React.FC = () => {
   const {
@@ -129,23 +136,26 @@ export const TableView: React.FC = () => {
 
                     {/* Column Dropdown */}
                     <td className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
-                      <select
+                      <Select
                         value={task.columnId}
-                        onChange={(e) => {
-                          const newCol = e.target.value as ColumnId;
+                        onValueChange={(newCol) => {
                           updateTask(task.id, {
-                            columnId: newCol,
+                            columnId: newCol as ColumnId,
                             completed: newCol === "done" ? true : (task.columnId === "done" ? false : task.completed),
                           });
                         }}
-                        className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
                       >
-                        {columns.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.icon} {c.title}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="h-7 w-[120px] px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {columns.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.icon} {c.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </td>
 
                     {/* Star Toggle */}

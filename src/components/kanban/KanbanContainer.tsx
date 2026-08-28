@@ -58,7 +58,7 @@ export const KanbanContainer: React.FC = () => {
   });
 
   return (
-    <div className="w-full h-full max-h-full overflow-x-auto overflow-y-hidden px-2 sm:px-3 py-2 custom-scrollbar">
+    <div className="w-full h-full max-h-full overflow-x-auto overflow-y-hidden px-2 sm:px-3 pt-2 pb-2 sm:pb-2.5 custom-scrollbar">
       {/* Kanban Horizontal Flex Area */}
       <div className="flex gap-3 sm:gap-3.5 h-full min-w-max items-start">
         {columns.map((column) => {

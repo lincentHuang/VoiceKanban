@@ -542,8 +542,8 @@ export const BoardCanvasContainer: React.FC = () => {
         </div>
       </div>
 
-      {/* Main View Area Inside Container */}
-      <div className="flex-1 h-full min-h-0 overflow-hidden relative">
+      {/* Main View Area Inside Container - pb-13 sm:pb-14 lifts the scrollbar and content cleanly above the floating BottomDock */}
+      <div className="flex-1 h-full min-h-0 overflow-hidden relative pb-13 sm:pb-14">
         {viewMode === "kanban" && <KanbanContainer />}
         {viewMode === "calendar" && <CalendarView />}
         {viewMode === "table" && <TableView />}

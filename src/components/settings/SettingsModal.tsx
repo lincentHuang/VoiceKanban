@@ -19,6 +19,13 @@ import {
   BookOpen,
   Check,
 } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export const SettingsModal: React.FC = () => {
   const {
@@ -229,31 +236,39 @@ export const SettingsModal: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   多模態模型
                 </label>
-                <select
+                <Select
                   value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200"
+                  onValueChange={(val) => setSelectedModel(val as any)}
                 >
-                  <option value="gemini-2.0-flash">gemini-2.0-flash (推薦 - 極速)</option>
-                  <option value="gemini-1.5-pro">gemini-1.5-pro (深度語義)</option>
-                </select>
+                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gemini-2.0-flash">gemini-2.0-flash (推薦 - 極速)</SelectItem>
+                    <SelectItem value="gemini-1.5-pro">gemini-1.5-pro (深度語義)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   預設注入看板
                 </label>
-                <select
+                <Select
                   value={defaultBoard}
-                  onChange={(e) => setDefaultBoard(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200"
+                  onValueChange={(val) => setDefaultBoard(val)}
                 >
-                  {boards.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.icon} {b.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {boards.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.icon} {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

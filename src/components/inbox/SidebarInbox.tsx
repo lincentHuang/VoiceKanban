@@ -102,13 +102,11 @@ export const SidebarInbox: React.FC = () => {
     <aside
       ref={setNodeRef}
       style={{ width: isMobile ? "100%" : `${inboxWidth}px` }}
-      className={`h-full w-full sm:w-auto shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xl p-3 sm:p-3.5 relative overflow-hidden ${
-        isDraggingSplitter ? "transition-none select-none" : "transition-all duration-300 ease-in-out"
-      } ${
-        isOver
+      className={`h-full w-full sm:w-auto shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xl p-3 sm:p-3.5 relative overflow-hidden ${isDraggingSplitter ? "transition-none select-none" : "transition-all duration-300 ease-in-out"
+        } ${isOver
           ? "ring-2 ring-blue-500/40 bg-blue-50/50 dark:bg-blue-950/40 border-blue-400"
           : ""
-      }`}
+        }`}
     >
       {/* Inbox Header */}
       <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
@@ -125,7 +123,6 @@ export const SidebarInbox: React.FC = () => {
                 {inboxTasks.length}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 font-medium">獨立資料池・支援雙向拖曳</p>
           </div>
         </div>
 
@@ -133,11 +130,10 @@ export const SidebarInbox: React.FC = () => {
           {/* Multi-Select Toggle Button */}
           <button
             onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-            className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
-              isMultiSelectMode
-                ? "bg-orange-500 text-white shadow-xs"
-                : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700"
-            }`}
+            className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${isMultiSelectMode
+              ? "bg-orange-500 text-white shadow-xs"
+              : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700"
+              }`}
             title="多選模式"
           >
             <CheckSquare className="w-3.5 h-3.5" />
@@ -169,11 +165,10 @@ export const SidebarInbox: React.FC = () => {
                     setInboxSort("date");
                     setIsMenuOpen(false);
                   }}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 ${
-                    inboxSort === "date"
-                      ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                  }`}
+                  className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 ${inboxSort === "date"
+                    ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold"
+                    : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    }`}
                 >
                   <ArrowUpDown className="w-3.5 h-3.5" />
                   <span>依建立時間</span>
@@ -183,11 +178,10 @@ export const SidebarInbox: React.FC = () => {
                     setInboxSort("priority");
                     setIsMenuOpen(false);
                   }}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 ${
-                    inboxSort === "priority"
-                      ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                  }`}
+                  className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 ${inboxSort === "priority"
+                    ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold"
+                    : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    }`}
                 >
                   <ArrowUpDown className="w-3.5 h-3.5" />
                   <span>依重要程度</span>
@@ -208,15 +202,6 @@ export const SidebarInbox: React.FC = () => {
               </div>
             )}
           </div>
-
-          {/* Close / Collapse Button (Returns to Kanban on mobile) */}
-          <button
-            onClick={() => setIsInboxSidebarOpen(false)}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 transition-colors"
-            title={isMobile ? "返回看板" : "收合收件匣"}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
@@ -281,7 +266,7 @@ export const SidebarInbox: React.FC = () => {
       </div>
 
       {/* Cards List in Inbox (Droppable & Sortable with Adaptive Row Layout & Drop Insertion Slot) */}
-      <div className={`flex-1 overflow-y-auto overflow-x-hidden my-2.5 pr-1 custom-scrollbar min-h-0 ${!isMobile && inboxWidth >= 420 ? "space-y-2" : "space-y-2.5"}`}>
+      <div className={`flex-1 overflow-y-auto overflow-x-hidden my-2.5 pr-1 pb-13 sm:pb-14 custom-scrollbar min-h-0 ${!isMobile && inboxWidth >= 420 ? "space-y-2" : "space-y-2.5"}`}>
         <SortableContext items={inboxTaskIds} strategy={verticalListSortingStrategy}>
           {filteredInboxTasks.map((task, idx) => (
             <React.Fragment key={task.id}>
@@ -309,11 +294,10 @@ export const SidebarInbox: React.FC = () => {
 
         {filteredInboxTasks.length === 0 && (
           <div
-            className={`h-36 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${
-              isInboxOver
-                ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500/30 text-blue-600 dark:text-blue-300 shadow-inner"
-                : "border-slate-200 dark:border-slate-800 text-slate-400"
-            }`}
+            className={`h-36 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${isInboxOver
+              ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500/30 text-blue-600 dark:text-blue-300 shadow-inner"
+              : "border-slate-200 dark:border-slate-800 text-slate-400"
+              }`}
           >
             {isInboxOver ? (
               <>

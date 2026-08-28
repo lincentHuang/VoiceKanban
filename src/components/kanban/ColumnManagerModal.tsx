@@ -4,6 +4,13 @@ import React, { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import { X, Plus, Edit2, Trash2, Check, SlidersHorizontal, Sparkles } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 const EMOJI_OPTIONS = ["📥", "📋", "⚡", "⏳", "✅", "🧪", "🎨", "🚀", "💡", "📌", "🔍", "🔥", "🎯", "📦"];
 
@@ -103,17 +110,20 @@ export const ColumnManagerModal: React.FC = () => {
             >
               {editingColId === col.id ? (
                 <div className="flex items-center gap-2 flex-1 mr-2">
-                  <select
-                    value={editIcon}
-                    onChange={(e) => setEditIcon(e.target.value)}
-                    className="p-1 rounded-lg border text-sm bg-white dark:bg-slate-700"
-                  >
-                    {EMOJI_OPTIONS.map((em) => (
-                      <option key={em} value={em}>
-                        {em}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="w-16">
+                    <Select value={editIcon} onValueChange={(val) => setEditIcon(val)}>
+                      <SelectTrigger className="h-8 px-2 py-1 text-sm bg-white dark:bg-slate-700">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-48 min-w-[5rem]">
+                        {EMOJI_OPTIONS.map((em) => (
+                          <SelectItem key={em} value={em}>
+                            {em}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <input
                     type="text"
                     value={editTitle}
@@ -176,17 +186,20 @@ export const ColumnManagerModal: React.FC = () => {
           </label>
 
           <div className="flex items-center gap-2">
-            <select
-              value={newIcon}
-              onChange={(e) => setNewIcon(e.target.value)}
-              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
-            >
-              {EMOJI_OPTIONS.map((em) => (
-                <option key={em} value={em}>
-                  {em}
-                </option>
-              ))}
-            </select>
+            <div className="w-16">
+              <Select value={newIcon} onValueChange={(val) => setNewIcon(val)}>
+                <SelectTrigger className="h-9 px-2 py-1 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-48 min-w-[5rem]">
+                  {EMOJI_OPTIONS.map((em) => (
+                    <SelectItem key={em} value={em}>
+                      {em}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <input
               type="text"
