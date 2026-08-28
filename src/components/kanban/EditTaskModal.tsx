@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId, CoverAspectRatio, TRELLO_COLUMN_COLORS } from "@/core/types/task";
-import { getDueDateStatus } from "@/core/utils/dateUtils";
+import { getDueDateStatus, isoToDateTimeLocal, dateTimeLocalToIso } from "@/core/utils/dateUtils";
 import { MarkdownEditor } from "../editor/MarkdownEditor";
+import { DateTimePicker } from "../common/DateTimePicker";
 import {
   X,
   Calendar,
@@ -49,6 +50,7 @@ export const EditTaskModal: React.FC = () => {
     editingTaskId,
     setEditingTaskId,
     tasks,
+    activeBoardId,
     getActiveBoardColumns,
     updateTask,
     deleteTask,
@@ -61,6 +63,10 @@ export const EditTaskModal: React.FC = () => {
 
   const task = tasks.find((t) => t.id === editingTaskId);
   const columns = getActiveBoardColumns();
+  const allTargetColumns = [
+    { id: "inbox" as ColumnId, title: "靈感收件匣", icon: "📥" },
+    ...columns,
+  ];
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -68,7 +74,8 @@ export const EditTaskModal: React.FC = () => {
   const [columnId, setColumnId] = useState<ColumnId>("inbox");
   const [isStarred, setIsStarred] = useState(false);
   const [dueDate, setDueDate] = useState<string | null>(null);
-  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [isAllDay, setIsAllDay] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [coverColor, setCoverColor] = useState<string>("");
@@ -89,8 +96,9 @@ export const EditTaskModal: React.FC = () => {
       setBoardId(task.boardId);
       setColumnId(task.columnId);
       setIsStarred(!!task.isStarred);
-      setDueDate(task.dueDate ? task.dueDate.slice(0, 16) : null);
-      setIsDatePickerVisible(!!task.dueDate);
+      setDueDate(task.dueDate || null);
+      setStartDate(task.startDate || null);
+      setIsAllDay(!!task.isAllDay);
       setTags(task.tags || []);
       setCoverColor(task.coverColor || "");
       setCoverAspectRatio(task.coverAspectRatio || (task.coverColor?.startsWith("data:image") || task.coverColor?.startsWith("http") ? "banner" : "bar"));
@@ -103,7 +111,22 @@ export const EditTaskModal: React.FC = () => {
 
   if (!editingTaskId || !task) return null;
 
-  const currentColumn = columns.find((c) => c.id === columnId) || columns[0];
+  const currentColumn =
+    columnId === "inbox"
+      ? { id: "inbox" as ColumnId, title: "靈感收件匣", icon: "📥" }
+      : columns.find((c) => c.id === columnId) || columns[0] || { id: "todo" as ColumnId, title: "待辦清單", icon: "📋" };
+
+  const handleMoveColumn = (targetColId: ColumnId) => {
+    const newBoardId = targetColId === "inbox" ? "global" : (task.boardId === "global" ? activeBoardId : task.boardId || activeBoardId);
+    setColumnId(targetColId);
+    setBoardId(newBoardId);
+    updateTask(task.id, {
+      columnId: targetColId,
+      boardId: newBoardId,
+      completed: targetColId === "done",
+    });
+    setIsMovePopoverOpen(false);
+  };
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -161,7 +184,9 @@ export const EditTaskModal: React.FC = () => {
       tags,
       coverColor,
       coverAspectRatio,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      startDate: startDate || null,
+      dueDate: dueDate || null,
+      isAllDay,
       completed: columnId === "done",
     });
 
@@ -187,7 +212,6 @@ export const EditTaskModal: React.FC = () => {
 
   const handleRemoveDueDate = () => {
     setDueDate(null);
-    setIsDatePickerVisible(false);
     updateTask(task.id, { dueDate: null });
   };
 
@@ -215,7 +239,7 @@ export const EditTaskModal: React.FC = () => {
   const totalItems = task.checklist ? task.checklist.length : 0;
   const completedItems = task.checklist ? task.checklist.filter((i) => i.completed).length : 0;
   const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-  const dueDateStatus = getDueDateStatus(dueDate || task.dueDate, task.completed);
+  const dueDateStatus = getDueDateStatus(dueDate ? dateTimeLocalToIso(dueDate) : task.dueDate, task.completed);
 
   // Modal Cover Height styles based on coverAspectRatio
   const getModalCoverHeightClass = () => {
@@ -229,7 +253,7 @@ export const EditTaskModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-y-auto">
-      <div className="w-full max-w-3xl my-auto backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl relative text-slate-800 dark:text-slate-100">
+      <div className="w-full max-w-4xl my-auto backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl relative text-slate-800 dark:text-slate-100">
         {/* Top Cover Banner */}
         {coverColor && (
           <div
@@ -273,28 +297,6 @@ export const EditTaskModal: React.FC = () => {
           {/* Header Bar */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              {/* Breadcrumb / Column indicator */}
-              <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5">
-                <span className="font-semibold">在列表</span>
-                <div className="relative inline-block">
-                  <select
-                    value={columnId}
-                    onChange={(e) => {
-                      const newCol = e.target.value as ColumnId;
-                      setColumnId(newCol);
-                      updateTask(task.id, { columnId: newCol, completed: newCol === "done" });
-                    }}
-                    className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer"
-                  >
-                    {columns.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.icon} {c.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               {/* Title input */}
               <input
                 type="text"
@@ -357,10 +359,10 @@ export const EditTaskModal: React.FC = () => {
             </div>
           )}
 
-          {/* Main Grid: Left Details (2/3) + Right Actions (1/3) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          {/* Main Grid: Left Details (7/12) + Right Actions (5/12) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
             {/* Left Column: Description with Rich Markdown Image Editor & Checklist */}
-            <div className="md:col-span-2 space-y-6">
+            <div className="lg:col-span-7 space-y-6">
               {/* Description (說明 - Markdown Editor) */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -515,7 +517,7 @@ export const EditTaskModal: React.FC = () => {
             </div>
 
             {/* Right Action Sidebar */}
-            <div className="space-y-4">
+            <div className="lg:col-span-5 space-y-4">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 卡片屬性與動作
               </span>
@@ -523,6 +525,7 @@ export const EditTaskModal: React.FC = () => {
               {/* Action 1: Move Card */}
               <div className="relative">
                 <button
+                  type="button"
                   onClick={() => setIsMovePopoverOpen(!isMovePopoverOpen)}
                   className="w-full text-left px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold flex items-center justify-between transition-colors"
                 >
@@ -530,31 +533,34 @@ export const EditTaskModal: React.FC = () => {
                     <MoveRight className="w-3.5 h-3.5 text-blue-500" />
                     <span>移動卡片</span>
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isMovePopoverOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {isMovePopoverOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in space-y-2">
-                    <span className="text-[11px] font-bold text-slate-400 block">選取目標欄位</span>
-                    {columns.map((col) => (
-                      <button
-                        key={col.id}
-                        onClick={() => {
-                          setColumnId(col.id);
-                          updateTask(task.id, { columnId: col.id, completed: col.id === "done" });
-                          setIsMovePopoverOpen(false);
-                        }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-2 ${
-                          columnId === col.id
-                            ? "bg-orange-500 text-white font-bold"
-                            : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                        }`}
-                      >
-                        <span>{col.icon}</span>
-                        <span>{col.title}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsMovePopoverOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 px-2 py-1 block">選取目標欄位</span>
+                      {allTargetColumns.map((col) => (
+                        <button
+                          key={col.id}
+                          type="button"
+                          onClick={() => handleMoveColumn(col.id)}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-colors ${
+                            columnId === col.id
+                              ? "bg-orange-500 text-white font-bold"
+                              : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                          }`}
+                        >
+                          <span>{col.icon}</span>
+                          <span>{col.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -584,7 +590,7 @@ export const EditTaskModal: React.FC = () => {
 
                 {/* Comprehensive Cover Picker Popover */}
                 {isCoverModalOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 max-h-[380px] overflow-y-auto custom-scrollbar backdrop-blur-2xl bg-white/98 dark:bg-slate-900/98 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
+                  <div className="absolute right-0 top-full mt-2 w-80 max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-100">設定卡片封面與比例</span>
                       <button
@@ -752,62 +758,28 @@ export const EditTaskModal: React.FC = () => {
                 </button>
               </div>
 
-              {/* Action 4: Optional Due Date */}
+              {/* Action 4: Optional Due Date / Event Range */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-[11px] font-semibold text-slate-500">
-                      到期時間
-                    </label>
-                    {dueDateStatus && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${dueDateStatus.badgeClasses.modalBadge}`}>
-                        {dueDateStatus.label}
-                      </span>
-                    )}
-                  </div>
-                  {isDatePickerVisible && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveDueDate}
-                      className="text-[10px] text-rose-500 hover:underline font-semibold"
-                    >
-                      ✕ 移除日期
-                    </button>
-                  )}
-                </div>
-
-                {isDatePickerVisible ? (
-                  <input
-                    type="datetime-local"
-                    value={dueDate || ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setDueDate(val);
-                      updateTask(task.id, {
-                        dueDate: val ? new Date(val).toISOString() : null,
-                      });
-                    }}
-                    className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const defaultNextDay = new Date(Date.now() + 24 * 3600 * 1000)
-                        .toISOString()
-                        .slice(0, 16);
-                      setDueDate(defaultNextDay);
-                      setIsDatePickerVisible(true);
-                      updateTask(task.id, {
-                        dueDate: new Date(defaultNextDay).toISOString(),
-                      });
-                    }}
-                    className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-dashed border-slate-300 dark:border-slate-700"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>+ 設定到期日</span>
-                  </button>
-                )}
+                <label className="text-[11px] font-semibold text-slate-500 block mb-1.5">
+                  到期日 / 活動時段
+                </label>
+                <DateTimePicker
+                  value={dueDate}
+                  startDate={startDate}
+                  isAllDay={isAllDay}
+                  onChange={(dates) => {
+                    setStartDate(dates.startDate || null);
+                    setDueDate(dates.dueDate);
+                    setIsAllDay(dates.isAllDay);
+                    updateTask(task.id, {
+                      startDate: dates.startDate || null,
+                      dueDate: dates.dueDate,
+                      isAllDay: dates.isAllDay,
+                    });
+                  }}
+                  align="right"
+                  placeholder="+ 設定到期日或活動時段"
+                />
               </div>
 
               {/* Action 5: Tags */}

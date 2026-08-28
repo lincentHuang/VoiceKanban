@@ -29,7 +29,9 @@ export interface Task {
   priority?: Priority;
   isStarred?: boolean; // ⭐ Important / Starred flag
   tags: string[];
-  dueDate: string | null; // Nullable by default
+  startDate?: string | null; // Optional start date for time range
+  dueDate: string | null; // Due date or End date
+  isAllDay?: boolean; // True if time is omitted (date only)
   completed: boolean;
   checklist?: ChecklistItem[];
   coverColor?: string | null;

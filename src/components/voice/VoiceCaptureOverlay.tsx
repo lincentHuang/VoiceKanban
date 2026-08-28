@@ -9,6 +9,7 @@ import { webSpeechService } from "@/core/services/webSpeechService";
 import { learningEngine } from "@/core/services/learningEngine";
 import { detectLanguage } from "@/core/services/localNlpParser";
 import { isoToDateTimeLocal, dateTimeLocalToIso, formatDueDateHuman } from "@/core/utils/dateUtils";
+import { DateTimePicker } from "../common/DateTimePicker";
 import {
   Mic,
   Square,
@@ -24,6 +25,7 @@ import {
   Cpu,
   Globe,
   AlertCircle,
+  AlertTriangle,
   BrainCircuit,
   Volume2,
 } from "lucide-react";
@@ -55,6 +57,7 @@ export const VoiceCaptureOverlay: React.FC = () => {
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFeedbackRecorded, setIsFeedbackRecorded] = useState(false);
+  const [isSilentWarning, setIsSilentWarning] = useState(false);
 
   // Editable Preview State
   const [editTitle, setEditTitle] = useState("");
@@ -69,6 +72,8 @@ export const VoiceCaptureOverlay: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasReceivedSpeechRef = useRef<boolean>(false);
 
   // Start recording on mount if open and state is recording
   useEffect(() => {
@@ -117,72 +122,104 @@ export const VoiceCaptureOverlay: React.FC = () => {
     setNoticeMessage(null);
     setErrorMessage(null);
     setIsFeedbackRecorded(false);
+    setIsSilentWarning(false);
+    hasReceivedSpeechRef.current = false;
+
+    // Reset silence timer
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+
+    // 3-second Silence Detection Timer (AC-5.2)
+    silenceTimeoutRef.current = setTimeout(() => {
+      if (!hasReceivedSpeechRef.current) {
+        setIsSilentWarning(true);
+      }
+    }, 3000);
 
     const isWebSpeechAvailable = webSpeechService.isSupported();
+    const isCloudMode = voiceMode === "cloud_gemini" && Boolean(byokConfig?.apiKey?.trim());
 
-    // 1. If Offline Learning mode or fallback, initialize Web Speech API
+    // 1. Web Speech API (Exclusive Microphone Access for Offline / Default Mode)
     if (isWebSpeechAvailable) {
       webSpeechService.start(
         {
           onInterim: (transcript) => {
-            setInterimTranscript(transcript);
             if (transcript.trim().length > 0) {
+              hasReceivedSpeechRef.current = true;
+              setIsSilentWarning(false);
+              setInterimTranscript(transcript);
               const detected = detectLanguage(transcript);
               setLiveLanguage(detected);
             }
           },
+          onNoSpeech: () => {
+            if (!hasReceivedSpeechRef.current) {
+              setIsSilentWarning(true);
+            }
+          },
           onError: (err) => {
             console.warn("WebSpeech error:", err);
+            if (err.includes("存取權限已被拒絕") || err.includes("異常") || err.includes("失敗")) {
+              setErrorMessage(err);
+              setVoiceState("error");
+            }
           },
         },
         voiceLanguage
       );
     }
 
-    // 2. Also start MediaRecorder for sound visualizer & cloud mode
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaStreamRef.current = stream;
+    // 2. Audio Stream Single-Channel Optimization (AC-5.1):
+    // Only start MediaRecorder on demand if Cloud Gemini Mode is selected with BYOK.
+    // In Offline mode, do NOT call getUserMedia to avoid competing for Bluetooth/microphone hardware lock.
+    if (isCloudMode) {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaStreamRef.current = stream;
 
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4",
-        });
-
-        mediaRecorderRef.current = mediaRecorder;
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-          }
-        };
-
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(audioChunksRef.current, {
-            type: mediaRecorder.mimeType || "audio/webm",
+          const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4",
           });
-          setAudioBlob(blob);
-          stopHardwareAudioTracks();
-        };
 
-        mediaRecorder.start(200);
-        startTimer();
-      } else {
-        startTimer();
-      }
-    } catch (err: any) {
-      console.warn("Microphone hardware access warning:", err);
-      if (!isWebSpeechAvailable) {
-        setErrorMessage("無法存取麥克風，請檢查瀏覽器設定與權限。");
-        setVoiceState("error");
-      } else {
-        startTimer();
+          mediaRecorderRef.current = mediaRecorder;
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
+
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(audioChunksRef.current, {
+              type: mediaRecorder.mimeType || "audio/webm",
+            });
+            setAudioBlob(blob);
+            stopHardwareAudioTracks();
+          };
+
+          mediaRecorder.start(200);
+        }
+      } catch (err: any) {
+        console.warn("Microphone hardware access warning:", err);
+        if (!isWebSpeechAvailable) {
+          setErrorMessage("無法存取麥克風，請檢查瀏覽器設定與權限。");
+          setVoiceState("error");
+        }
       }
     }
+
+    startTimer();
   };
 
   const stopRecordingCleanup = () => {
     stopTimer();
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
     webSpeechService.stop();
     stopHardwareAudioTracks();
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -439,6 +476,20 @@ export const VoiceCaptureOverlay: React.FC = () => {
               </span>
             </div>
 
+            {/* 3-Second Silence Detection Guidance Banner (AC-5.2) */}
+            {isSilentWarning && !interimTranscript && (
+              <div className="w-full max-w-md p-3 mb-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-amber-800 dark:text-amber-200 text-xs flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1 text-left shadow-xs">
+                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <p className="font-bold">⚠️ 未偵測到聲音訊號</p>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                    • <b>電腦端（耳機）</b>：請至系統設定「聲音 ➔ 輸入」確認選中耳機麥克風。<br />
+                    • <b>手機端</b>：瀏覽器可能預設使用手機底部麥克風，請靠近手機麥克風說話。
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Live Transcript Stream Box */}
             <div className="w-full max-w-md min-h-[52px] max-h-24 overflow-y-auto px-4 py-2.5 mb-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 text-left">
               {interimTranscript ? (
@@ -638,36 +689,16 @@ export const VoiceCaptureOverlay: React.FC = () => {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    到期時間
-                  </label>
-                  {editDueDate && (
-                    <button
-                      type="button"
-                      onClick={() => setEditDueDate("")}
-                      className="text-[10px] text-slate-400 hover:text-rose-500 transition-colors"
-                    >
-                      清除
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="datetime-local"
-                  value={isoToDateTimeLocal(editDueDate)}
-                  onChange={(e) => setEditDueDate(dateTimeLocalToIso(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 mb-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span>到期時間</span>
+                </label>
+                <DateTimePicker
+                  value={editDueDate}
+                  onChange={(dates) => setEditDueDate(dates.dueDate || "")}
+                  placeholder="點擊選擇日期與時間..."
+                  align="right"
                 />
-                {editDueDate ? (
-                  <div className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <span>✨ {formatDueDateHuman(editDueDate)}</span>
-                  </div>
-                ) : (
-                  <div className="mt-1 text-[10px] text-slate-400">
-                    <span>尚未設定到期時間</span>
-                  </div>
-                )}
               </div>
             </div>
 

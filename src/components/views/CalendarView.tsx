@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { getMonthDays, CalendarDay } from "@/core/utils/calendar";
+import { isoToDateTimeLocal } from "@/core/utils/dateUtils";
 import { Task } from "@/core/types/task";
 import {
   Calendar as CalendarIcon,
@@ -191,9 +192,15 @@ export const CalendarView: React.FC = () => {
           <div className="grid grid-cols-7 min-w-[700px] auto-rows-fr divide-x divide-y divide-slate-200/60 dark:divide-slate-800">
             {monthDays.map((dayCell, i) => {
               const dateKey = dayCell.dateStr;
-              const cellTasks = boardTasks.filter(
-                (t) => t.dueDate && t.dueDate.slice(0, 10) === dateKey
-              );
+              const cellTasks = boardTasks.filter((t) => {
+                if (!t.dueDate && !t.startDate) return false;
+                const startKey = t.startDate ? isoToDateTimeLocal(t.startDate).slice(0, 10) : null;
+                const endKey = t.dueDate ? isoToDateTimeLocal(t.dueDate).slice(0, 10) : null;
+                if (startKey && endKey) {
+                  return dateKey >= startKey && dateKey <= endKey;
+                }
+                return endKey === dateKey || startKey === dateKey;
+              });
 
               return (
                 <div

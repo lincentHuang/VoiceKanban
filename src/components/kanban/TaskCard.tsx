@@ -133,7 +133,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   // Smart Due Date Status with simplified Date only & dynamic color
-  const dueDateStatus = getDueDateStatus(task.dueDate, task.completed);
+  const dueDateStatus = getDueDateStatus(task.dueDate, task.completed, task.isAllDay, task.startDate);
 
   const hasTags = task.tags && task.tags.length > 0;
   const hasBottomBadges =

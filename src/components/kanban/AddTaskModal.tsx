@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId } from "@/core/types/task";
+import { DateTimePicker } from "../common/DateTimePicker";
 import { X, Calendar, Tag, Star, Plus } from "lucide-react";
 
 export const AddTaskModal: React.FC = () => {
@@ -27,7 +28,9 @@ export const AddTaskModal: React.FC = () => {
     return validCols[0] || "todo";
   });
   const [isStarred, setIsStarred] = useState(false);
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [isAllDay, setIsAllDay] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,7 +73,9 @@ export const AddTaskModal: React.FC = () => {
         columnId,
         isStarred,
         tags,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : null, // Default null if empty
+        startDate: startDate || null,
+        dueDate: dueDate || null, // Default null if empty
+        isAllDay,
         completed: columnId === "done",
       });
 
@@ -78,7 +83,9 @@ export const AddTaskModal: React.FC = () => {
       setTitle("");
       setDescription("");
       setIsStarred(false);
-      setDueDate("");
+      setDueDate(null);
+      setStartDate(null);
+      setIsAllDay(false);
       setTags([]);
       setIsAddTaskModalOpen(false);
     } finally {
@@ -187,13 +194,18 @@ export const AddTaskModal: React.FC = () => {
           {/* Due Date (Optional, default empty) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              到期時間 (預設無，選填)
+              到期日 / 活動時段 (選填)
             </label>
-            <input
-              type="datetime-local"
+            <DateTimePicker
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-200"
+              startDate={startDate}
+              isAllDay={isAllDay}
+              onChange={(dates) => {
+                setStartDate(dates.startDate || null);
+                setDueDate(dates.dueDate);
+                setIsAllDay(dates.isAllDay);
+              }}
+              placeholder="點擊選擇日期或活動時段..."
             />
           </div>
 

@@ -3,6 +3,7 @@
 import React from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { Task, ColumnId } from "@/core/types/task";
+import { isoToDateTimeLocal, getDueDateStatus } from "@/core/utils/dateUtils";
 import { Check, Calendar, Trash2, Edit3, CheckSquare2, Plus, Star } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -163,10 +164,13 @@ export const TableView: React.FC = () => {
 
                     {/* Due Date */}
                     <td className="py-3 px-3 text-slate-600 dark:text-slate-300">
-                      {task.dueDate ? (
+                      {task.dueDate || task.startDate ? (
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-slate-400" />
-                          <span>{task.dueDate.slice(5, 16).replace("T", " ")}</span>
+                          <span className="text-xs">
+                            {getDueDateStatus(task.dueDate, task.completed, task.isAllDay, task.startDate)?.formattedFullDateTime ||
+                              (task.dueDate ? isoToDateTimeLocal(task.dueDate).slice(5).replace("T", " ") : "")}
+                          </span>
                         </div>
                       ) : (
                         <span className="text-slate-400 italic">無</span>

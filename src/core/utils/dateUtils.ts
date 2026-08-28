@@ -17,21 +17,43 @@ export interface DueDateStatus {
 
 export function getDueDateStatus(
   dueDateStr: string | null | undefined,
-  completed: boolean = false
+  completed: boolean = false,
+  isAllDay: boolean = false,
+  startDateStr?: string | null
 ): DueDateStatus | null {
-  if (!dueDateStr) return null;
+  if (!dueDateStr && !startDateStr) return null;
+
+  const targetStr = dueDateStr || startDateStr!;
 
   try {
-    const due = new Date(dueDateStr);
+    const due = new Date(targetStr);
     if (isNaN(due.getTime())) return null;
 
     const month = due.getMonth() + 1;
     const day = due.getDate();
-    const formattedDateOnly = `${month}月${day}日`;
-
     const hours = due.getHours().toString().padStart(2, "0");
     const mins = due.getMinutes().toString().padStart(2, "0");
-    const formattedFullDateTime = `${month}月${day}日 ${hours}:${mins}`;
+
+    let formattedDateOnly = `${month}月${day}日`;
+    let formattedFullDateTime = isAllDay ? `${month}月${day}日` : `${month}月${day}日 ${hours}:${mins}`;
+
+    if (startDateStr && dueDateStr) {
+      const sD = new Date(startDateStr);
+      if (!isNaN(sD.getTime())) {
+        const sm = sD.getMonth() + 1;
+        const sd = sD.getDate();
+        const sh = sD.getHours().toString().padStart(2, "0");
+        const smins = sD.getMinutes().toString().padStart(2, "0");
+
+        if (isAllDay) {
+          formattedDateOnly = `${sm}月${sd}日 - ${month}月${day}日`;
+          formattedFullDateTime = `${sm}月${sd}日 - ${month}月${day}日`;
+        } else {
+          formattedDateOnly = `${sm}月${sd}日 - ${month}月${day}日`;
+          formattedFullDateTime = `${sm}月${sd}日 ${sh}:${smins} - ${month}月${day}日 ${hours}:${mins}`;
+        }
+      }
+    }
 
     if (completed) {
       return {

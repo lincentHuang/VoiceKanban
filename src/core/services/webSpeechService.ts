@@ -4,6 +4,7 @@ export interface SpeechRecognitionHandlers {
   onInterim?: (transcript: string) => void;
   onFinal?: (transcript: string, detectedLang: "zh-TW" | "en-US") => void;
   onError?: (error: string) => void;
+  onNoSpeech?: () => void;
   onEnd?: () => void;
   onAudioLevel?: (level: number) => void;
 }
@@ -85,7 +86,9 @@ export class WebSpeechService {
         if (event.error === "not-allowed" || event.error === "permission-denied") {
           handlers.onError?.("麥克風存取權限已被拒絕，請於瀏覽器網址列解除限制。");
         } else if (event.error === "no-speech") {
-          // Keep listening or ignore
+          handlers.onNoSpeech?.();
+        } else if (event.error === "audio-capture") {
+          handlers.onError?.("麥克風音訊讀取失敗（可能耳機未正確連接或被其他程式佔用），請檢查音訊輸入設定。");
         } else if (event.error === "network") {
           handlers.onError?.("語音辨識網路中斷，請重試。");
         } else {

@@ -3,6 +3,7 @@
 import React from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { Task, Priority } from "@/core/types/task";
+import { isoToDateTimeLocal, getDueDateStatus } from "@/core/utils/dateUtils";
 import { Check, Calendar, Trash2, Edit3, Flag, CheckCircle2 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -127,11 +128,14 @@ export const ListView: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Due Date */}
-                    {task.dueDate && (
+                    {/* Due Date / Range */}
+                    {(task.dueDate || task.startDate) && (
                       <div className="flex items-center gap-1 text-xs text-slate-500 bg-slate-50 dark:bg-slate-700 px-2 py-0.5 rounded-md">
                         <Calendar className="w-3 h-3 text-slate-400" />
-                        <span>{task.dueDate.slice(5, 16).replace("T", " ")}</span>
+                        <span>
+                          {getDueDateStatus(task.dueDate, task.completed, task.isAllDay, task.startDate)?.formattedFullDateTime ||
+                            (task.dueDate ? isoToDateTimeLocal(task.dueDate).slice(5).replace("T", " ") : "")}
+                        </span>
                       </div>
                     )}
 
