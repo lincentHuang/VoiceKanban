@@ -13,12 +13,19 @@ import { AuthModal } from "@/components/auth/AuthModal";
 import { BatchActionBar } from "@/components/kanban/BatchActionBar";
 import { ColumnManagerModal } from "@/components/kanban/ColumnManagerModal";
 
+import { useKanbanStore } from "@/core/stores/useKanbanStore";
+
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
+  const initAuthAndSync = useKanbanStore((state) => state.initAuthAndSync);
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    const cleanup = initAuthAndSync();
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [initAuthAndSync]);
 
   if (!isMounted) {
     return (

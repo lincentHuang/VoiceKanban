@@ -6,7 +6,7 @@ import { BYOKConfig } from "../types/user";
 import { UserSession, SyncState, AuthProvider } from "../types/auth";
 import { INITIAL_BOARDS, INITIAL_TASKS } from "../services/mockData";
 import { generateOrderKeyBetween, initialOrderKey } from "../utils/lexorank";
-import { GUEST_USER, loginWithProvider } from "../services/authService";
+import { GUEST_USER, loginWithProvider, logoutUser, subscribeToAuthState } from "../services/authService";
 import { syncEngine } from "../services/syncService";
 
 interface KanbanStoreState {
@@ -14,8 +14,15 @@ interface KanbanStoreState {
   userSession: UserSession;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
-  login: (provider: AuthProvider, email?: string) => Promise<void>;
-  logout: () => void;
+  login: (
+    provider: AuthProvider,
+    email?: string,
+    password?: string,
+    displayName?: string,
+    isRegister?: boolean
+  ) => Promise<void>;
+  logout: () => Promise<void>;
+  initAuthAndSync: () => () => void;
 
   // Cloud Sync State
   syncState: SyncState;
@@ -160,27 +167,103 @@ export const useKanbanStore = create<KanbanStoreState>()(
       userSession: GUEST_USER,
       isAuthModalOpen: false,
       setIsAuthModalOpen: (isAuthModalOpen) => set({ isAuthModalOpen }),
-      login: async (provider, email) => {
-        const session = await loginWithProvider(provider, email);
+      login: async (provider, email, password, displayName, isRegister) => {
+        const session = await loginWithProvider(provider, email, password, displayName, isRegister);
         set({ userSession: session, isAuthModalOpen: false });
-        get().triggerSync();
+
+        if (session && session.provider !== "guest" && session.id !== "guest-user") {
+          // 1. Auto-Merge local guest data into Cloud Firestore
+          const merged = await syncEngine.mergeLocalDataToCloud(
+            session.id,
+            get().tasks,
+            get().boards,
+            get().activeBoardId
+          );
+          set({
+            tasks: merged.tasks,
+            boards: merged.boards,
+            activeBoardId: merged.activeBoardId || get().activeBoardId,
+          });
+
+          // 2. Attach Real-time Cross-device Listener
+          syncEngine.subscribeToUserData(session.id, (remoteData) => {
+            if (remoteData) {
+              set((state) => ({
+                boards: remoteData.boards && remoteData.boards.length > 0 ? remoteData.boards : state.boards,
+                tasks: remoteData.tasks || state.tasks,
+                activeBoardId: remoteData.activeBoardId || state.activeBoardId,
+                syncState: {
+                  status: "synced",
+                  lastSyncedAt: new Date().toISOString(),
+                  isCloudConnected: true,
+                },
+              }));
+            }
+          });
+        }
+
+        await get().triggerSync();
       },
-      logout: () => {
-        set({ userSession: { ...GUEST_USER, isAuthenticated: false, name: "訪客" } });
+      logout: async () => {
+        syncEngine.unsubscribe();
+        await logoutUser();
+        set({
+          userSession: { ...GUEST_USER, isAuthenticated: false, name: "訪客" },
+          syncState: {
+            status: "synced",
+            lastSyncedAt: new Date().toISOString(),
+            isCloudConnected: false,
+          },
+        });
+      },
+      initAuthAndSync: () => {
+        const unsubscribeAuth = subscribeToAuthState(async (session) => {
+          if (session) {
+            set({ userSession: session });
+            // Attach real-time cloud listener
+            syncEngine.subscribeToUserData(session.id, (remoteData) => {
+              if (remoteData) {
+                set((state) => ({
+                  boards: remoteData.boards && remoteData.boards.length > 0 ? remoteData.boards : state.boards,
+                  tasks: remoteData.tasks || state.tasks,
+                  activeBoardId: remoteData.activeBoardId || state.activeBoardId,
+                  syncState: {
+                    status: "synced",
+                    lastSyncedAt: new Date().toISOString(),
+                    isCloudConnected: true,
+                  },
+                }));
+              }
+            });
+          }
+        });
+        return () => {
+          unsubscribeAuth();
+          syncEngine.unsubscribe();
+        };
       },
 
       // Sync
       syncState: {
         status: "synced",
         lastSyncedAt: new Date().toISOString(),
+        isCloudConnected: syncEngine.isCloudAvailable(),
       },
       triggerSync: async () => {
+        const user = get().userSession;
         set((s) => ({ syncState: { ...s.syncState, status: "syncing" } }));
-        const result = await syncEngine.syncTasksToCloud(get().tasks, get().boards);
+        const result = await syncEngine.syncTasksToCloud(
+          user.id,
+          get().tasks,
+          get().boards,
+          get().activeBoardId
+        );
         set({
           syncState: {
             status: result.status,
             lastSyncedAt: result.syncedAt,
+            errorMessage: result.errorMessage,
+            isCloudConnected: result.isCloudConnected,
           },
         });
       },

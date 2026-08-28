@@ -7,6 +7,8 @@ export interface UserSession {
   avatarUrl?: string;
   provider: AuthProvider;
   isAuthenticated: boolean;
+  isAnonymous?: boolean;
+  emailVerified?: boolean;
   createdAt: string;
 }
 
@@ -16,4 +18,16 @@ export interface SyncState {
   status: SyncStatus;
   lastSyncedAt: string | null;
   errorMessage?: string;
+  isCloudConnected?: boolean;
+}
+
+export interface CloudUserData {
+  userId: string;
+  email: string;
+  name: string;
+  avatarUrl?: string;
+  boards: any[];
+  tasks: any[];
+  activeBoardId?: string;
+  updatedAt: string;
 }
