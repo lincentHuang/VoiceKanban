@@ -222,3 +222,53 @@ export function formatSyncTime(
   }
 }
 
+/**
+ * Converts ISO 8601 string to YYYY-MM-DDTHH:mm string in user's local timezone
+ * suitable for <input type="datetime-local">.
+ */
+export function isoToDateTimeLocal(isoString: string | null | undefined): string {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "";
+    const pad = (num: number) => num.toString().padStart(2, "0");
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const mins = pad(d.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${mins}`;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Converts local YYYY-MM-DDTHH:mm string from <input type="datetime-local"> to ISO 8601 string.
+ */
+export function dateTimeLocalToIso(localString: string): string {
+  if (!localString || localString.trim() === "") return "";
+  try {
+    const d = new Date(localString);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Human-readable friendly due date label with relative day.
+ */
+export function formatDueDateHuman(isoString: string | null | undefined): string {
+  if (!isoString) return "無到期時間";
+  try {
+    const status = getDueDateStatus(isoString);
+    if (!status) return "無到期時間";
+    return `${status.formattedFullDateTime} (${status.label})`;
+  } catch {
+    return "無到期時間";
+  }
+}
+
+

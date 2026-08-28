@@ -1,13 +1,14 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { Board, Column, ColumnId, Priority, Task, ViewMode, DEFAULT_COLUMNS, ChecklistItem } from "../types/task";
-import { VoiceExtractResult, VoiceState } from "../types/voice";
+import { VoiceExtractResult, VoiceState, VoiceLanguage, VoiceMode, CorrectionFeedbackPayload, LearningStats } from "../types/voice";
 import { BYOKConfig } from "../types/user";
 import { UserSession, SyncState, AuthProvider } from "../types/auth";
 import { INITIAL_BOARDS, INITIAL_TASKS } from "../services/mockData";
 import { generateOrderKeyBetween, initialOrderKey } from "../utils/lexorank";
 import { GUEST_USER, createGuestSession, loginWithProvider, logoutUser, subscribeToAuthState } from "../services/authService";
 import { syncEngine } from "../services/syncService";
+import { learningEngine } from "../services/learningEngine";
 
 interface KanbanStoreState {
   // Authentication & Profile
@@ -121,8 +122,15 @@ interface KanbanStoreState {
   setIsVoiceOverlayOpen: (open: boolean) => void;
   voiceState: VoiceState;
   setVoiceState: (state: VoiceState) => void;
+  voiceMode: VoiceMode;
+  setVoiceMode: (mode: VoiceMode) => void;
+  voiceLanguage: VoiceLanguage;
+  setVoiceLanguage: (lang: VoiceLanguage) => void;
   extractedTask: VoiceExtractResult | null;
   setExtractedTask: (task: VoiceExtractResult | null) => void;
+  recordLearningFeedback: (payload: CorrectionFeedbackPayload) => void;
+  getLearningStats: () => LearningStats;
+  resetLearningModel: () => void;
 
   isSettingsModalOpen: boolean;
   setIsSettingsModalOpen: (open: boolean) => void;
@@ -919,13 +927,26 @@ export const useKanbanStore = create<KanbanStoreState>()(
       tagFilter: "all",
       setTagFilter: (tagFilter) => set({ tagFilter }),
 
-      // Voice modal
+      // Voice modal & Learning Engine
       isVoiceOverlayOpen: false,
       setIsVoiceOverlayOpen: (isVoiceOverlayOpen) => set({ isVoiceOverlayOpen }),
       voiceState: "idle",
       setVoiceState: (voiceState) => set({ voiceState }),
+      voiceMode: "offline_learning",
+      setVoiceMode: (voiceMode) => set({ voiceMode }),
+      voiceLanguage: "auto",
+      setVoiceLanguage: (voiceLanguage) => set({ voiceLanguage }),
       extractedTask: null,
       setExtractedTask: (extractedTask) => set({ extractedTask }),
+      recordLearningFeedback: (payload) => {
+        learningEngine.recordUserCorrection(payload);
+      },
+      getLearningStats: () => {
+        return learningEngine.getStats();
+      },
+      resetLearningModel: () => {
+        learningEngine.resetModel();
+      },
 
       // Modals
       isSettingsModalOpen: false,

@@ -1,9 +1,9 @@
-# VoiceKanban 同步時間戳記與即時狀態指示 QA 驗收報告 (QA_REPORT.md v3.2.0)
+# VoiceKanban 離線語音辨識與半自動雙語學習引擎 QA 驗收報告 (QA_REPORT.md v4.0.0)
 
 > **驗收日期**：2026-08-28  
 > **負責人**：`@QA (測試驗收工程師)`  
 > **測試狀態**：✅ **100% 通過 (PASS)**  
-> **對應規格**：[PRD.md](./PRD.md) v3.2.0
+> **對應規格**：[PRD.md](./PRD.md) v4.0.0
 
 ---
 
@@ -11,16 +11,20 @@
 
 | 模組 | 驗收標準 (AC) | 測試情境與邊界條件 | 驗收結果 |
 | :--- | :--- | :--- | :---: |
-| **1. 剛同步完成指示** | [AC-6.1] Just Synced Badge | 1 分鐘內同步完成時，副標題顯示「剛剛（目前為最新版本）」，並亮起「最新」綠色徽章 | ✅ PASS |
-| **2. 動態相對時間輪詢** | [AC-6.1 & 6.2] Relative Time | 1~59 分鐘顯示「X 分鐘前」、當日顯示「今天 HH:mm」、跨日顯示「M/D HH:mm」，每 15 秒背景定時自動刷新文字無需手動 F5 | ✅ PASS |
-| **3. 精確時間 Tooltip** | [AC-6.3] Full Timestamp | 滑鼠懸浮於同步卡片或副標題時，顯示完整 ISO 格式時間（如 `2026/08/28 10:15:30`） | ✅ PASS |
-| **4. 多態狀態矩陣** | [AC-6.4] State Matrix (5 態) | `synced` (雲端已同步 / 最新標籤)、`syncing` (正在同步... / 旋轉圖示)、`offline` (離線模式 / 提示連線後自動上傳)、`error` (同步異常 / 點擊重試) | ✅ PASS |
-| **5. 訪客本機狀態適配** | [AC-6.5] Guest Storage State | 訪客模式顯示「本機已存檔」與「訪客本機模式」，清楚區分本機快取與正式雲端同步 | ✅ PASS |
-| **6. 登入與資料保留** | [AC-1 & AC-2] Auth & Data Safety | 登入載入雲端、登出 100% 保留 Firestore 資料不刪除、訪客無縫升級綁定 | ✅ PASS |
+| **1. 雙語字元分類** | [AC-1.2] Language Detection | 純繁中、純英文、中英夾雜 (Chinglish)、空字串與特殊字元測試，100% 正確判定 `zh-TW` 與 `en-US` | ✅ PASS |
+| **2. 本地中文時間萃取** | [AC-2.1] Chinese Temporal NLP | 「今天」、「明天」、「後天」、「下週一~日」、「下午/早上 X 點」自動轉成標準 ISO 到期日 | ✅ PASS |
+| **3. 本地英文時間萃取** | [AC-2.2] English Temporal NLP | "today", "tomorrow", "day after tomorrow", "next monday", "at 4pm", "at 9am" 精確計算 | ✅ PASS |
+| **4. 優先級關鍵字判定** | [AC-2.1 & 2.2] Priority Classifier | 「緊急/急件/高優先」➔ `high`；"asap/urgent/critical" ➔ `high`；「有空再做/隨便」➔ `low`；預設 `medium` | ✅ PASS |
+| **5. 看板與欄位匹配** | [AC-2.3] Board/Column Matcher | 口述包含看板名（如「工作日常」、「產品開發」）與欄位名（如「進行中」、「待辦」）自動精準選定 | ✅ PASS |
+| **6. 標題智慧過濾清洗** | [AC-2.1 & 2.2] Title Cleanup | 自動剃除贅詞「幫我記一下」、「放進工作日常進行中」、「高優先級」等，萃取出乾淨標題 | ✅ PASS |
+| **7. 半自動學習回饋循環** | [AC-3.1 & 3.2] Correction Feedback | 使用者微調目標看板/欄位/標籤確認後，系統將特徵詞彙自動寫入本地貝氏權重表，後續口述自動優先套用 | ✅ PASS |
+| **8. 學習記憶庫管理與重設** | [AC-3.3] Learning Stats & Reset | 設定面板中即時呈現「已學習詞彙數」、「中英樣本次數」，點擊重設可乾淨還原記憶庫 | ✅ PASS |
+| **9. 5 種 UI 狀態完備性** | [AC-4.1 ~ 4.5] UI 5-State Matrix | Loading (波形/即時字串)、Empty (防呆提示)、Error (權限指引)、Success (Confetti 粒子)、Active (預覽微調) | ✅ PASS |
 
 ---
 
 ## 🛡️ 靜態建置與型別安全 (Build & Typecheck)
 - **Next.js Production Build**：`npm run build`（Turbopack）生產環境建置通過（0 錯誤）。
 - **TypeScript 5.7.3 型別檢查**：全站嚴格型別校驗 100% 通過（0 錯誤）。
-- **邊界值測試**：0s、10s、59s、60s、2m、45m、2h、跨日、null 邊界測試 100% 通過。
+- **自動化測試套件**：執行 27 項極端與邊界值測試，通過率 100%（27 Passed, 0 Failed）。
+

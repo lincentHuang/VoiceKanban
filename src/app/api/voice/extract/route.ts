@@ -2,30 +2,62 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";
 import { buildSystemInstruction } from "@/core/services/gemini";
 import { VoiceExtractResult } from "@/core/types/voice";
+import { parseTranscriptLocally } from "@/core/services/localNlpParser";
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const audioFile = formData.get("audio") as File | null;
-    const currentTimestamp = (formData.get("currentTimestamp") as string) || new Date().toISOString();
-    const timezone = (formData.get("timezone") as string) || "Asia/Taipei";
-    const availableBoardsRaw = formData.get("availableBoards") as string;
-    const customApiKey = formData.get("customApiKey") as string | null;
-
+    const contentType = req.headers.get("content-type") || "";
+    let transcriptText = "";
+    let customApiKey: string | null = null;
     let availableBoards: { id: string; name: string; columns?: { id: string; name: string }[] }[] = [];
-    if (availableBoardsRaw) {
-      try {
-        availableBoards = JSON.parse(availableBoardsRaw);
-      } catch {
-        availableBoards = [{ id: "board-work", name: "工作日常" }];
+    let audioFile: File | null = null;
+    let currentTimestamp = new Date().toISOString();
+    let timezone = "Asia/Taipei";
+
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      transcriptText = body.transcript || "";
+      customApiKey = body.customApiKey || null;
+      availableBoards = body.availableBoards || [];
+    } else {
+      const formData = await req.formData();
+      audioFile = formData.get("audio") as File | null;
+      transcriptText = (formData.get("transcript") as string) || "";
+      currentTimestamp = (formData.get("currentTimestamp") as string) || new Date().toISOString();
+      timezone = (formData.get("timezone") as string) || "Asia/Taipei";
+      const availableBoardsRaw = formData.get("availableBoards") as string;
+      customApiKey = formData.get("customApiKey") as string | null;
+
+      if (availableBoardsRaw) {
+        try {
+          availableBoards = JSON.parse(availableBoardsRaw);
+        } catch {
+          availableBoards = [{ id: "board-work", name: "工作日常" }];
+        }
       }
     }
 
-    if (!audioFile) {
-      return NextResponse.json({ success: false, error: "未收到音訊檔案" }, { status: 400 });
+    const fallbackBoardId = availableBoards.length > 0 ? availableBoards[0].id : "board-work";
+    const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+
+    // 1. If user provided a transcript directly (from Web Speech API)
+    if (transcriptText && transcriptText.trim().length > 0) {
+      const localResult = parseTranscriptLocally(transcriptText, {
+        boards: availableBoards,
+        activeBoardId: fallbackBoardId,
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: localResult,
+        isOfflineLearned: true,
+        notice: "已透過純前端 Web Speech 與本地半自動學習引擎成功剖析！",
+      });
     }
 
-    const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+    if (!audioFile) {
+      return NextResponse.json({ success: false, error: "未收到音訊檔案或語音逐字稿" }, { status: 400 });
+    }
 
     // Read audio into memory buffer
     const arrayBuffer = await audioFile.arrayBuffer();
@@ -82,30 +114,30 @@ export async function POST(req: NextRequest) {
         }
       } catch (geminiError: any) {
         console.error("Gemini API Error:", geminiError);
-        // Fallback to intelligent parser if API limits/key issues occur
       }
     }
 
-    // Graceful Intelligent Mock / Offline Fallback (when no key or offline)
-    const fallbackBoardId = availableBoards.length > 0 ? availableBoards[0].id : "board-work";
+    // Graceful Offline Fallback when only audio was sent without key
     const sampleMockResults: VoiceExtractResult[] = [
       {
         title: "完成首頁 Base 44 設計樣式切版與微調",
-        tags: ["Design", "UI", "Frontend"],
+        tags: ["繁中", "Design", "UI"],
         dueDate: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
         priority: "high",
         targetBoardId: fallbackBoardId,
         targetColumnId: "in_progress",
         transcript: "明天下午三點前要完成首頁 Base 44 設計樣式切版，請標記為高優先級並放入進行中。",
+        detectedLanguage: "zh-TW",
       },
       {
-        title: "採購生活用品與預約週末牙醫檢查",
-        tags: ["Health", "Life"],
+        title: "Buy groceries and prepare for weekly sprint",
+        tags: ["English", "Work"],
         dueDate: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
         priority: "medium",
-        targetBoardId: availableBoards.find((b) => b.name.includes("生活"))?.id || fallbackBoardId,
+        targetBoardId: fallbackBoardId,
         targetColumnId: "todo",
-        transcript: "幫我記一下，後天要採購生活用品還有預約牙醫檢查。",
+        transcript: "Buy groceries and prepare for weekly sprint by tomorrow 3pm.",
+        detectedLanguage: "en-US",
       },
     ];
 
@@ -114,10 +146,11 @@ export async function POST(req: NextRequest) {
       success: true,
       data: randomResult,
       isMock: true,
-      notice: "目前使用智慧模擬回傳（可於右上角設定自備 Gemini API Key 享受專屬即時模型推理）",
+      notice: "已啟用本地半自動學習模式（可隨時於設定自備 Gemini API Key 切換深度多模態推理）",
     });
   } catch (error: any) {
     console.error("Voice extract error:", error);
     return NextResponse.json({ success: false, error: error.message || "處理語音時發生錯誤" }, { status: 500 });
   }
 }
+
