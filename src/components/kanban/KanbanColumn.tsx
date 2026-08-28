@@ -25,16 +25,19 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
 
   const {
     openAddTaskModal,
+    openVoiceForColumn,
     isMultiSelectMode,
     toggleTaskSelection,
     selectedTaskIds,
-    dragOverLocation,
-    activeDragTaskId,
   } = useKanbanStore();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleAddTaskClick = () => {
+  const handleVoiceAddClick = () => {
+    openVoiceForColumn(column.id);
+  };
+
+  const handleManualAddClick = () => {
     openAddTaskModal(column.id);
   };
 
@@ -46,13 +49,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
     });
   };
 
-  const isCurrentColumnOver = dragOverLocation?.columnId === column.id;
-  const filteredTasks = tasks.filter((t) => t.id !== activeDragTaskId);
-  const taskIds = filteredTasks.map((t) => t.id);
-  const insertIndex =
-    isCurrentColumnOver && dragOverLocation
-      ? Math.max(0, Math.min(dragOverLocation.index, filteredTasks.length))
-      : -1;
+  const taskIds = tasks.map((t) => t.id);
 
   return (
     <div
@@ -95,11 +92,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
             </button>
           )}
 
-          {/* Add Task Plus */}
+          {/* Add Task Plus - Direct Voice Input */}
           <button
-            onClick={handleAddTaskClick}
-            className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors"
-            title={`在「${column.title}」新增卡片`}
+            onClick={handleVoiceAddClick}
+            className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors"
+            title={`在「${column.title}」用語音新增卡片`}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -118,55 +115,40 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
               <ColumnActionMenu
                 column={column}
                 onClose={() => setIsMenuOpen(false)}
-                onAddTask={handleAddTaskClick}
+                onAddTask={handleManualAddClick}
               />
             )}
           </div>
         </div>
       </div>
 
-      {/* Cards Scrollable Container (Dynamic viewport height adaptation with Drop Insertion Slot) */}
+      {/* Cards Scrollable Container */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 custom-scrollbar min-h-0">
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {filteredTasks.map((task, idx) => (
-            <React.Fragment key={task.id}>
-              {insertIndex === idx && (
-                <div
-                  key="drop-slot-placeholder"
-                  className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400/70 bg-orange-50/40 dark:bg-orange-950/30 my-1 transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
-                />
-              )}
-              <TaskCard task={task} />
-            </React.Fragment>
+          {tasks.map((task) => (
+            <TaskCard key={task.id} task={task} />
           ))}
-
-          {filteredTasks.length > 0 && insertIndex === filteredTasks.length && (
-            <div
-              key="drop-slot-placeholder-end"
-              className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400/70 bg-orange-50/40 dark:bg-orange-950/30 my-1 transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
-            />
-          )}
         </SortableContext>
 
         {/* Empty State */}
-        {filteredTasks.length === 0 && (
+        {tasks.length === 0 && (
           <div
             className={`h-28 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-xs gap-1.5 p-3 text-center transition-all duration-200 ${
-              isCurrentColumnOver
+              isOver
                 ? "border-orange-500 bg-orange-50/80 dark:bg-orange-950/60 ring-2 ring-orange-500/30 text-orange-600 dark:text-orange-300 shadow-inner"
                 : "border-slate-200/80 dark:border-slate-800 text-slate-400"
             }`}
           >
-            {isCurrentColumnOver ? (
+            {isOver ? (
               <span className="font-bold text-sm">✨ 放開以移入此欄位</span>
             ) : (
               <>
                 <span>尚無卡片</span>
                 <button
-                  onClick={handleAddTaskClick}
-                  className="text-orange-500 font-medium hover:underline text-[11px]"
+                  onClick={handleVoiceAddClick}
+                  className="text-orange-500 font-medium hover:underline text-[11px] flex items-center gap-1"
                 >
-                  + 點此快速建立
+                  <Plus className="w-3.5 h-3.5" /> 語音快速建立
                 </button>
               </>
             )}

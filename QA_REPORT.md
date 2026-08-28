@@ -1,29 +1,29 @@
-# VoiceKanban 語音串流單一化與無聲偵測 QA 驗收報告 (QA_REPORT.md v4.1.0)
+# VoiceKanban 測試與品質驗收報告 (QA_REPORT.md v7.0.0)
 
-> **驗收日期**：2026-08-28  
-> **負責人**：`@QA (測試驗收工程師)`  
-> **測試狀態**：✅ **100% 通過 (PASS)**  
-> **對應規格**：[PRD.md](./PRD.md) v4.1.0
-
----
-
-## 📋 測試案例與驗收結果 (Test Execution Matrix)
-
-| 模組 | 驗收標準 (AC) | 測試情境與邊界條件 | 驗收結果 |
-| :--- | :--- | :--- | :---: |
-| **1. 音訊串流單一化** | [AC-5.1.1] Audio Channel Exclusivity | 離線語音模式下僅由 Web Speech API 獨佔麥克風通道，杜絕 `getUserMedia` 雙重硬體鎖定競爭，徹底解決藍牙耳機 (HFP) 與手機瀏覽器收音問題 | ✅ PASS |
-| **2. 按需雲端錄音** | [AC-5.1.2] On-Demand MediaRecorder | 僅在使用者啟用雲端 Gemini BYOK 模式時調用 MediaRecorder，非雲端模式不重複佔用硬體 | ✅ PASS |
-| **3. 3秒無聲自動提示** | [AC-5.2.1] 3s Silence Detection | 錄音開啟後 3 秒內若未收到字元或觸發 `no-speech`，UI 立即呈現黃色警告指引（檢查電腦耳機輸入裝置或靠近手機麥克風） | ✅ PASS |
-| **4. 語音輸入自動恢復** | [AC-5.2.2] Auto-Recovery on Speech | 一旦偵測到口述語音或逐字稿，無聲警告橫幅立即自動隱藏，流暢切換為即時串流逐字稿 | ✅ PASS |
-| **5. 裝置異常精確提示** | [AC-5.2.3] Device Error Diagnostics | 精確區分 `not-allowed`（權限遭拒）、`audio-capture`（麥克風硬體佔用/耳機未就緒）與 `network` 網路異常 | ✅ PASS |
-| **6. 雙語字元分類** | [AC-1.2] Language Detection | 純繁中、純英文、中英夾雜 (Chinglish)、空字串與特殊字元測試，100% 正確判定 `zh-TW` 與 `en-US` | ✅ PASS |
-| **7. 本地時間與語意萃取** | [AC-2.1 & 2.2] Temporal NLP | 中文「明天下午三點」、英文 "tomorrow 3pm" 精確轉化 ISO 到期時間與優先等級 | ✅ PASS |
-| **8. 半自動學習回饋循環** | [AC-3.1 & 3.2] Correction Feedback | 使用者微調目標看板/欄位/標籤確認後，特徵詞彙自動寫入本地貝氏權重表 | ✅ PASS |
-| **9. 5 種 UI 狀態完備性** | [AC-4.1 ~ 4.5] UI 5-State Matrix | Loading (波形/即時字串)、Empty (3秒無聲防呆警告)、Error (權限指引)、Success (Confetti 粒子)、Active (預覽微調) | ✅ PASS |
+> **測試日期**：2026-08-28  
+> **負責人**：`@QA`  
+> **測試狀態**：✅ 100% 通過 (ALL PASSED)  
+> **測試涵蓋範圍**：卡片完成原地保留（In-situ Card Completion）、跨視圖一致性、批次操作與手動拖曳相容性。
 
 ---
 
-## 🛡️ 靜態建置與型別安全 (Build & Typecheck)
-- **Next.js Production Build**：`npm run build`（Turbopack）生產環境建置通過（0 錯誤）。
-- **TypeScript 5.7.3 型別檢查**：全站嚴格型別校驗 100% 通過（0 錯誤）。
-- **驗收結論**：音訊串流單一化與無聲偵測機制已全數驗證完畢，符合 PRD v4.1.0 規格標準。
+## 📋 測試用例與驗收結果 (Test Execution Matrix)
+
+| 測試編號 | 測試項目 | 預期結果 | 實際結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :---: |
+| **TC-CMP-01** | 看板單卡完成原地保留 | 點擊卡片「快速完成」按鈕，卡片留在原列表（待辦/進行中等），呈現刪除線與打勾樣式，不移至「已完成」欄位 | 卡片留在原欄位，`columnId` 不變，樣式正常切換 | ✅ PASS |
+| **TC-CMP-02** | 再次點擊取消完成 | 在原欄位中再次點擊完成按鈕，卡片恢復為未完成，依然留在原欄位 | 順暢切換回未完成狀態，位置完全不變 | ✅ PASS |
+| **TC-CMP-03** | 批次完成原地保留 | 多選模式選取不同列表多張卡片並執行「批次完成」，所有卡片各自在所屬列表變更為完成狀態 | 各卡片保持原 `columnId`，無位移跳轉 | ✅ PASS |
+| **TC-CMP-04** | 編輯彈窗 EditTaskModal 儲存 | 在編輯彈窗修改已完成卡片的內容後儲存，`completed` 狀態完整保留，不因欄位非 `done` 被重設為未完成 | 儲存後保持完成狀態與原欄位 | ✅ PASS |
+| **TC-CMP-05** | 表格檢視 TableView 勾選完成 | 在表格模式勾選完成框，卡片留在當前列中，所屬列表不跳轉 | 原地切換完成狀態，列表下拉選單保持原值 | ✅ PASS |
+| **TC-CMP-06** | 清單檢視 ListView 勾選完成 | 在清單模式勾選完成框，卡片留在原欄位分組內，不被分派到已完成分組 | 卡片留在原分組內原地完成 | ✅ PASS |
+| **TC-CMP-07** | 側邊欄收件匣 SidebarInbox 完成 | 在收件匣中標記卡片完成，卡片依然保留在收件匣列表中 | 收件匣卡片原地完成，不外流至看板 | ✅ PASS |
+| **TC-CMP-08** | 主動手動拖曳至「已完成」欄位 | 主動將未完成卡片拖曳至「已完成」欄位時，卡片自動標記為已完成 | 拖入 `done` 欄位時 `completed: true` | ✅ PASS |
+| **TC-CMP-09** | 主動手動拖曳離開「已完成」欄位 | 主動將卡片從「已完成」欄位拖曳至「待辦」欄位時，卡片自動恢復為未完成 | 拖出 `done` 欄位時 `completed: false` | ✅ PASS |
+| **TC-BLD-01** | Next.js 16 Production Build | 全專案 TypeScript 與 Turbopack 打包零錯誤 | 0 errors, 100% 編譯成功 | ✅ PASS |
+
+---
+
+## 🎯 測試結論
+卡片原地完成機制（In-situ Card Completion）在看板、表格、清單、收件匣、編輯彈窗與批次操作下均運作正常，所有驗收標準 AC-8.1、AC-8.2、AC-8.3 均已 100% 通過。
+

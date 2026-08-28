@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId } from "@/core/types/task";
 import { DateTimePicker } from "../common/DateTimePicker";
+import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import { X, Calendar, Tag, Star, Plus } from "lucide-react";
 
 export const AddTaskModal: React.FC = () => {
@@ -15,6 +16,12 @@ export const AddTaskModal: React.FC = () => {
     getActiveBoardColumns,
     addTask,
   } = useKanbanStore();
+
+  useEscapeKey(() => {
+    if (isAddTaskModalOpen) {
+      setIsAddTaskModalOpen(false);
+    }
+  }, isAddTaskModalOpen);
 
   const columns = getActiveBoardColumns();
 
@@ -94,8 +101,14 @@ export const AddTaskModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-lg backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 relative">
+    <div
+      onClick={() => setIsAddTaskModalOpen(false)}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 relative"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>

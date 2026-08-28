@@ -47,18 +47,18 @@ export const UnifiedDnDWorkspace: React.FC = () => {
   const columns = getActiveBoardColumns();
 
   // Multi-sensor configuration:
-  // 1. MouseSensor: 3px movement for instant snappy drag on desktop
-  // 2. TouchSensor: 250ms long press delay with 5px tolerance on mobile to prevent scrolling conflict
+  // 1. MouseSensor: 4px movement for instant snappy drag on desktop
+  // 2. TouchSensor: 200ms long press delay with 8px tolerance on mobile
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 3, // 3px threshold for fast responsive desktop dragging
+        distance: 4,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250, // 250ms long-press on mobile touch
-        tolerance: 5, // 5px tolerance during hold to avoid canceling on tiny finger tremor
+        delay: 200,
+        tolerance: 8,
       },
     })
   );

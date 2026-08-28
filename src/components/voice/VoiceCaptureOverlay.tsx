@@ -10,6 +10,7 @@ import { learningEngine } from "@/core/services/learningEngine";
 import { detectLanguage } from "@/core/services/localNlpParser";
 import { isoToDateTimeLocal, dateTimeLocalToIso, formatDueDateHuman } from "@/core/utils/dateUtils";
 import { DateTimePicker } from "../common/DateTimePicker";
+import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import {
   Mic,
   Square,
@@ -48,6 +49,8 @@ export const VoiceCaptureOverlay: React.FC = () => {
     addTask,
     byokConfig,
     recordLearningFeedback,
+    voiceTargetColumnId,
+    setVoiceTargetColumnId,
   } = useKanbanStore();
 
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -313,7 +316,7 @@ export const VoiceCaptureOverlay: React.FC = () => {
     setExtractedTask(result);
     setEditTitle(result.title);
     setEditBoardId(boards.some((b) => b.id === result.targetBoardId) ? result.targetBoardId : activeBoardId);
-    setEditColumnId(result.targetColumnId || "inbox");
+    setEditColumnId(voiceTargetColumnId || result.targetColumnId || "inbox");
     setPriority(result.priority || "medium");
     setEditDueDate(result.dueDate || "");
     setEditTags(result.tags && result.tags.length > 0 ? result.tags : []);
@@ -382,9 +385,12 @@ export const VoiceCaptureOverlay: React.FC = () => {
     stopRecordingCleanup();
     setIsVoiceOverlayOpen(false);
     setVoiceState("idle");
+    setVoiceTargetColumnId(null);
     setExtractedTask(null);
     setInterimTranscript("");
   };
+
+  useEscapeKey(handleClose, isVoiceOverlayOpen);
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -397,8 +403,14 @@ export const VoiceCaptureOverlay: React.FC = () => {
   if (!isVoiceOverlayOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200">
-      <div className="w-full max-w-xl backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 relative overflow-hidden">
+    <div
+      onClick={handleClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-xl backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 relative overflow-hidden"
+      >
         {/* Close button */}
         <button
           onClick={handleClose}

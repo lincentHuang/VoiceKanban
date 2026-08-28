@@ -119,7 +119,7 @@ export const SidebarInbox: React.FC = () => {
           <div>
             <div className="flex items-center gap-1.5">
               <h2 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">
-                全域收件匣
+                收件匣
               </h2>
               <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-black text-[10px]">
                 {inboxTasks.length}
@@ -318,7 +318,7 @@ export const SidebarInbox: React.FC = () => {
             {isInboxOver ? (
               <>
                 <span className="font-bold text-sm">📥 放開以移至收件匣</span>
-                <p className="text-[11px] text-blue-500/80">卡片將存入全域收件匣</p>
+                <p className="text-[11px] text-blue-500/80">卡片將存入收件匣</p>
               </>
             ) : (
               <>
@@ -328,20 +328,6 @@ export const SidebarInbox: React.FC = () => {
             )}
           </div>
         )}
-      </div>
-
-      {/* Bottom Integration Footer */}
-      <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-          雙向拖曳已啟用
-        </span>
-        <button
-          onClick={handleVoiceAdd}
-          className="text-orange-600 font-bold hover:underline"
-        >
-          一鍵口述 🎙️
-        </button>
       </div>
     </aside>
   );

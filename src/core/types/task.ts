@@ -10,6 +10,15 @@ export interface ChecklistItem {
   completed: boolean;
 }
 
+export interface TaskAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  createdAt: string;
+}
+
 export interface TaskActivity {
   id: string;
   user: string;
@@ -36,6 +45,7 @@ export interface Task {
   checklist?: ChecklistItem[];
   coverColor?: string | null;
   coverAspectRatio?: CoverAspectRatio | null; // 1:1, 3:4, 9:16, banner, bar
+  attachments?: TaskAttachment[];
   attachmentsCount?: number;
   activities?: TaskActivity[];
   isArchived?: boolean;

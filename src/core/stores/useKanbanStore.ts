@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
-import { Board, Column, ColumnId, Priority, Task, ViewMode, DEFAULT_COLUMNS, ChecklistItem } from "../types/task";
+import { Board, Column, ColumnId, Priority, Task, ViewMode, DEFAULT_COLUMNS, ChecklistItem, TaskAttachment } from "../types/task";
 import { VoiceExtractResult, VoiceState, VoiceLanguage, VoiceMode, CorrectionFeedbackPayload, LearningStats } from "../types/voice";
 import { BYOKConfig } from "../types/user";
 import { UserSession, SyncState, AuthProvider } from "../types/auth";
@@ -83,8 +83,13 @@ interface KanbanStoreState {
 
   // Checklist Actions
   addChecklistItem: (taskId: string, title: string) => void;
+  updateChecklistItem: (taskId: string, itemId: string, newTitle: string) => void;
   toggleChecklistItem: (taskId: string, itemId: string) => void;
   removeChecklistItem: (taskId: string, itemId: string) => void;
+
+  // Attachment Actions
+  addAttachment: (taskId: string, attachment: TaskAttachment) => void;
+  removeAttachment: (taskId: string, attachmentId: string) => void;
 
   // Editing Task Detail Modal
   editingTaskId: string | null;
@@ -126,6 +131,9 @@ interface KanbanStoreState {
   setVoiceMode: (mode: VoiceMode) => void;
   voiceLanguage: VoiceLanguage;
   setVoiceLanguage: (lang: VoiceLanguage) => void;
+  voiceTargetColumnId: ColumnId | null;
+  setVoiceTargetColumnId: (colId: ColumnId | null) => void;
+  openVoiceForColumn: (columnId?: ColumnId) => void;
   extractedTask: VoiceExtractResult | null;
   setExtractedTask: (task: VoiceExtractResult | null) => void;
   recordLearningFeedback: (payload: CorrectionFeedbackPayload) => void;
@@ -681,7 +689,6 @@ export const useKanbanStore = create<KanbanStoreState>()(
               return {
                 ...t,
                 completed: newCompleted,
-                columnId: newCompleted ? "done" : t.columnId === "done" ? "todo" : t.columnId,
                 updatedAt: new Date().toISOString(),
               };
             }
@@ -730,7 +737,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
                   boardId: newBoardId,
                   columnId: targetColumnId,
                   orderKey: newOrderKey,
-                  completed: targetColumnId === "done",
+                  completed: targetColumnId === "done" ? true : (taskToMove.columnId === "done" ? false : taskToMove.completed),
                   updatedAt: new Date().toISOString(),
                 }
               : t
@@ -748,7 +755,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           columnId,
           boardId: columnId === "inbox" ? "global" : boardId,
           orderKey: `k_${(index + 1) * 1000}`,
-          completed: columnId === "done",
+          completed: columnId === "done" ? true : task.completed,
           updatedAt: new Date().toISOString(),
         }));
 
@@ -802,6 +809,23 @@ export const useKanbanStore = create<KanbanStoreState>()(
         get().triggerSync();
       },
 
+      updateChecklistItem: (taskId, itemId, newTitle) => {
+        if (!newTitle.trim()) return;
+        set((state) => ({
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t;
+            return {
+              ...t,
+              checklist: (t.checklist || []).map((item) =>
+                item.id === itemId ? { ...item, title: newTitle.trim() } : item
+              ),
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        }));
+        get().triggerSync();
+      },
+
       removeChecklistItem: (taskId, itemId) => {
         set((state) => ({
           tasks: state.tasks.map((t) =>
@@ -813,6 +837,38 @@ export const useKanbanStore = create<KanbanStoreState>()(
                 }
               : t
           ),
+        }));
+        get().triggerSync();
+      },
+
+      addAttachment: (taskId, attachment) => {
+        set((state) => ({
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t;
+            const updatedAttachments = [...(t.attachments || []), attachment];
+            return {
+              ...t,
+              attachments: updatedAttachments,
+              attachmentsCount: updatedAttachments.length,
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        }));
+        get().triggerSync();
+      },
+
+      removeAttachment: (taskId, attachmentId) => {
+        set((state) => ({
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t;
+            const updatedAttachments = (t.attachments || []).filter((a) => a.id !== attachmentId);
+            return {
+              ...t,
+              attachments: updatedAttachments,
+              attachmentsCount: updatedAttachments.length,
+              updatedAt: new Date().toISOString(),
+            };
+          }),
         }));
         get().triggerSync();
       },
@@ -859,7 +915,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
                   ...t,
                   boardId: targetBoardId,
                   columnId: targetColumnId,
-                  completed: targetColumnId === "done",
+                  completed: targetColumnId === "done" ? true : (t.columnId === "done" ? false : t.completed),
                   updatedAt: new Date().toISOString(),
                 }
               : t
@@ -890,7 +946,6 @@ export const useKanbanStore = create<KanbanStoreState>()(
               ? {
                   ...t,
                   completed,
-                  columnId: completed ? "done" : t.columnId === "done" ? "todo" : t.columnId,
                   updatedAt: new Date().toISOString(),
                 }
               : t
@@ -938,6 +993,15 @@ export const useKanbanStore = create<KanbanStoreState>()(
       setVoiceMode: (voiceMode) => set({ voiceMode }),
       voiceLanguage: "auto",
       setVoiceLanguage: (voiceLanguage) => set({ voiceLanguage }),
+      voiceTargetColumnId: null,
+      setVoiceTargetColumnId: (voiceTargetColumnId) => set({ voiceTargetColumnId }),
+      openVoiceForColumn: (columnId) => {
+        set({
+          voiceTargetColumnId: columnId || null,
+          voiceState: "recording",
+          isVoiceOverlayOpen: true,
+        });
+      },
       extractedTask: null,
       setExtractedTask: (extractedTask) => set({ extractedTask }),
       recordLearningFeedback: (payload) => {

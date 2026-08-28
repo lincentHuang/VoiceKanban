@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import {
   X,
   KeyRound,
@@ -29,6 +30,12 @@ export const SettingsModal: React.FC = () => {
     getLearningStats,
     resetLearningModel,
   } = useKanbanStore();
+
+  useEscapeKey(() => {
+    if (isSettingsModalOpen) {
+      setIsSettingsModalOpen(false);
+    }
+  }, isSettingsModalOpen);
 
   const [activeTab, setActiveTab] = useState<"api" | "learning">("api");
   const [inputKey, setInputKey] = useState(byokConfig.apiKey || "");
@@ -113,8 +120,14 @@ export const SettingsModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200">
-      <div className="w-full max-w-lg backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative">
+    <div
+      onClick={() => setIsSettingsModalOpen(false)}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { DEFAULT_COLUMNS, ColumnId, Priority } from "@/core/types/task";
+import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import {
   CheckSquare,
   ArrowRight,
@@ -28,6 +29,16 @@ export const BatchActionBar: React.FC = () => {
 
   const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const [isPriorityMenuOpen, setIsPriorityMenuOpen] = useState(false);
+
+  useEscapeKey(() => {
+    if (isMoveMenuOpen) {
+      setIsMoveMenuOpen(false);
+    } else if (isPriorityMenuOpen) {
+      setIsPriorityMenuOpen(false);
+    } else if (selectedTaskIds.length > 0) {
+      clearSelection();
+    }
+  }, selectedTaskIds.length > 0);
 
   if (selectedTaskIds.length === 0) return null;
 
@@ -80,22 +91,28 @@ export const BatchActionBar: React.FC = () => {
             </button>
 
             {isMoveMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-44 backdrop-blur-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">目標欄位</div>
-                {allTargetColumns.map((col) => (
-                  <button
-                    key={col.id}
-                    onClick={() => {
-                      batchMoveTasks(col.id);
-                      setIsMoveMenuOpen(false);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>{col.icon}</span>
-                    <span>{col.title}</span>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsMoveMenuOpen(false)}
+                />
+                <div className="absolute bottom-full left-0 mb-2 w-44 backdrop-blur-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">目標欄位</div>
+                  {allTargetColumns.map((col) => (
+                    <button
+                      key={col.id}
+                      onClick={() => {
+                        batchMoveTasks(col.id);
+                        setIsMoveMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg flex items-center gap-1.5 transition-colors"
+                    >
+                      <span>{col.icon}</span>
+                      <span>{col.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </div>
 
@@ -114,20 +131,26 @@ export const BatchActionBar: React.FC = () => {
             </button>
 
             {isPriorityMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-36 backdrop-blur-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
-                {(["high", "medium", "low"] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      batchSetPriority(p);
-                      setIsPriorityMenuOpen(false);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-                  >
-                    {p === "high" ? "🔴 高優先" : p === "medium" ? "🟡 中優先" : "🟢 低優先"}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsPriorityMenuOpen(false)}
+                />
+                <div className="absolute bottom-full left-0 mb-2 w-36 backdrop-blur-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  {(["high", "medium", "low"] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        batchSetPriority(p);
+                        setIsPriorityMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+                    >
+                      {p === "high" ? "🔴 高優先" : p === "medium" ? "🟡 中優先" : "🟢 低優先"}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </div>
 

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { Column, TRELLO_COLUMN_COLORS } from "@/core/types/task";
+import { useClickOutside } from "@/core/hooks/useClickOutside";
+import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import {
   Plus,
   Copy,
@@ -35,6 +37,10 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
     getActiveBoardColumns,
   } = useKanbanStore();
 
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, onClose, true);
+  useEscapeKey(onClose, true);
+
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isMoveAllOpen, setIsMoveAllOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -43,7 +49,10 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
   const otherColumns = columns.filter((c) => c.id !== column.id);
 
   return (
-    <div className="absolute top-10 right-2 w-64 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-slate-700 dark:text-slate-200 text-xs">
+    <div
+      ref={menuRef}
+      className="absolute top-10 right-2 w-64 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-slate-700 dark:text-slate-200 text-xs"
+    >
       {/* Header */}
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
         <span className="font-bold text-slate-800 dark:text-slate-100">列表動作</span>

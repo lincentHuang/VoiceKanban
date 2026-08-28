@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { formatSyncTime } from "@/core/utils/dateUtils";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { useClickOutside } from "@/core/hooks/useClickOutside";
+import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 
 export const Navbar: React.FC = () => {
   const {
@@ -45,6 +47,10 @@ export const Navbar: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(userMenuRef, () => setIsUserMenuOpen(false), isUserMenuOpen);
+  useEscapeKey(() => setIsUserMenuOpen(false), isUserMenuOpen);
 
   // Periodically refresh relative time display every 15s
   useEffect(() => {
@@ -80,7 +86,7 @@ export const Navbar: React.FC = () => {
   const isGuest = userSession.isGuest || userSession.provider === "guest";
 
   return (
-    <header className="w-full h-12 bg-transparent px-3 sm:px-5 flex items-center justify-between gap-3 shrink-0 z-30">
+    <header className="w-full h-12 bg-transparent sm:pt-3 px-3 sm:px-5 flex items-center justify-between gap-3 shrink-0 z-30">
       {/* Left: Logo & Brand */}
       <div className="flex items-center gap-2 shrink-0">
         <BrandLogo bgVariant="white" size="sm" showBadge={false} />
@@ -141,7 +147,7 @@ export const Navbar: React.FC = () => {
         </button>
 
         {/* User Profile & Settings Popup */}
-        <div className="relative">
+        <div ref={userMenuRef} className="relative">
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="w-8 h-8 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800 flex items-center justify-center text-slate-700 hover:border-orange-500 transition-all overflow-hidden shadow-2xs"
@@ -161,9 +167,8 @@ export const Navbar: React.FC = () => {
                 </div>
                 <div className="text-xs text-slate-400 truncate">{userSession.email}</div>
                 <div className="mt-1 flex items-center gap-1.5">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-semibold ${
-                    isGuest ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-semibold ${isGuest ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                    }`}>
                     {userSession.provider}
                   </span>
                   <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
@@ -223,12 +228,12 @@ export const Navbar: React.FC = () => {
                               {syncState.status === "syncing"
                                 ? "正在同步..."
                                 : syncState.status === "offline"
-                                ? "離線模式"
-                                : syncState.status === "error"
-                                ? "同步異常"
-                                : isGuest
-                                ? "本機已存檔"
-                                : "雲端已同步"}
+                                  ? "離線模式"
+                                  : syncState.status === "error"
+                                    ? "同步異常"
+                                    : isGuest
+                                      ? "本機已存檔"
+                                      : "雲端已同步"}
                             </span>
                             {syncState.status === "synced" && formattedSync.isLatest && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800 shrink-0 leading-none">
@@ -243,14 +248,14 @@ export const Navbar: React.FC = () => {
                             {syncState.status === "syncing"
                               ? "正在更新雲端資料"
                               : syncState.status === "offline"
-                              ? `${syncState.lastSyncedAt ? `上次同步於 ${formattedSync.relative}` : "離線快取中"}・連線後自動上傳`
-                              : syncState.status === "error"
-                              ? `${syncState.errorMessage || "連線異常"}・點擊重試`
-                              : isGuest
-                              ? `${formattedSync.relative}（訪客本機模式）`
-                              : formattedSync.isLatest
-                              ? "剛剛（目前為最新版本）"
-                              : `上次同步：${formattedSync.relative}`}
+                                ? `${syncState.lastSyncedAt ? `上次同步於 ${formattedSync.relative}` : "離線快取中"}・連線後自動上傳`
+                                : syncState.status === "error"
+                                  ? `${syncState.errorMessage || "連線異常"}・點擊重試`
+                                  : isGuest
+                                    ? `${formattedSync.relative}（訪客本機模式）`
+                                    : formattedSync.isLatest
+                                      ? "剛剛（目前為最新版本）"
+                                      : `上次同步：${formattedSync.relative}`}
                           </div>
                         </div>
                       </div>
@@ -293,9 +298,8 @@ export const Navbar: React.FC = () => {
                     <span>自備 Gemini Key (BYOK)</span>
                   </span>
                   <span
-                    className={`w-2 h-2 rounded-full ${
-                      byokConfig.apiKey ? "bg-emerald-500" : "bg-slate-300"
-                    }`}
+                    className={`w-2 h-2 rounded-full ${byokConfig.apiKey ? "bg-emerald-500" : "bg-slate-300"
+                      }`}
                   />
                 </button>
 

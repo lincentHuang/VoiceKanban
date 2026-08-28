@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
-import { ColumnId, CoverAspectRatio, TRELLO_COLUMN_COLORS } from "@/core/types/task";
+import { ColumnId, CoverAspectRatio, TRELLO_COLUMN_COLORS, TaskAttachment } from "@/core/types/task";
 import { getDueDateStatus, isoToDateTimeLocal, dateTimeLocalToIso } from "@/core/utils/dateUtils";
 import { MarkdownEditor } from "../editor/MarkdownEditor";
 import { DateTimePicker } from "../common/DateTimePicker";
+import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import {
   X,
   Calendar,
@@ -27,6 +28,12 @@ import {
   RectangleVertical,
   Maximize2,
   Minus,
+  Edit3,
+  Check,
+  Paperclip,
+  FileText,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -56,8 +63,11 @@ export const EditTaskModal: React.FC = () => {
     deleteTask,
     toggleTaskComplete,
     addChecklistItem,
+    updateChecklistItem,
     toggleChecklistItem,
     removeChecklistItem,
+    addAttachment,
+    removeAttachment,
     userSession,
   } = useKanbanStore();
 
@@ -81,6 +91,9 @@ export const EditTaskModal: React.FC = () => {
   const [coverColor, setCoverColor] = useState<string>("");
   const [coverAspectRatio, setCoverAspectRatio] = useState<CoverAspectRatio>("banner");
   const [newChecklistTitle, setNewChecklistTitle] = useState("");
+  const [editingChecklistId, setEditingChecklistId] = useState<string | null>(null);
+  const [editingChecklistText, setEditingChecklistText] = useState("");
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [isMovePopoverOpen, setIsMovePopoverOpen] = useState(false);
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
@@ -88,6 +101,7 @@ export const EditTaskModal: React.FC = () => {
   const [saveToast, setSaveToast] = useState(false);
 
   const coverFileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (task) {
@@ -109,6 +123,16 @@ export const EditTaskModal: React.FC = () => {
     }
   }, [task]);
 
+  useEscapeKey(() => {
+    if (isCoverModalOpen) {
+      setIsCoverModalOpen(false);
+    } else if (isMovePopoverOpen) {
+      setIsMovePopoverOpen(false);
+    } else if (editingTaskId) {
+      setEditingTaskId(null);
+    }
+  }, !!editingTaskId);
+
   if (!editingTaskId || !task) return null;
 
   const currentColumn =
@@ -123,7 +147,7 @@ export const EditTaskModal: React.FC = () => {
     updateTask(task.id, {
       columnId: targetColId,
       boardId: newBoardId,
-      completed: targetColId === "done",
+      completed: targetColId === "done" ? true : (task.columnId === "done" ? false : task.completed),
     });
     setIsMovePopoverOpen(false);
   };
@@ -171,6 +195,67 @@ export const EditTaskModal: React.FC = () => {
     updateTask(task.id, { isStarred: newStarred });
   };
 
+  const handleStartEditChecklist = (itemId: string, currentTitle: string) => {
+    setEditingChecklistId(itemId);
+    setEditingChecklistText(currentTitle);
+  };
+
+  const handleSaveEditChecklist = (itemId: string) => {
+    if (editingChecklistText.trim()) {
+      updateChecklistItem(task.id, itemId, editingChecklistText.trim());
+    }
+    setEditingChecklistId(null);
+    setEditingChecklistText("");
+  };
+
+  const handleCancelEditChecklist = () => {
+    setEditingChecklistId(null);
+    setEditingChecklistText("");
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (!bytes) return "0 B";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 10MB limit (10 * 1024 * 1024 bytes)
+    if (file.size > 10 * 1024 * 1024) {
+      setAttachmentError("檔案大小超過 10MB 限制！請選擇小於 10MB 的檔案。");
+      setTimeout(() => setAttachmentError(null), 3500);
+      e.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string;
+      const newAttachment: TaskAttachment = {
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+        url: base64Url,
+        createdAt: new Date().toISOString(),
+      };
+      addAttachment(task.id, newAttachment);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleInsertAttachmentToDescription = (att: TaskAttachment) => {
+    const imgMarkdown = `\n![${att.name}](${att.url})\n`;
+    const updated = description ? `${description}\n${imgMarkdown}` : imgMarkdown;
+    setDescription(updated);
+    updateTask(task.id, { description: updated });
+  };
+
   const handleSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!title.trim()) return;
@@ -187,7 +272,7 @@ export const EditTaskModal: React.FC = () => {
       startDate: startDate || null,
       dueDate: dueDate || null,
       isAllDay,
-      completed: columnId === "done",
+      completed: columnId === "done" ? true : task.completed,
     });
 
     setSaveToast(true);
@@ -252,8 +337,14 @@ export const EditTaskModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-y-auto">
-      <div className="w-full max-w-4xl my-auto backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl relative text-slate-800 dark:text-slate-100">
+    <div
+      onClick={() => setEditingTaskId(null)}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-y-auto"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-4xl my-auto backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl relative text-slate-800 dark:text-slate-100"
+      >
         {/* Top Cover Banner */}
         {coverColor && (
           <div
@@ -361,31 +452,13 @@ export const EditTaskModal: React.FC = () => {
 
           {/* Main Grid: Left Details (7/12) + Right Actions (5/12) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
-            {/* Left Column: Description with Rich Markdown Image Editor & Checklist */}
+            {/* Left Column: Checklist (First) -> Description (Second) -> Attachments (Third) -> Comments */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Description (說明 - Markdown Editor) */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <AlignLeft className="w-4 h-4 text-slate-400" />
-                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">說明 (Markdown & 圖片)</h4>
-                </div>
-
-                <MarkdownEditor
-                  value={description}
-                  onChange={(val) => {
-                    setDescription(val);
-                    updateTask(task.id, { description: val });
-                  }}
-                  onSave={() => handleSave()}
-                  placeholder="輸入詳細說明，支援 Markdown 粗體、清單，並可點擊 🖼️ 插入圖片或直接貼上截圖..."
-                />
-              </div>
-
-              {/* Checklist (待辦清單) */}
+              {/* 1. Checklist (待辦清單 - 移至最上方並支援點擊編輯修改) */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <CheckSquare className="w-4 h-4 text-slate-400" />
+                    <CheckSquare className="w-4 h-4 text-orange-500" />
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">待辦清單</h4>
                   </div>
                   {totalItems > 0 && (
@@ -413,35 +486,96 @@ export const EditTaskModal: React.FC = () => {
                     task.checklist.map((item) => (
                       <div
                         key={item.id}
-                        onClick={() => toggleChecklistItem(task.id, item.id)}
-                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-200/60 cursor-pointer transition-colors"
+                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-200/60 transition-colors"
                       >
-                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          {item.completed ? (
-                            <CheckSquare className="w-4 h-4 text-emerald-500" />
-                          ) : (
-                            <Square className="w-4 h-4 text-slate-300 dark:text-slate-600" />
-                          )}
-                          <span
-                            className={`text-xs sm:text-sm ${
-                              item.completed
-                                ? "line-through text-slate-400 dark:text-slate-500"
-                                : "text-slate-700 dark:text-slate-200"
-                            }`}
-                          >
-                            {item.title}
-                          </span>
-                        </div>
+                        {editingChecklistId === item.id ? (
+                          /* Inline Edit Mode */
+                          <div className="flex items-center gap-2 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              autoFocus
+                              value={editingChecklistText}
+                              onChange={(e) => setEditingChecklistText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleSaveEditChecklist(item.id);
+                                }
+                                if (e.key === "Escape") {
+                                  e.preventDefault();
+                                  handleCancelEditChecklist();
+                                }
+                              }}
+                              className="flex-1 px-2.5 py-1 text-xs sm:text-sm bg-white dark:bg-slate-800 border border-orange-500 rounded-lg focus:outline-none shadow-xs text-slate-800 dark:text-slate-100"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveEditChecklist(item.id)}
+                              className="p-1 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-xs"
+                              title="儲存修改"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelEditChecklist}
+                              className="p-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 transition-colors"
+                              title="取消"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          /* Normal Display Mode */
+                          <>
+                            <div
+                              onClick={() => toggleChecklistItem(task.id, item.id)}
+                              className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer select-none"
+                            >
+                              {item.completed ? (
+                                <CheckSquare className="w-4 h-4 text-emerald-500 shrink-0" />
+                              ) : (
+                                <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+                              )}
+                              <span
+                                className={`text-xs sm:text-sm break-words flex-1 ${
+                                  item.completed
+                                    ? "line-through text-slate-400 dark:text-slate-500"
+                                    : "text-slate-700 dark:text-slate-200"
+                                }`}
+                              >
+                                {item.title}
+                              </span>
+                            </div>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeChecklistItem(task.id, item.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 transition-opacity"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                            {/* Hover Actions: Edit Pencil & Delete Trash */}
+                            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity shrink-0 ml-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartEditChecklist(item.id, item.title);
+                                }}
+                                className="p-1 rounded-lg text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors"
+                                title="編輯項目名稱"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeChecklistItem(task.id, item.id);
+                                }}
+                                className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-700 transition-colors"
+                                title="刪除項目"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                 </div>
@@ -453,19 +587,154 @@ export const EditTaskModal: React.FC = () => {
                     value={newChecklistTitle}
                     onChange={(e) => setNewChecklistTitle(e.target.value)}
                     placeholder="+ 新增子任務項目..."
-                    className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
+                    className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
                   />
                   <button
                     type="submit"
                     disabled={!newChecklistTitle.trim()}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold disabled:opacity-40"
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold disabled:opacity-40 hover:bg-slate-700 transition-colors"
                   >
                     新增
                   </button>
                 </form>
               </div>
 
-              {/* Activity & Comments */}
+              {/* 2. Description (說明 - Markdown Editor 移至待辦清單後) */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlignLeft className="w-4 h-4 text-slate-400" />
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">說明 (Markdown & 圖片)</h4>
+                </div>
+
+                <MarkdownEditor
+                  value={description}
+                  onChange={(val) => {
+                    setDescription(val);
+                    updateTask(task.id, { description: val });
+                  }}
+                  onSave={() => handleSave()}
+                  placeholder="輸入詳細說明，支援 Markdown 粗體、連結、清單，並可點擊 🖼️ 插入圖片或直接貼上截圖..."
+                />
+              </div>
+
+              {/* 3. Attachments Section (附件檔案 - 支援圖片/資料，最大不能超過10MB) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Paperclip className="w-4 h-4 text-slate-400" />
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      附件檔案 <span className="text-xs font-normal text-slate-400">(最大 10MB)</span>
+                    </h4>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => attachmentFileInputRef.current?.click()}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-orange-500" />
+                    <span>上傳附件</span>
+                  </button>
+
+                  <input
+                    type="file"
+                    ref={attachmentFileInputRef}
+                    onChange={handleAttachmentUpload}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Attachment Size Error Alert */}
+                {attachmentError && (
+                  <div className="mb-2 p-2.5 rounded-xl bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 text-xs font-semibold flex items-center justify-between animate-in fade-in">
+                    <span>⚠️ {attachmentError}</span>
+                    <button type="button" onClick={() => setAttachmentError(null)} className="text-rose-500 hover:text-rose-700">✕</button>
+                  </div>
+                )}
+
+                {/* Attachments List */}
+                {task.attachments && task.attachments.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {task.attachments.map((att) => {
+                      const isImg = att.type.startsWith("image/") || att.url.startsWith("data:image");
+                      return (
+                        <div
+                          key={att.id}
+                          className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:border-orange-300 transition-all group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            {isImg ? (
+                              <img
+                                src={att.url}
+                                alt={att.name}
+                                className="w-9 h-9 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0 bg-white"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-950/50 text-orange-600 flex items-center justify-center shrink-0">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                            )}
+
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate" title={att.name}>
+                                {att.name}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-mono">
+                                {formatFileSize(att.size)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0 ml-1">
+                            {/* Insert image into Markdown description */}
+                            {isImg && (
+                              <button
+                                type="button"
+                                onClick={() => handleInsertAttachmentToDescription(att)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors"
+                                title="插入到說明中"
+                              >
+                                <ImageIcon className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {/* Download / Open File */}
+                            <a
+                              href={att.url}
+                              download={att.name}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors"
+                              title="下載/開啟檔案"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </a>
+
+                            {/* Delete Attachment */}
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(task.id, att.id)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-700 transition-colors"
+                              title="刪除附件"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => attachmentFileInputRef.current?.click()}
+                    className="p-3 text-center rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 text-xs cursor-pointer hover:border-orange-300 hover:bg-slate-50 transition-colors"
+                  >
+                    尚無附件檔案，點擊此處上傳圖片或資料檔案（最大 10MB）
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Activity & Comments (留言與活動紀錄) */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <MessageSquare className="w-4 h-4 text-slate-400" />
@@ -480,12 +749,12 @@ export const EditTaskModal: React.FC = () => {
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="撰寫評論或進度筆記..."
-                    className="flex-1 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
                   />
                   <button
                     type="submit"
                     disabled={!newComment.trim()}
-                    className="px-3.5 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold shadow-xs disabled:opacity-40"
+                    className="px-3.5 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold shadow-xs disabled:opacity-40 hover:bg-orange-600 transition-colors"
                   >
                     送出
                   </button>
@@ -590,8 +859,13 @@ export const EditTaskModal: React.FC = () => {
 
                 {/* Comprehensive Cover Picker Popover */}
                 {isCoverModalOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsCoverModalOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-80 max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-100">設定卡片封面與比例</span>
                       <button
                         onClick={() => setIsCoverModalOpen(false)}
@@ -730,8 +1004,9 @@ export const EditTaskModal: React.FC = () => {
                       </div>
                     )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
+            </div>
 
               {/* Action 3: Star / Important Toggle */}
               <div>

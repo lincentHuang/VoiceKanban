@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import { X, Plus, Edit2, Trash2, Check, SlidersHorizontal, Sparkles } from "lucide-react";
 
 const EMOJI_OPTIONS = ["📥", "📋", "⚡", "⏳", "✅", "🧪", "🎨", "🚀", "💡", "📌", "🔍", "🔥", "🎯", "📦"];
@@ -17,6 +18,12 @@ export const ColumnManagerModal: React.FC = () => {
     boards,
     activeBoardId,
   } = useKanbanStore();
+
+  useEscapeKey(() => {
+    if (isColumnManagerOpen) {
+      setIsColumnManagerOpen(false);
+    }
+  }, isColumnManagerOpen);
 
   const columns = getActiveBoardColumns();
   const activeBoard = boards.find((b) => b.id === activeBoardId);
@@ -51,8 +58,14 @@ export const ColumnManagerModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200">
-      <div className="w-full max-w-lg backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative">
+    <div
+      onClick={() => setIsColumnManagerOpen(false)}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">

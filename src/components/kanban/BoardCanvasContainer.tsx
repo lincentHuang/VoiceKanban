@@ -350,9 +350,28 @@ export const BoardCanvasContainer: React.FC = () => {
             </div>
           )}
 
-          {/* --- COMPACT MODE CONTROLS (Rendered when width < 720px - Matching Screenshot) --- */}
+          {/* --- COMPACT MODE CONTROLS (Rendered when width < 720px - Prominent Multi-Select) --- */}
           {isCompact && (
             <div className="flex items-center gap-1">
+              {/* Prominent Multi-select Mode Button (Always visible on mobile, not collapsed) */}
+              <button
+                onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
+                className={`px-2 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 cursor-pointer select-none ${
+                  isMultiSelectMode
+                    ? "bg-orange-500 text-white font-bold shadow-xs ring-2 ring-orange-300/50"
+                    : "bg-white/10 hover:bg-white/20 text-white/90"
+                }`}
+                title="多選模式"
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                <span className="text-[11px]">多選</span>
+                {selectedTaskIds.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-white text-orange-600 text-[10px] font-black flex items-center justify-center ml-0.5">
+                    {selectedTaskIds.length}
+                  </span>
+                )}
+              </button>
+
               {/* Filter Button (≡) */}
               <div className="relative">
                 <button
@@ -361,7 +380,7 @@ export const BoardCanvasContainer: React.FC = () => {
                     closeAllMenus();
                     setIsFilterMenuOpen(!state);
                   }}
-                  className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${
+                  className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer ${
                     tagFilter !== "all" || priorityFilter === "high"
                       ? "bg-orange-500 text-white font-bold"
                       : "bg-white/10 hover:bg-white/20 text-white/90"

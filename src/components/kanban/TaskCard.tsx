@@ -10,7 +10,6 @@ import {
   Check,
   CheckCircle2,
   Calendar,
-  Edit3,
   AlignLeft,
   Paperclip,
   CheckSquare2,
@@ -64,7 +63,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     transition,
     isDragging,
   } = isOverlay
-    ? {
+      ? {
         attributes: {},
         listeners: {},
         setNodeRef: undefined,
@@ -72,14 +71,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         transition: undefined,
         isDragging: false,
       }
-    : sortable;
+      : sortable;
 
   const style = isOverlay
     ? undefined
     : {
-        transform: CSS.Translate.toString(transform),
-        transition,
-      };
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
 
   const isSelected = selectedTaskIds.includes(task.id);
 
@@ -102,7 +101,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           origin: { y: 0.8 },
           colors: ["#BEF264", "#F97316", "#10B981"],
         });
-      } catch {}
+      } catch { }
     }
     toggleTaskComplete(task.id);
   };
@@ -127,7 +126,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           origin: { y: 0.8 },
           colors: ["#10B981", "#3B82F6", "#F59E0B"],
         });
-      } catch {}
+      } catch { }
     }
     toggleChecklistItem(task.id, itemId);
   };
@@ -136,9 +135,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const dueDateStatus = getDueDateStatus(task.dueDate, task.completed, task.isAllDay, task.startDate);
 
   const hasTags = task.tags && task.tags.length > 0;
+  const totalAttachments = (task.attachments?.length || 0) > 0 ? task.attachments!.length : (task.attachmentsCount || 0);
   const hasBottomBadges =
+    !!task.isStarred ||
     !!task.description ||
-    (task.attachmentsCount || 0) > 0 ||
+    totalAttachments > 0 ||
     totalChecklist > 0 ||
     !!dueDateStatus;
 
@@ -155,13 +156,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         {...attributes}
         {...listeners}
         onClick={handleCardClick}
-        className={`group relative bg-white/95 dark:bg-slate-850 backdrop-blur-md rounded-xl px-3 py-2 shadow-2xs hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${
-          isSelected
-            ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
-            : "border-slate-200/80 dark:border-slate-700/80 hover:border-orange-400 dark:hover:border-slate-600"
-        } ${
-          isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border-2 border-dashed border-slate-300 dark:border-slate-700 shadow-none pointer-events-none" : ""
-        } ${task.completed ? "opacity-65 bg-slate-50/80 dark:bg-slate-900/60" : ""}`}
+        className={`group relative bg-white/95 dark:bg-slate-850 backdrop-blur-md rounded-xl px-3 py-2 shadow-2xs hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${isSelected
+          ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
+          : "border-slate-200/80 dark:border-slate-700/80 hover:border-orange-400 dark:hover:border-slate-600"
+          } ${isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border-2 border-dashed border-slate-300 dark:border-slate-700 shadow-none pointer-events-none" : ""
+          } ${task.completed ? "opacity-65 bg-slate-50/80 dark:bg-slate-900/60" : ""}`}
       >
         {/* Left Color Indicator Accent */}
         {task.coverColor && !task.coverColor.startsWith("data:image") && (
@@ -199,9 +198,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {/* Guaranteed Min-Width 100px Title */}
           <h4
             style={{ minWidth: "100px" }}
-            className={`text-xs font-semibold text-slate-800 dark:text-slate-100 truncate flex-1 min-w-[100px] ${
-              task.completed ? "line-through text-slate-400 dark:text-slate-500" : ""
-            }`}
+            className={`text-[16px] sm:text-xs font-semibold text-slate-800 dark:text-slate-100 truncate flex-1 min-w-[100px] ${task.completed ? "line-through text-slate-400 dark:text-slate-500" : ""
+              }`}
           >
             {task.title}
           </h4>
@@ -231,11 +229,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {/* Checklist progress (Visible on Medium & Large) */}
           {totalChecklist > 0 && !isSmallRow && (
             <span
-              className={`inline-flex items-center gap-1 font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0 ${
-                isChecklistAllDone
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-bold"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-              }`}
+              className={`inline-flex items-center gap-1 font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0 ${isChecklistAllDone
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-bold"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                }`}
               title={`子任務: ${completedChecklist}/${totalChecklist}`}
             >
               <CheckSquare2 className="w-3 h-3 shrink-0" />
@@ -263,35 +260,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={handleToggleComplete}
-              className={`p-1 rounded-lg transition-colors ${
-                task.completed
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "hover:bg-emerald-50 text-slate-400 hover:text-emerald-600"
-              }`}
+              className={`p-1 rounded-lg transition-colors ${task.completed
+                ? "bg-emerald-100 text-emerald-700"
+                : "hover:bg-emerald-50 text-slate-400 hover:text-emerald-600"
+                }`}
               title="標記完成"
             >
               <CheckCircle2
-                className={`w-3.5 h-3.5 ${
-                  task.completed ? "fill-emerald-500 text-white" : ""
-                }`}
+                className={`w-3.5 h-3.5 ${task.completed ? "fill-emerald-500 text-white" : ""
+                  }`}
               />
             </button>
-
-            {/* Edit Pencil Button (Visible when Medium/Large or on hover) */}
-            {(!isSmallRow || isSelected) && (
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingTaskId(task.id);
-                }}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 transition-colors"
-                title="編輯"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -306,13 +285,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       {...attributes}
       {...listeners}
       onClick={handleCardClick}
-      className={`group relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${
-        isSelected
-          ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
-          : "border-slate-100 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600"
-      } ${
-        isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border-2 border-dashed border-slate-300 dark:border-slate-700 shadow-none pointer-events-none" : ""
-      } ${task.completed ? "opacity-65 bg-slate-50/80 dark:bg-slate-900/60" : ""}`}
+      className={`group relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${isSelected
+        ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
+        : "border-slate-100 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600"
+        } ${isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border-2 border-dashed border-slate-300 dark:border-slate-700 shadow-none pointer-events-none" : ""
+        } ${task.completed ? "opacity-65 bg-slate-50/80 dark:bg-slate-900/60" : ""}`}
     >
       {/* Top Cover Color/Image Banner (With Aspect Ratio support) */}
       {task.coverColor && (
@@ -324,30 +301,29 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 : task.coverColor,
             backgroundColor:
               !task.coverColor.startsWith("data:image") &&
-              !task.coverColor.startsWith("http") &&
-              !task.coverColor.startsWith("linear")
+                !task.coverColor.startsWith("http") &&
+                !task.coverColor.startsWith("linear")
                 ? task.coverColor
                 : undefined,
           }}
-          className={`w-full transition-all duration-200 ${
-            task.coverAspectRatio === "1:1"
-              ? "aspect-square object-cover"
-              : task.coverAspectRatio === "3:4"
+          className={`w-full transition-all duration-200 ${task.coverAspectRatio === "1:1"
+            ? "aspect-square object-cover"
+            : task.coverAspectRatio === "3:4"
               ? "aspect-[3/4] max-h-64 object-cover"
               : task.coverAspectRatio === "9:16"
-              ? "aspect-[9/16] max-h-72 object-cover"
-              : task.coverAspectRatio === "banner"
-              ? "aspect-video max-h-36 object-cover"
-              : task.coverColor.startsWith("data:image") || task.coverColor.startsWith("http")
-              ? "aspect-video max-h-36 object-cover"
-              : "h-3"
-          }`}
+                ? "aspect-[9/16] max-h-72 object-cover"
+                : task.coverAspectRatio === "banner"
+                  ? "aspect-video max-h-36 object-cover"
+                  : task.coverColor.startsWith("data:image") || task.coverColor.startsWith("http")
+                    ? "aspect-video max-h-36 object-cover"
+                    : "h-3"
+            }`}
         />
       )}
 
       <div className="p-3 sm:p-3.5">
-        {/* Main Header Row: Title on the left, Actions on the right */}
-        <div className="flex items-start justify-between gap-2">
+        {/* Main Header Row: Title on the left, Actions on the right (Y-axis Centered, min-h-[25px]) */}
+        <div className="flex items-start justify-between gap-2 min-h-[25px]">
           {/* In Multi-Select Mode: show select checkbox on the left */}
           {isMultiSelectMode && (
             <button
@@ -357,7 +333,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 e.stopPropagation();
                 toggleTaskSelection(task.id);
               }}
-              className="text-orange-600 dark:text-orange-400 p-0.5 shrink-0 flex items-center justify-center self-start mt-[1px]"
+              className="text-orange-600 h-[25px] dark:text-orange-400 p-0.5 shrink-0 flex items-center justify-center self-start"
             >
               {isSelected ? (
                 <CheckSquare className="w-4 h-4 fill-orange-500 text-white" />
@@ -367,67 +343,35 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </button>
           )}
 
-          {/* Task Title (Flush with left edge, zero blank space, min-width guaranteed) */}
-          <div className="flex-1 min-w-0">
+          {/* Task Title (16px on mobile, min-h-[25px], Y-axis centered to perfectly align with quick complete button) */}
+          <div className="flex-1 min-w-0 flex items-center min-h-[25px]">
             <h4
               style={{ minWidth: "100px" }}
-              className={`text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug break-words ${
-                task.completed ? "line-through text-slate-400 dark:text-slate-500" : ""
-              }`}
+              className={`text-[16px] sm:text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug break-words flex items-center min-h-[25px] ${task.completed ? "line-through text-slate-400 dark:text-slate-500" : ""
+                }`}
             >
               {task.title}
             </h4>
           </div>
 
-          {/* Top-Right Badges & Hover Action Controls (Aligned with first line of title) */}
-          <div className="flex items-center gap-1 shrink-0 self-start mt-[1px]">
-            {/* Star Important Icon */}
-            {task.isStarred && (
-              <span className="text-amber-500 flex items-center justify-center h-4 w-4" title="重要事項">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" />
-              </span>
-            )}
-
-            {/* Completed Indicator */}
-            {task.completed && (
-              <span className="flex items-center justify-center h-4 w-4 text-emerald-600 group-hover:hidden" title="已完成">
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              </span>
-            )}
-
-            {/* Hover Action Buttons: Quick Complete + Edit Pencil */}
-            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-all">
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={handleToggleComplete}
-                className={`p-0.5 rounded-lg transition-colors ${
-                  task.completed
-                    ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300"
-                    : "hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 dark:hover:bg-emerald-950/40"
+          {/* Top-Right Action Controls (Aligned with Title Y-axis center) */}
+          <div className="flex items-start gap-1 shrink-0 self-start">
+            {/* Quick Complete Button: ALWAYS directly visible & clickable on mobile & desktop without hover */}
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={handleToggleComplete}
+              className={`p-1 rounded-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center ${task.completed
+                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 ring-1 ring-emerald-500/20"
+                : "text-slate-300 dark:text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                 }`}
-                title={task.completed ? "標記為未完成" : "快速標記完成"}
-              >
-                <CheckCircle2
-                  className={`w-3.5 h-3.5 ${
-                    task.completed ? "fill-emerald-500 text-white" : ""
+              title={task.completed ? "標記為未完成" : "快速標記完成"}
+            >
+              <CheckCircle2
+                className={`w-4 h-4 transition-transform ${task.completed ? "fill-emerald-500 text-white" : ""
                   }`}
-                />
-              </button>
-
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingTaskId(task.id);
-                }}
-                className="p-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                title="編輯詳細資訊"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              />
+            </button>
           </div>
         </div>
 
@@ -458,6 +402,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         {/* Bottom Metadata Badges (Wraps gracefully when crowded, date badge never wraps text internally) */}
         {hasBottomBadges && (
           <div className="flex flex-wrap items-center gap-2 mt-2.5 pt-2 border-t border-slate-100/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400">
+            {/* Star Important Icon - Placed at the very front of the bottom row */}
+            {task.isStarred && (
+              <span className="text-amber-500 flex items-center justify-center shrink-0" title="重要事項">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" />
+              </span>
+            )}
+
             {/* Description note icon */}
             {task.description && (
               <span className="inline-flex items-center gap-1 shrink-0" title="有備註說明">
@@ -466,10 +417,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             )}
 
             {/* Attachments icon */}
-            {(task.attachmentsCount || 0) > 0 && (
+            {totalAttachments > 0 && (
               <span className="inline-flex items-center gap-1 shrink-0" title="有附件檔案">
                 <Paperclip className="w-3.5 h-3.5" />
-                <span>{task.attachmentsCount}</span>
+                <span>{totalAttachments}</span>
               </span>
             )}
 
@@ -479,13 +430,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={handleToggleSubtasksExpand}
-                className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-lg transition-all cursor-pointer group/badge select-none whitespace-nowrap shrink-0 ${
-                  isSubtasksExpanded
-                    ? "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 ring-1 ring-blue-400/50 shadow-2xs"
-                    : isChecklistAllDone
+                className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-lg transition-all cursor-pointer group/badge select-none whitespace-nowrap shrink-0 ${isSubtasksExpanded
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 ring-1 ring-blue-400/50 shadow-2xs"
+                  : isChecklistAllDone
                     ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold"
                     : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-                }`}
+                  }`}
                 title={isSubtasksExpanded ? "收合子任務列表" : `點擊展開子任務 (${completedChecklist}/${totalChecklist})`}
                 aria-expanded={isSubtasksExpanded}
               >
@@ -532,9 +482,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </div>
             <div className="w-full h-1 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-300 ${
-                  isChecklistAllDone ? "bg-emerald-500" : "bg-blue-500"
-                }`}
+                className={`h-full transition-all duration-300 ${isChecklistAllDone ? "bg-emerald-500" : "bg-blue-500"
+                  }`}
                 style={{ width: `${(completedChecklist / totalChecklist) * 100}%` }}
               />
             </div>
@@ -546,11 +495,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   key={item.id}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => handleSubtaskToggle(e, item.id, item.completed)}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer group/item select-none ${
-                    item.completed
-                      ? "bg-slate-50/70 dark:bg-slate-900/40 text-slate-400 dark:text-slate-500"
-                      : "hover:bg-slate-100/90 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200"
-                  }`}
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer group/item select-none ${item.completed
+                    ? "bg-slate-50/70 dark:bg-slate-900/40 text-slate-400 dark:text-slate-500"
+                    : "hover:bg-slate-100/90 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200"
+                    }`}
                 >
                   <button
                     type="button"
@@ -566,9 +514,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     )}
                   </button>
                   <span
-                    className={`flex-1 break-words leading-normal text-[11px] ${
-                      item.completed ? "line-through text-slate-400 dark:text-slate-500" : "font-normal text-slate-700 dark:text-slate-200"
-                    }`}
+                    className={`flex-1 break-words leading-normal text-[11px] ${item.completed ? "line-through text-slate-400 dark:text-slate-500" : "font-normal text-slate-700 dark:text-slate-200"
+                      }`}
                   >
                     {item.title}
                   </span>
