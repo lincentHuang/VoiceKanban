@@ -10,6 +10,8 @@ import { SettingsModal } from "@/components/settings/SettingsModal";
 import { AddTaskModal } from "@/components/kanban/AddTaskModal";
 import { EditTaskModal } from "@/components/kanban/EditTaskModal";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { AuthLandingScreen } from "@/components/auth/AuthLandingScreen";
+import { BindAccountModal } from "@/components/auth/BindAccountModal";
 import { BatchActionBar } from "@/components/kanban/BatchActionBar";
 import { ColumnManagerModal } from "@/components/kanban/ColumnManagerModal";
 
@@ -18,6 +20,7 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
   const initAuthAndSync = useKanbanStore((state) => state.initAuthAndSync);
+  const userSession = useKanbanStore((state) => state.userSession);
 
   useEffect(() => {
     setIsMounted(true);
@@ -37,6 +40,11 @@ export default function Home() {
         </div>
       </main>
     );
+  }
+
+  // 0. Gatekeeper: Unauthenticated users are presented with the Auth Landing Screen
+  if (!userSession.isAuthenticated) {
+    return <AuthLandingScreen />;
   }
 
   return (
@@ -62,7 +70,9 @@ export default function Home() {
       <AddTaskModal />
       <EditTaskModal />
       <AuthModal />
+      <BindAccountModal />
       <ColumnManagerModal />
     </main>
   );
 }
+

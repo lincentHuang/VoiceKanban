@@ -134,3 +134,91 @@ export function getDueDateStatus(
     return null;
   }
 }
+
+export interface FormattedSyncTime {
+  relative: string;
+  full: string;
+  isLatest: boolean;
+}
+
+/**
+ * Format sync timestamp for human-readable display and exact tooltip
+ */
+export function formatSyncTime(
+  timestamp: string | null | undefined,
+  now: Date = new Date()
+): FormattedSyncTime {
+  if (!timestamp) {
+    return {
+      relative: "尚未同步",
+      full: "無同步記錄",
+      isLatest: false,
+    };
+  }
+
+  try {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      return {
+        relative: "尚未同步",
+        full: "無效的時間戳記",
+        isLatest: false,
+      };
+    }
+
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const hours = date.getHours().toString().padStart(2, "0");
+    const mins = date.getMinutes().toString().padStart(2, "0");
+    const secs = date.getSeconds().toString().padStart(2, "0");
+    const full = `${year}/${month}/${day} ${hours}:${mins}:${secs}`;
+
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+
+    if (diffSec < 60) {
+      return {
+        relative: "剛剛（目前為最新）",
+        full,
+        isLatest: true,
+      };
+    }
+
+    if (diffSec < 3600) {
+      const minutes = Math.floor(diffSec / 60);
+      return {
+        relative: `${minutes} 分鐘前`,
+        full,
+        isLatest: false,
+      };
+    }
+
+    // Check if same day
+    const isToday =
+      now.getFullYear() === date.getFullYear() &&
+      now.getMonth() === date.getMonth() &&
+      now.getDate() === date.getDate();
+
+    if (isToday) {
+      return {
+        relative: `今天 ${hours}:${mins}`,
+        full,
+        isLatest: false,
+      };
+    }
+
+    return {
+      relative: `${parseInt(month, 10)}/${parseInt(day, 10)} ${hours}:${mins}`,
+      full,
+      isLatest: false,
+    };
+  } catch {
+    return {
+      relative: "時間計算錯誤",
+      full: "無法解析時間",
+      isLatest: false,
+    };
+  }
+}
+

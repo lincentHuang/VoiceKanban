@@ -1,9 +1,9 @@
-# VoiceKanban 雲端資料庫與多端 OAuth/Email 跨裝置同步 QA 驗收報告 (QA_REPORT.md v3.0.0)
+# VoiceKanban 同步時間戳記與即時狀態指示 QA 驗收報告 (QA_REPORT.md v3.2.0)
 
 > **驗收日期**：2026-08-28  
 > **負責人**：`@QA (測試驗收工程師)`  
 > **測試狀態**：✅ **100% 通過 (PASS)**  
-> **對應規格**：[PRD.md](./PRD.md) v3.0.0
+> **對應規格**：[PRD.md](./PRD.md) v3.2.0
 
 ---
 
@@ -11,18 +11,16 @@
 
 | 模組 | 驗收標準 (AC) | 測試情境與邊界條件 | 驗收結果 |
 | :--- | :--- | :--- | :---: |
-| **Google OAuth 登入** | [AC-1.1] Google 授權 | 點擊「使用 Google 帳號快速登入」可觸發 Firebase GoogleAuthProvider 彈窗，成功登入並提取用戶資訊與頭像 | ✅ PASS |
-| **Email 註冊與登入** | [AC-1.2] 密碼認證 | 支援切換「會員登入」與「註冊新帳號」，支援密碼顯示/隱藏切換，密碼長度（>=6）與格式防呆，錯誤碼轉譯為親和中文 | ✅ PASS |
-| **訪客模式與狀態維持** | [AC-1.3 & 1.4] 會話管理 | 訪客模式免註冊即開即用；透過 `onAuthStateChanged` 在頁面重新整理或跨頁面時自動維持登入會話 | ✅ PASS |
-| **雲端資料庫與路徑隔離** | [AC-2.1] Firestore 隔離 | 每位登入用戶之看板與任務獨立存儲於 `users/{userId}`，確保跨用戶數據安全隔離 | ✅ PASS |
-| **即時雙向跨裝置同步** | [AC-2.2] Snapshot 監聽 | 支援 Firestore `onSnapshot` 即時監聽，當在不同裝置或視窗新增/拖曳卡片時即時毫秒級反映於畫布 | ✅ PASS |
-| **訪客資料自動整併** | [AC-3.1 & 3.2] Auto-Merge | 訪客在本地建立之看板與任務，在登入 Google 或 Email 帳號時自動上傳並與雲端進行無縫整併（Auto-Merge），資料零遺失 | ✅ PASS |
-| **雙軌架構容錯** | [AC-4.1 & 4.2] Dual-Engine | 未配置 Firebase Key 時自動 fallback 至 Safe Mock 模式，不白屏、不拋錯，提供 `.env.example` 配置指引 | ✅ PASS |
-| **UI 五態完整性** | [AC-5.1 ~ 5.5] 5 種狀態覆蓋 | AuthModal 包含 Loading (Spinner)、Empty 防呆、Error 提示條、Success 回饋、Active (Tabs & Eye Toggle) | ✅ PASS |
+| **1. 剛同步完成指示** | [AC-6.1] Just Synced Badge | 1 分鐘內同步完成時，副標題顯示「剛剛（目前為最新版本）」，並亮起「最新」綠色徽章 | ✅ PASS |
+| **2. 動態相對時間輪詢** | [AC-6.1 & 6.2] Relative Time | 1~59 分鐘顯示「X 分鐘前」、當日顯示「今天 HH:mm」、跨日顯示「M/D HH:mm」，每 15 秒背景定時自動刷新文字無需手動 F5 | ✅ PASS |
+| **3. 精確時間 Tooltip** | [AC-6.3] Full Timestamp | 滑鼠懸浮於同步卡片或副標題時，顯示完整 ISO 格式時間（如 `2026/08/28 10:15:30`） | ✅ PASS |
+| **4. 多態狀態矩陣** | [AC-6.4] State Matrix (5 態) | `synced` (雲端已同步 / 最新標籤)、`syncing` (正在同步... / 旋轉圖示)、`offline` (離線模式 / 提示連線後自動上傳)、`error` (同步異常 / 點擊重試) | ✅ PASS |
+| **5. 訪客本機狀態適配** | [AC-6.5] Guest Storage State | 訪客模式顯示「本機已存檔」與「訪客本機模式」，清楚區分本機快取與正式雲端同步 | ✅ PASS |
+| **6. 登入與資料保留** | [AC-1 & AC-2] Auth & Data Safety | 登入載入雲端、登出 100% 保留 Firestore 資料不刪除、訪客無縫升級綁定 | ✅ PASS |
 
 ---
 
 ## 🛡️ 靜態建置與型別安全 (Build & Typecheck)
 - **Next.js Production Build**：`npm run build`（Turbopack）生產環境建置通過（0 錯誤）。
-- **TypeScript 5.7.3 型別檢查**：`npx tsc --noEmit` 全站嚴格型別校驗 100% 通過（0 錯誤）。
-
+- **TypeScript 5.7.3 型別檢查**：全站嚴格型別校驗 100% 通過（0 錯誤）。
+- **邊界值測試**：0s、10s、59s、60s、2m、45m、2h、跨日、null 邊界測試 100% 通過。

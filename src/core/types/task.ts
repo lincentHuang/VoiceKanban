@@ -32,8 +32,8 @@ export interface Task {
   dueDate: string | null; // Nullable by default
   completed: boolean;
   checklist?: ChecklistItem[];
-  coverColor?: string;
-  coverAspectRatio?: CoverAspectRatio; // 1:1, 3:4, 9:16, banner, bar
+  coverColor?: string | null;
+  coverAspectRatio?: CoverAspectRatio | null; // 1:1, 3:4, 9:16, banner, bar
   attachmentsCount?: number;
   activities?: TaskActivity[];
   isArchived?: boolean;

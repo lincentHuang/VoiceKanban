@@ -8,6 +8,7 @@ export interface UserSession {
   provider: AuthProvider;
   isAuthenticated: boolean;
   isAnonymous?: boolean;
+  isGuest?: boolean;
   emailVerified?: boolean;
   createdAt: string;
 }
@@ -31,3 +32,4 @@ export interface CloudUserData {
   activeBoardId?: string;
   updatedAt: string;
 }
+

@@ -6,7 +6,7 @@ import { BYOKConfig } from "../types/user";
 import { UserSession, SyncState, AuthProvider } from "../types/auth";
 import { INITIAL_BOARDS, INITIAL_TASKS } from "../services/mockData";
 import { generateOrderKeyBetween, initialOrderKey } from "../utils/lexorank";
-import { GUEST_USER, loginWithProvider, logoutUser, subscribeToAuthState } from "../services/authService";
+import { GUEST_USER, createGuestSession, loginWithProvider, logoutUser, subscribeToAuthState } from "../services/authService";
 import { syncEngine } from "../services/syncService";
 
 interface KanbanStoreState {
@@ -14,6 +14,16 @@ interface KanbanStoreState {
   userSession: UserSession;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
+  isBindModalOpen: boolean;
+  setIsBindModalOpen: (open: boolean) => void;
+  loginAsGuest: () => void;
+  bindGuestAccount: (
+    provider: AuthProvider,
+    email?: string,
+    password?: string,
+    displayName?: string,
+    isRegister?: boolean
+  ) => Promise<void>;
   login: (
     provider: AuthProvider,
     email?: string,
@@ -167,25 +177,38 @@ export const useKanbanStore = create<KanbanStoreState>()(
       userSession: GUEST_USER,
       isAuthModalOpen: false,
       setIsAuthModalOpen: (isAuthModalOpen) => set({ isAuthModalOpen }),
-      login: async (provider, email, password, displayName, isRegister) => {
+      isBindModalOpen: false,
+      setIsBindModalOpen: (isBindModalOpen) => set({ isBindModalOpen }),
+      loginAsGuest: () => {
+        const existing = get().userSession;
+        const currentId = existing?.isGuest && existing?.id ? existing.id : undefined;
+        const guestSession = createGuestSession(currentId);
+        set({ userSession: guestSession, isAuthModalOpen: false, isBindModalOpen: false });
+      },
+      bindGuestAccount: async (provider, email, password, displayName, isRegister) => {
         const session = await loginWithProvider(provider, email, password, displayName, isRegister);
-        set({ userSession: session, isAuthModalOpen: false });
+        const localTasks = get().tasks;
+        const localBoards = get().boards;
+        const currentBoardId = get().activeBoardId;
 
         if (session && session.provider !== "guest" && session.id !== "guest-user") {
-          // 1. Auto-Merge local guest data into Cloud Firestore
+          // Auto-merge guest data to cloud
           const merged = await syncEngine.mergeLocalDataToCloud(
             session.id,
-            get().tasks,
-            get().boards,
-            get().activeBoardId
+            localTasks,
+            localBoards,
+            currentBoardId
           );
           set({
+            userSession: session,
+            isBindModalOpen: false,
+            isAuthModalOpen: false,
             tasks: merged.tasks,
             boards: merged.boards,
-            activeBoardId: merged.activeBoardId || get().activeBoardId,
+            activeBoardId: merged.activeBoardId || currentBoardId,
           });
 
-          // 2. Attach Real-time Cross-device Listener
+          // Attach real-time listener
           syncEngine.subscribeToUserData(session.id, (remoteData) => {
             if (remoteData) {
               set((state) => ({
@@ -200,15 +223,82 @@ export const useKanbanStore = create<KanbanStoreState>()(
               }));
             }
           });
+        } else {
+          set({ userSession: session, isBindModalOpen: false, isAuthModalOpen: false });
         }
 
         await get().triggerSync();
+      },
+      login: async (provider, email, password, displayName, isRegister) => {
+        const session = await loginWithProvider(provider, email, password, displayName, isRegister);
+        set({ userSession: session, isAuthModalOpen: false, isBindModalOpen: false });
+
+        if (session && session.provider !== "guest" && !session.id.startsWith("guest")) {
+          // 資料庫為主 (Database is Source of Truth): 登入時直接拉回資料庫的全部最新資料
+          const cloudData = await syncEngine.fetchUserDataFromCloud(session.id);
+
+          if (cloudData) {
+            // 雲端資料庫已有資料 -> 立即拉回並完全以資料庫最新資料覆蓋本地
+            set({
+              tasks: cloudData.tasks || [],
+              boards: cloudData.boards && cloudData.boards.length > 0 ? cloudData.boards : INITIAL_BOARDS,
+              activeBoardId: cloudData.activeBoardId || (cloudData.boards && cloudData.boards[0]?.id) || "board-work",
+              syncState: {
+                status: "synced",
+                lastSyncedAt: new Date().toISOString(),
+                isCloudConnected: syncEngine.isCloudAvailable(),
+              },
+            });
+          } else {
+            // 創建新帳號 (或首次使用無既有資料庫記錄) -> 完全乾淨、無任何一筆任務 (0 筆任務)
+            const cleanTasks: Task[] = [];
+            const cleanBoards: Board[] = INITIAL_BOARDS;
+            const cleanActiveBoard = "board-work";
+
+            set({
+              tasks: cleanTasks,
+              boards: cleanBoards,
+              activeBoardId: cleanActiveBoard,
+              syncState: {
+                status: "synced",
+                lastSyncedAt: new Date().toISOString(),
+                isCloudConnected: syncEngine.isCloudAvailable(),
+              },
+            });
+
+            await syncEngine.syncTasksToCloud(
+              session.id,
+              cleanTasks,
+              cleanBoards,
+              cleanActiveBoard
+            );
+          }
+
+          // Attach Real-time Cross-device Listener
+          syncEngine.subscribeToUserData(session.id, (remoteData) => {
+            if (remoteData) {
+              set((state) => ({
+                boards: remoteData.boards && remoteData.boards.length > 0 ? remoteData.boards : state.boards,
+                tasks: remoteData.tasks || [],
+                activeBoardId: remoteData.activeBoardId || state.activeBoardId,
+                syncState: {
+                  status: "synced",
+                  lastSyncedAt: new Date().toISOString(),
+                  isCloudConnected: true,
+                },
+              }));
+            }
+          });
+        }
       },
       logout: async () => {
         syncEngine.unsubscribe();
         await logoutUser();
         set({
-          userSession: { ...GUEST_USER, isAuthenticated: false, name: "訪客" },
+          userSession: { ...GUEST_USER, isAuthenticated: false, isGuest: false, name: "訪客" },
+          isAuthModalOpen: false,
+          isBindModalOpen: false,
+          tasks: [],
           syncState: {
             status: "synced",
             lastSyncedAt: new Date().toISOString(),
@@ -217,18 +307,63 @@ export const useKanbanStore = create<KanbanStoreState>()(
         });
       },
       initAuthAndSync: () => {
+        // Dynamic Online / Offline Network Listeners
+        const handleOnline = () => {
+          set((state) => ({
+            syncState: {
+              ...state.syncState,
+              status: "synced",
+              lastSyncedAt: new Date().toISOString(),
+              isCloudConnected: true,
+            },
+          }));
+          get().triggerSync();
+        };
+
+        const handleOffline = () => {
+          set((state) => ({
+            syncState: {
+              ...state.syncState,
+              status: "offline",
+              errorMessage: "偵測到本機網路已斷線",
+              isCloudConnected: false,
+            },
+          }));
+        };
+
+        if (typeof window !== "undefined") {
+          window.addEventListener("online", handleOnline);
+          window.addEventListener("offline", handleOffline);
+        }
+
         const unsubscribeAuth = subscribeToAuthState(async (session) => {
           if (session) {
             set({ userSession: session });
+
+            // 資料庫為主：初次載入或重新整理時先拉取雲端最新資料
+            const cloudData = await syncEngine.fetchUserDataFromCloud(session.id);
+            if (cloudData) {
+              set({
+                boards: cloudData.boards && cloudData.boards.length > 0 ? cloudData.boards : INITIAL_BOARDS,
+                tasks: cloudData.tasks || [],
+                activeBoardId: cloudData.activeBoardId || (cloudData.boards && cloudData.boards[0]?.id) || get().activeBoardId,
+                syncState: {
+                  status: typeof navigator !== "undefined" && !navigator.onLine ? "offline" : "synced",
+                  lastSyncedAt: new Date().toISOString(),
+                  isCloudConnected: true,
+                },
+              });
+            }
+
             // Attach real-time cloud listener
             syncEngine.subscribeToUserData(session.id, (remoteData) => {
               if (remoteData) {
                 set((state) => ({
                   boards: remoteData.boards && remoteData.boards.length > 0 ? remoteData.boards : state.boards,
-                  tasks: remoteData.tasks || state.tasks,
+                  tasks: remoteData.tasks || [],
                   activeBoardId: remoteData.activeBoardId || state.activeBoardId,
                   syncState: {
-                    status: "synced",
+                    status: typeof navigator !== "undefined" && !navigator.onLine ? "offline" : "synced",
                     lastSyncedAt: new Date().toISOString(),
                     isCloudConnected: true,
                   },
@@ -237,7 +372,12 @@ export const useKanbanStore = create<KanbanStoreState>()(
             });
           }
         });
+
         return () => {
+          if (typeof window !== "undefined") {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+          }
           unsubscribeAuth();
           syncEngine.unsubscribe();
         };
@@ -247,7 +387,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
       syncState: {
         status: "synced",
         lastSyncedAt: new Date().toISOString(),
-        isCloudConnected: syncEngine.isCloudAvailable(),
+        isCloudConnected: true,
       },
       triggerSync: async () => {
         const user = get().userSession;
@@ -477,12 +617,13 @@ export const useKanbanStore = create<KanbanStoreState>()(
           boardId: effectiveBoardId,
           columnId: taskData.columnId,
           orderKey: newOrderKey,
-          priority: taskData.priority,
+          priority: taskData.priority || "medium",
+          isStarred: taskData.isStarred || false,
           tags: taskData.tags || [],
           dueDate: taskData.dueDate || null,
           completed: taskData.completed || false,
           checklist: taskData.checklist || [],
-          coverColor: taskData.coverColor,
+          coverColor: taskData.coverColor || null,
           attachmentsCount: taskData.attachmentsCount || 0,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

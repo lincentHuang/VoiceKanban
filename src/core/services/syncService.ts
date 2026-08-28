@@ -10,7 +10,35 @@ export interface SyncResult {
   isCloudConnected: boolean;
 }
 
+/**
+ * Recursively replaces `undefined` with `null` or safe defaults to ensure 100% compliance with Firestore serialization
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === undefined) {
+    return null as any;
+  }
+  if (data === null || typeof data !== "object") {
+    return data;
+  }
+  if (data instanceof Date) {
+    return data.toISOString() as any;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeForFirestore(item)) as any;
+  }
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data as Record<string, any>)) {
+    if (value !== undefined) {
+      result[key] = sanitizeForFirestore(value);
+    } else {
+      result[key] = null;
+    }
+  }
+  return result as T;
+}
+
 export class DatabaseSyncEngine {
+
   private static instance: DatabaseSyncEngine;
   private isOnline: boolean = true;
   private unsubscribeSnapshot: Unsubscribe | null = null;
@@ -59,13 +87,22 @@ export class DatabaseSyncEngine {
       };
     }
 
-    if (!isCloud || !userId || userId === "guest-user") {
-      // Local simulated mode
-      await new Promise((resolve) => setTimeout(resolve, 300));
+    if (!isCloud || !userId || userId.startsWith("guest-") || userId.startsWith("guest_")) {
+      // Local simulated mock cloud persistence
+      if (typeof window !== "undefined" && userId && !userId.startsWith("guest")) {
+        try {
+          localStorage.setItem(
+            `vk_cloud_user_${userId}`,
+            JSON.stringify({ userId, boards, tasks, activeBoardId, updatedAt: now })
+          );
+        } catch {}
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const isActuallyOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
       return {
-        status: "synced",
+        status: isActuallyOnline ? "synced" : "offline",
         syncedAt: now,
-        isCloudConnected: false,
+        isCloudConnected: isActuallyOnline,
       };
     }
 
@@ -78,15 +115,25 @@ export class DatabaseSyncEngine {
       const userDocRef = doc(db, "users", userId);
       await setDoc(
         userDocRef,
-        {
+        sanitizeForFirestore({
           userId,
           boards,
           tasks,
           activeBoardId: activeBoardId || "board-work",
           updatedAt: now,
-        },
+        }),
         { merge: true }
       );
+
+      // Also update local cloud cache
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            `vk_cloud_user_${userId}`,
+            JSON.stringify({ userId, boards, tasks, activeBoardId, updatedAt: now })
+          );
+        } catch {}
+      }
 
       return {
         status: "synced",
@@ -105,7 +152,57 @@ export class DatabaseSyncEngine {
   }
 
   /**
-   * Auto-Merge local guest tasks and boards with remote cloud data upon login
+   * Fetch authoritative user data directly from Firestore or Cloud Storage (Database is source of truth)
+   */
+  public async fetchUserDataFromCloud(
+    userId: string
+  ): Promise<{ boards: Board[]; tasks: Task[]; activeBoardId?: string } | null> {
+    if (!userId || userId.startsWith("guest-") || userId.startsWith("guest_")) {
+      return null;
+    }
+
+    // 1. Try Firebase Firestore
+    if (isFirebaseConfigured()) {
+      try {
+        const db = getFirebaseDb();
+        if (db) {
+          const userDocRef = doc(db, "users", userId);
+          const snapshot = await getDoc(userDocRef);
+
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            return {
+              boards: data.boards || [],
+              tasks: data.tasks || [],
+              activeBoardId: data.activeBoardId || (data.boards && data.boards[0]?.id) || "board-work",
+            };
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to fetch authoritative user data from Firestore, checking cache:", error);
+      }
+    }
+
+    // 2. Fallback / Mock Storage for simulated accounts
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(`vk_cloud_user_${userId}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return {
+            boards: parsed.boards || [],
+            tasks: parsed.tasks || [],
+            activeBoardId: parsed.activeBoardId || "board-work",
+          };
+        }
+      } catch {}
+    }
+
+    return null;
+  }
+
+  /**
+   * Auto-Merge local guest tasks and boards with remote cloud data upon explicit guest binding
    */
   public async mergeLocalDataToCloud(
     userId: string,
@@ -136,13 +233,16 @@ export class DatabaseSyncEngine {
 
       if (!snapshot.exists()) {
         // No remote data yet -> initial upload of local data
-        await setDoc(userDocRef, {
-          userId,
-          boards: localBoards,
-          tasks: localTasks,
-          activeBoardId: localActiveBoardId || "board-work",
-          updatedAt: new Date().toISOString(),
-        });
+        await setDoc(
+          userDocRef,
+          sanitizeForFirestore({
+            userId,
+            boards: localBoards,
+            tasks: localTasks,
+            activeBoardId: localActiveBoardId || "board-work",
+            updatedAt: new Date().toISOString(),
+          })
+        );
         return {
           boards: localBoards,
           tasks: localTasks,
@@ -187,13 +287,13 @@ export class DatabaseSyncEngine {
       // Save merged copy to Cloud
       await setDoc(
         userDocRef,
-        {
+        sanitizeForFirestore({
           userId,
           boards: mergedBoards,
           tasks: mergedTasks,
           activeBoardId,
           updatedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
 

@@ -14,16 +14,35 @@ import {
   isFirebaseConfigured,
 } from "./firebase";
 
+export function createGuestSession(existingId?: string): UserSession {
+  const guestId =
+    existingId ||
+    `guest_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
+  return {
+    id: guestId,
+    name: "訪客 (Guest)",
+    email: `${guestId}@voicekanban.app`,
+    avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${guestId}`,
+    provider: "guest",
+    isAuthenticated: true,
+    isAnonymous: true,
+    isGuest: true,
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export const GUEST_USER: UserSession = {
   id: "guest-user",
-  name: "訪客使用者 (Guest)",
+  name: "訪客",
   email: "guest@voicekanban.app",
   avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=Guest",
   provider: "guest",
-  isAuthenticated: true,
+  isAuthenticated: false,
   isAnonymous: true,
+  isGuest: true,
   createdAt: new Date().toISOString(),
 };
+
 
 /**
  * Format Firebase Auth Error codes into friendly Traditional Chinese messages
