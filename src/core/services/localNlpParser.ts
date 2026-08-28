@@ -378,7 +378,7 @@ export function parseTranscriptLocally(
   const matchedPhrases = [datePhrase, priorityPhrase, matchedBoardName, matchedColumnName];
   const title = extractCleanTitle(transcript, matchedPhrases);
 
-  const tags: string[] = [language === "zh-TW" ? "繁中" : "English"];
+  const tags: string[] = [];
   
   if (transcript.toLowerCase().includes("bug") || transcript.includes("修復") || transcript.includes("問題")) {
     tags.push("Bug");

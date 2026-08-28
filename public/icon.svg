@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 外層主背景：圓角 Squircle 亮麗火燄橘紅 (#FF3B20) -->
+  <rect width="512" height="512" rx="140" fill="#FF3B20"/>
+  
+  <!-- 內層白色任務卡片 -->
+  <rect x="64" y="64" width="384" height="384" rx="96" fill="#FFFFFF"/>
+  
+  <!-- 眼睛 1：左長看板柱 -->
+  <rect x="160" y="148" width="58" height="148" rx="29" fill="#FF3B20"/>
+  
+  <!-- 眼睛 2：右短看板柱 -->
+  <rect x="256" y="180" width="58" height="116" rx="29" fill="#FF3B20"/>
+  
+  <!-- 友善微笑弧線 -->
+  <path d="M 148 308 Q 238 398 328 308" stroke="#FF3B20" stroke-width="28" stroke-linecap="round" fill="none"/>
+  
+  <!-- 右上角 AI 發光四芒星 -->
+  <g transform="translate(410, 102)">
+    <path d="M 0 -48 Q 0 0 48 0 Q 0 0 0 48 Q 0 0 -48 0 Q 0 0 0 -48 Z" fill="#FF3B20"/>
+  </g>
+</svg>

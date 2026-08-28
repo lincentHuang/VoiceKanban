@@ -231,15 +231,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {/* Checklist progress (Visible on Medium & Large) */}
           {totalChecklist > 0 && !isSmallRow && (
             <span
-              className={`flex items-center gap-1 font-medium px-1.5 py-0.5 rounded-md ${
+              className={`inline-flex items-center gap-1 font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0 ${
                 isChecklistAllDone
                   ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-bold"
                   : "bg-slate-100 dark:bg-slate-800 text-slate-500"
               }`}
               title={`子任務: ${completedChecklist}/${totalChecklist}`}
             >
-              <CheckSquare2 className="w-3 h-3" />
-              <span>
+              <CheckSquare2 className="w-3 h-3 shrink-0" />
+              <span className="whitespace-nowrap">
                 {completedChecklist}/{totalChecklist}
               </span>
             </span>
@@ -248,11 +248,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {/* Due date badge (Only visible on Large) */}
           {dueDateStatus && isLargeRow && (
             <span
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold ${dueDateStatus.badgeClasses.cardBadge}`}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap shrink-0 ${dueDateStatus.badgeClasses.cardBadge}`}
               title={`到期時間: ${dueDateStatus.formattedFullDateTime} (${dueDateStatus.label})`}
             >
-              <Calendar className={`w-3 h-3 ${dueDateStatus.badgeClasses.iconColor}`} />
-              <span className={dueDateStatus.badgeClasses.cardText}>{dueDateStatus.formattedDateOnly}</span>
+              <Calendar className={`w-3 h-3 shrink-0 ${dueDateStatus.badgeClasses.iconColor}`} />
+              <span className={`whitespace-nowrap ${dueDateStatus.badgeClasses.cardText}`}>{dueDateStatus.formattedDateOnly}</span>
             </span>
           )}
 
@@ -357,7 +357,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 e.stopPropagation();
                 toggleTaskSelection(task.id);
               }}
-              className="mt-0.5 text-orange-600 dark:text-orange-400 p-0.5 shrink-0"
+              className="text-orange-600 dark:text-orange-400 p-0.5 shrink-0 flex items-center justify-center self-start mt-[1px]"
             >
               {isSelected ? (
                 <CheckSquare className="w-4 h-4 fill-orange-500 text-white" />
@@ -379,19 +379,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </h4>
           </div>
 
-          {/* Top-Right Badges & Hover Action Controls */}
-          <div className="flex items-center gap-1 shrink-0">
+          {/* Top-Right Badges & Hover Action Controls (Aligned with first line of title) */}
+          <div className="flex items-center gap-1 shrink-0 self-start mt-[1px]">
             {/* Star Important Icon */}
             {task.isStarred && (
-              <span className="text-amber-500 p-0.5" title="重要事項">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+              <span className="text-amber-500 flex items-center justify-center h-4 w-4" title="重要事項">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" />
               </span>
             )}
 
             {/* Completed Indicator */}
             {task.completed && (
-              <span className="p-0.5 text-emerald-600 group-hover:hidden" title="已完成">
-                <CheckCircle2 className="w-3.5 h-3.5" />
+              <span className="flex items-center justify-center h-4 w-4 text-emerald-600 group-hover:hidden" title="已完成">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               </span>
             )}
 
@@ -401,7 +401,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={handleToggleComplete}
-                className={`p-1 rounded-lg transition-colors ${
+                className={`p-0.5 rounded-lg transition-colors ${
                   task.completed
                     ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300"
                     : "hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 dark:hover:bg-emerald-950/40"
@@ -422,7 +422,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   e.stopPropagation();
                   setEditingTaskId(task.id);
                 }}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                className="p-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
                 title="編輯詳細資訊"
               >
                 <Edit3 className="w-3.5 h-3.5" />
@@ -433,21 +433,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Tags Section (Only displayed when tags exist or dynamic urgent status) */}
         {(hasTags || (dueDateStatus?.isUrgent && !task.completed)) && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
+          <div className="flex flex-wrap items-center gap-1.5 mt-2">
             {dueDateStatus?.urgency === "overdue" && !task.completed && (
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 shadow-2xs">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 shadow-2xs whitespace-nowrap shrink-0">
                 🔥 逾期
               </span>
             )}
             {dueDateStatus?.urgency === "due-soon" && !task.completed && (
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 shadow-2xs">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 shadow-2xs whitespace-nowrap shrink-0">
                 ⏳ 即將到期
               </span>
             )}
             {task.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0"
               >
                 #{tag}
               </span>
@@ -455,19 +455,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         )}
 
-        {/* Bottom Metadata Badges (Only displayed when metadata exists) */}
+        {/* Bottom Metadata Badges (Wraps gracefully when crowded, date badge never wraps text internally) */}
         {hasBottomBadges && (
-          <div className="flex items-center gap-2.5 mt-3 pt-2 border-t border-slate-100/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-2 mt-2.5 pt-2 border-t border-slate-100/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400">
             {/* Description note icon */}
             {task.description && (
-              <span className="flex items-center gap-1" title="有備註說明">
+              <span className="inline-flex items-center gap-1 shrink-0" title="有備註說明">
                 <AlignLeft className="w-3.5 h-3.5" />
               </span>
             )}
 
             {/* Attachments icon */}
             {(task.attachmentsCount || 0) > 0 && (
-              <span className="flex items-center gap-1" title="有附件檔案">
+              <span className="inline-flex items-center gap-1 shrink-0" title="有附件檔案">
                 <Paperclip className="w-3.5 h-3.5" />
                 <span>{task.attachmentsCount}</span>
               </span>
@@ -479,7 +479,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={handleToggleSubtasksExpand}
-                className={`flex items-center gap-1 font-medium px-2 py-0.5 rounded-lg transition-all cursor-pointer group/badge select-none ${
+                className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-lg transition-all cursor-pointer group/badge select-none whitespace-nowrap shrink-0 ${
                   isSubtasksExpanded
                     ? "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 ring-1 ring-blue-400/50 shadow-2xs"
                     : isChecklistAllDone
@@ -489,26 +489,26 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 title={isSubtasksExpanded ? "收合子任務列表" : `點擊展開子任務 (${completedChecklist}/${totalChecklist})`}
                 aria-expanded={isSubtasksExpanded}
               >
-                <CheckSquare2 className="w-3.5 h-3.5" />
-                <span>
+                <CheckSquare2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">
                   {completedChecklist}/{totalChecklist}
                 </span>
                 {isSubtasksExpanded ? (
-                  <ChevronUp className="w-3 h-3 ml-0.5 opacity-75" />
+                  <ChevronUp className="w-3 h-3 ml-0.5 opacity-75 shrink-0" />
                 ) : (
-                  <ChevronDown className="w-3 h-3 ml-0.5 opacity-75 group-hover/badge:translate-y-0.5 transition-transform" />
+                  <ChevronDown className="w-3 h-3 ml-0.5 opacity-75 group-hover/badge:translate-y-0.5 transition-transform shrink-0" />
                 )}
               </button>
             )}
 
-            {/* Due date badge (Formatted with only Date and dynamic urgency color) */}
+            {/* Due date badge (Always on single line, never breaks into 2 lines) */}
             {dueDateStatus && (
               <span
-                className={`flex items-center gap-1.5 ml-auto text-[11px] px-2 py-0.5 rounded-lg font-bold transition-all ${dueDateStatus.badgeClasses.cardBadge}`}
+                className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-lg font-bold transition-all whitespace-nowrap shrink-0 ml-auto ${dueDateStatus.badgeClasses.cardBadge}`}
                 title={`到期時間: ${dueDateStatus.formattedFullDateTime} (${dueDateStatus.label})`}
               >
-                <Calendar className={`w-3.5 h-3.5 ${dueDateStatus.badgeClasses.iconColor}`} />
-                <span className={dueDateStatus.badgeClasses.cardText}>
+                <Calendar className={`w-3.5 h-3.5 shrink-0 ${dueDateStatus.badgeClasses.iconColor}`} />
+                <span className={`whitespace-nowrap ${dueDateStatus.badgeClasses.cardText}`}>
                   {dueDateStatus.formattedDateOnly}
                 </span>
               </span>
@@ -524,7 +524,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150"
           >
             {/* Progress Header & Mini Bar */}
-            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 dark:text-slate-400 px-0.5">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400 px-0">
               <span>子任務進度</span>
               <span className={isChecklistAllDone ? "text-emerald-600 dark:text-emerald-400 font-bold" : ""}>
                 {Math.round((completedChecklist / totalChecklist) * 100)}%
@@ -539,14 +539,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               />
             </div>
 
-            {/* Subtask Items List */}
+            {/* Subtask Items List (Exact Y-axis vertical alignment between Checkbox & Item Title) */}
             <div className="space-y-1 pt-1 max-h-48 overflow-y-auto custom-scrollbar pr-0.5">
               {task.checklist?.map((item) => (
                 <div
                   key={item.id}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => handleSubtaskToggle(e, item.id, item.completed)}
-                  className={`flex items-start gap-2 p-1.5 rounded-lg text-xs transition-colors cursor-pointer group/item select-none ${
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer group/item select-none ${
                     item.completed
                       ? "bg-slate-50/70 dark:bg-slate-900/40 text-slate-400 dark:text-slate-500"
                       : "hover:bg-slate-100/90 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200"
@@ -556,18 +556,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     type="button"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => handleSubtaskToggle(e, item.id, item.completed)}
-                    className="mt-0.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors shrink-0"
+                    className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors shrink-0 flex items-center justify-center"
                     aria-label={item.completed ? `取消完成 ${item.title}` : `標記完成 ${item.title}`}
                   >
                     {item.completed ? (
-                      <CheckSquare className="w-3.5 h-3.5 fill-emerald-500 text-white dark:fill-emerald-600" />
+                      <CheckSquare className="w-3.5 h-3.5 fill-emerald-500 text-white dark:fill-emerald-600 shrink-0" />
                     ) : (
-                      <Square className="w-3.5 h-3.5 group-hover/item:text-emerald-500" />
+                      <Square className="w-3.5 h-3.5 group-hover/item:text-emerald-500 shrink-0" />
                     )}
                   </button>
                   <span
-                    className={`flex-1 break-words leading-tight text-[11px] ${
-                      item.completed ? "line-through text-slate-400 dark:text-slate-500" : "font-normal"
+                    className={`flex-1 break-words leading-normal text-[11px] ${
+                      item.completed ? "line-through text-slate-400 dark:text-slate-500" : "font-normal text-slate-700 dark:text-slate-200"
                     }`}
                   >
                     {item.title}

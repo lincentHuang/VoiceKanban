@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     const sampleMockResults: VoiceExtractResult[] = [
       {
         title: "完成首頁 Base 44 設計樣式切版與微調",
-        tags: ["繁中", "Design", "UI"],
+        tags: ["Design", "UI"],
         dueDate: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
         priority: "high",
         targetBoardId: fallbackBoardId,
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       },
       {
         title: "Buy groceries and prepare for weekly sprint",
-        tags: ["English", "Work"],
+        tags: ["Work"],
         dueDate: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
         priority: "medium",
         targetBoardId: fallbackBoardId,

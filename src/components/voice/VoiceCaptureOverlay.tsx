@@ -259,7 +259,7 @@ export const VoiceCaptureOverlay: React.FC = () => {
       console.warn("Extraction fallback triggered:", err);
       const fallbackResult: VoiceExtractResult = {
         title: spokenText || "語音待辦任務 (離線口述)",
-        tags: [liveLanguage === "zh-TW" ? "繁中" : "English", "VoiceTask"],
+        tags: [],
         dueDate: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
         priority: "medium",
         targetBoardId: activeBoardId,
@@ -279,7 +279,7 @@ export const VoiceCaptureOverlay: React.FC = () => {
     setEditColumnId(result.targetColumnId || "inbox");
     setPriority(result.priority || "medium");
     setEditDueDate(result.dueDate || "");
-    setEditTags(result.tags && result.tags.length > 0 ? result.tags : [result.detectedLanguage === "en-US" ? "English" : "繁中"]);
+    setEditTags(result.tags && result.tags.length > 0 ? result.tags : []);
     if (notice) {
       setNoticeMessage(notice);
     }
