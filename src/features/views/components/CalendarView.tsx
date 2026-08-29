@@ -266,7 +266,7 @@ export const CalendarView: React.FC = () => {
                   {/* Hover + Quick Add Button (Image 2) */}
                   <button
                     onClick={() => handleQuickAddOnDate(dayCell.dateStr)}
-                    className="opacity-0 group-hover:opacity-100 mt-auto w-full py-0.5 text-center text-[10px] font-semibold text-slate-500 hover:text-orange-600 hover:bg-white dark:hover:bg-slate-700 rounded transition-all border border-dashed border-slate-300 dark:border-slate-700"
+                    className="opacity-0 group-hover:opacity-100 mt-auto w-full py-0.5 text-center text-[10px] font-semibold text-slate-500 hover:text-orange-600 hover:bg-white dark:hover:bg-slate-700 rounded transition-all border border-slate-200/80 dark:border-slate-700"
                   >
                     + 新增
                   </button>

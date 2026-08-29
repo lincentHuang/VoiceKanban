@@ -727,7 +727,7 @@ export const EditTaskModal: React.FC = () => {
                 ) : (
                   <div
                     onClick={() => attachmentFileInputRef.current?.click()}
-                    className="p-3 text-center rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 text-xs cursor-pointer hover:border-orange-300 hover:bg-slate-50 transition-colors"
+                    className="p-3 text-center rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700 text-slate-400 text-xs cursor-pointer hover:border-orange-400 hover:bg-slate-50 transition-colors"
                   >
                     尚無附件檔案，點擊此處上傳圖片或資料檔案（最大 10MB）
                   </div>
@@ -974,7 +974,7 @@ export const EditTaskModal: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => coverFileInputRef.current?.click()}
-                        className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-dashed border-slate-300 dark:border-slate-700"
+                        className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-slate-300/80 dark:border-slate-700 hover:border-orange-400"
                       >
                         <Upload className="w-3.5 h-3.5 text-orange-500" />
                         <span>挑選相片圖檔...</span>

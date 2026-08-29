@@ -202,7 +202,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       return (
         <div
           onClick={handleStartEdit}
-          className="py-4 px-3 text-slate-400 dark:text-slate-500 text-xs italic rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 cursor-pointer hover:border-orange-300 dark:hover:border-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 group"
+          className="py-4 px-3 text-slate-400 dark:text-slate-500 text-xs italic rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700 cursor-pointer hover:border-orange-400 dark:hover:border-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 group"
         >
           <Edit3 className="w-3.5 h-3.5 text-slate-400 group-hover:text-orange-500 transition-colors" />
           <span>點擊此處新增說明內容或上傳圖片...</span>

@@ -64,6 +64,7 @@ interface KanbanStoreState {
   deleteColumnFromActiveBoard: (columnId: string) => void;
   sortColumnTasks: (columnId: string, sortBy: "date" | "priority" | "title") => void;
   moveAllColumnTasks: (sourceColumnId: string, targetColumnId: string) => void;
+  reorderBoardColumns: (boardId: string, orderedColumns: Column[]) => void;
   archiveColumn: (columnId: string) => void;
 
   // Column Manager Modal
@@ -585,6 +586,16 @@ export const useKanbanStore = create<KanbanStoreState>()(
             t.boardId === activeBoardId && t.columnId === sourceColumnId
               ? { ...t, columnId: targetColumnId, updatedAt: new Date().toISOString() }
               : t
+          ),
+        });
+        get().triggerSync();
+      },
+
+      reorderBoardColumns: (boardId, orderedColumns) => {
+        const { boards } = get();
+        set({
+          boards: boards.map((b) =>
+            b.id === boardId ? { ...b, columns: orderedColumns } : b
           ),
         });
         get().triggerSync();

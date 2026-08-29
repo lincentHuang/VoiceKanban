@@ -159,7 +159,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         className={`group relative bg-white/95 dark:bg-slate-850 backdrop-blur-md rounded-xl px-3 py-2 shadow-2xs hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${isSelected
           ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
           : "border-slate-200/80 dark:border-slate-700/80 hover:border-orange-400 dark:hover:border-slate-600"
-          } ${isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border-2 border-dashed border-slate-300 dark:border-slate-700 shadow-none pointer-events-none" : ""
+          } ${isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border border-slate-300/80 dark:border-slate-700/80 shadow-none pointer-events-none" : ""
           } ${task.completed ? "opacity-65 bg-slate-50/80 dark:bg-slate-900/60" : ""}`}
       >
         {/* Left Color Indicator Accent */}
@@ -288,7 +288,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       className={`group relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${isSelected
         ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
         : "border-slate-100 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600"
-        } ${isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border-2 border-dashed border-slate-300 dark:border-slate-700 shadow-none pointer-events-none" : ""
+        } ${isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border border-slate-300/80 dark:border-slate-700/80 shadow-none pointer-events-none" : ""
         } ${task.completed ? "opacity-65 bg-slate-50/80 dark:bg-slate-900/60" : ""}`}
     >
       {/* Top Cover Color/Image Banner (With Aspect Ratio support) */}

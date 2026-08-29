@@ -61,7 +61,7 @@ export const SubHeaderToolbar: React.FC = () => {
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 font-semibold text-slate-600 dark:text-slate-300">
             <button
               onClick={() => setViewMode("kanban")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 viewMode === "kanban"
                   ? "bg-white dark:bg-slate-900 text-orange-600 font-bold shadow-xs"
                   : "hover:text-slate-900 dark:hover:text-white"
@@ -72,32 +72,8 @@ export const SubHeaderToolbar: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setViewMode("table")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
-                viewMode === "table"
-                  ? "bg-white dark:bg-slate-900 text-orange-600 font-bold shadow-xs"
-                  : "hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <Table2 className="w-3.5 h-3.5" />
-              <span>表格</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
-                viewMode === "list"
-                  ? "bg-white dark:bg-slate-900 text-orange-600 font-bold shadow-xs"
-                  : "hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <ListTodo className="w-3.5 h-3.5" />
-              <span>清單</span>
-            </button>
-
-            <button
               onClick={() => setViewMode("calendar")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 viewMode === "calendar"
                   ? "bg-white dark:bg-slate-900 text-orange-600 font-bold shadow-xs"
                   : "hover:text-slate-900 dark:hover:text-white"

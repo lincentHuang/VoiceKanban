@@ -5,12 +5,10 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ViewMode } from "@/core/types/task";
 import { getDueDateStatus } from "@/core/utils/dateUtils";
 import { KanbanContainer } from "./KanbanContainer";
-import { TableView, ListView, CalendarView } from "@/features/views";
+import { CalendarView } from "@/features/views";
 import {
   Columns,
   Calendar,
-  Table2,
-  ListTodo,
   ChevronDown,
   Check,
   Tag,
@@ -25,8 +23,6 @@ import {
 const VIEW_CONFIG: Record<ViewMode, { label: string; icon: React.ReactNode }> = {
   kanban: { label: "看板", icon: <Columns className="w-3.5 h-3.5" /> },
   calendar: { label: "行事曆", icon: <Calendar className="w-3.5 h-3.5" /> },
-  table: { label: "表格", icon: <Table2 className="w-3.5 h-3.5" /> },
-  list: { label: "清單", icon: <ListTodo className="w-3.5 h-3.5" /> },
 };
 
 export const BoardCanvasContainer: React.FC = () => {
@@ -225,14 +221,14 @@ export const BoardCanvasContainer: React.FC = () => {
 
               {isViewMenuOpen && (
                 <div className="absolute top-full left-0 mt-1.5 w-44 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-1.5 z-50">
-                  {(["kanban", "calendar", "table", "list"] as const).map((mode) => (
+                  {(["kanban", "calendar"] as const).map((mode) => (
                     <button
                       key={mode}
                       onClick={() => {
                         setViewMode(mode);
                         setIsViewMenuOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-1.5 flex items-center justify-between text-xs hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                      className={`w-full text-left px-3 py-1.5 flex items-center justify-between text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer ${
                         viewMode === mode ? "text-orange-600 font-bold bg-orange-50/50" : ""
                       }`}
                     >
@@ -480,17 +476,14 @@ export const BoardCanvasContainer: React.FC = () => {
                     <div className="px-2 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                       檢視模式
                     </div>
-                    {(isCompact
-                      ? (["kanban", "list"] as const)
-                      : (["kanban", "calendar", "table", "list"] as const)
-                    ).map((mode) => (
+                    {(["kanban", "calendar"] as const).map((mode) => (
                       <button
                         key={mode}
                         onClick={() => {
                           setViewMode(mode);
                           setIsMoreMenuOpen(false);
                         }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-xl flex items-center justify-between text-xs hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                        className={`w-full text-left px-2.5 py-1.5 rounded-xl flex items-center justify-between text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer ${
                           viewMode === mode ? "text-orange-600 font-bold bg-orange-50/50" : ""
                         }`}
                       >
@@ -509,7 +502,7 @@ export const BoardCanvasContainer: React.FC = () => {
                           setIsMultiSelectMode(!isMultiSelectMode);
                           setIsMoreMenuOpen(false);
                         }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-xl flex items-center justify-between text-xs hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                        className={`w-full text-left px-2.5 py-1.5 rounded-xl flex items-center justify-between text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer ${
                           isMultiSelectMode ? "text-orange-600 font-bold" : ""
                         }`}
                       >
@@ -526,7 +519,7 @@ export const BoardCanvasContainer: React.FC = () => {
                           setIsColumnManagerOpen(true);
                           setIsMoreMenuOpen(false);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-xl flex items-center gap-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        className="w-full text-left px-2.5 py-1.5 rounded-xl flex items-center gap-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
                       >
                         <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
                         <span>自訂流程欄位</span>
@@ -544,8 +537,6 @@ export const BoardCanvasContainer: React.FC = () => {
       <div className="flex-1 h-full min-h-0 overflow-hidden relative pb-13 sm:pb-14">
         {viewMode === "kanban" && <KanbanContainer />}
         {viewMode === "calendar" && <CalendarView />}
-        {viewMode === "table" && <TableView />}
-        {viewMode === "list" && <ListView />}
       </div>
     </div>
   );

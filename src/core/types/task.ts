@@ -2,7 +2,7 @@ export type Priority = "high" | "medium" | "low";
 
 export type ColumnId = string;
 
-export type ViewMode = "kanban" | "table" | "list" | "calendar";
+export type ViewMode = "kanban" | "calendar";
 
 export interface ChecklistItem {
   id: string;

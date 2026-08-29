@@ -322,7 +322,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
           className={`w-full px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-all border shadow-2xs group outline-none focus:ring-2 focus:ring-orange-500/30 ${
             isValidEnd || isValidStart
               ? "bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-              : "bg-slate-50/60 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:text-slate-700 dark:text-slate-400"
+              : "bg-slate-50/60 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-500 hover:text-slate-700 dark:text-slate-400"
           } ${className}`}
         >
           <div className="flex items-start gap-2.5 min-w-0 flex-1 py-0.5">

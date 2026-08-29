@@ -11,7 +11,7 @@
 核心特色包含：
 1. **多模態極速輸入**：支援 Web Speech API 語音擷取、Gemini AI 智慧自然語言結構化拆解，以及單行自然語言速記。
 2. **極致流暢看板體驗**：支援毫秒級 Base36 Lexorank 排序、跨欄即時預覽插槽（Drop Slot Indicator）與平滑防抖雙向拖曳。
-3. **多維度檢視**：提供看板（Kanban）、表格（Table）、日曆（Calendar）與清單（List）四大視圖隨心切換。
+3. **雙維度核心檢視**：提供看板（Kanban）與行事曆（Calendar）雙視圖隨心切換。
 4. **Local-First & 雲端雙軌同步**：支援訪客本機離線優先使用，並可一鍵升級綁定 Google / Email 帳號無縫同步至 Firestore。
 5. **BYOK 隱私安全**：支援自帶 Google Gemini API Key（BYOK），採客戶端 AES 加密保障個人隱私。
 
@@ -33,7 +33,7 @@ src/
 │   │   ├── components/         # AuthLandingScreen, AuthModal, BindAccountModal
 │   │   ├── index.ts            # 模組統一出口
 │   │   └── feature.md          # 認證功能全貌規格與 AC
-│   ├── kanban/                 # [Feature 2] 看板核心、卡片、欄位與批次操作
+│   ├── kanban/                 # [Feature 2] 看板核心、卡片、狀態列拖曳、右側新增欄位與批次操作
 │   │   ├── components/         # BoardCanvasContainer, KanbanContainer, KanbanColumn, TaskCard, Add/Edit Modal...
 │   │   ├── index.ts            # 模組統一出口
 │   │   └── feature.md          # 看板功能全貌規格與 AC
@@ -49,10 +49,10 @@ src/
 │   │   ├── components/         # QuickPromptHero
 │   │   ├── index.ts            # 模組統一出口
 │   │   └── feature.md          # 速記功能全貌規格與 AC
-│   ├── views/                  # [Feature 6] 多維度視圖 (Table, Calendar, List)
-│   │   ├── components/         # TableView, CalendarView, ListView
+│   ├── views/                  # [Feature 6] 行事曆視圖 (Calendar View)
+│   │   ├── components/         # CalendarView
 │   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 多視圖功能全貌規格與 AC
+│   │   └── feature.md          # 行事曆視圖全貌規格與 AC
 │   ├── settings/               # [Feature 7] 使用者設定與 BYOK 金鑰加密
 │   │   ├── components/         # SettingsModal
 │   │   ├── index.ts            # 模組統一出口
@@ -65,7 +65,7 @@ src/
 │   ├── ui/                     # 基礎原子元件 (Dialog, Dropdown, Select, Popover...)
 │   ├── layout/                 # 全域版面 (UnifiedDnDWorkspace, WorkspaceSplitter)
 │   ├── navbar/                 # 全域頂部導覽列
-│   ├── navigation/             # 全域底部浮動 Dock
+│   ├── navigation/             # 全域底部浮動 Dock (精簡收件匣/看板/行事曆)
 │   ├── toolbar/                # 全域子工具列
 │   ├── common/                 # 全域共用複合元件 (DateTimePicker)
 │   └── brand/                  # 品牌 Logo
@@ -85,9 +85,11 @@ src/
 - **多渠道登入 (Multi-Provider)**：支援 Google OAuth 與 Email 密碼登入。
 - **無縫帳號綁定 (Seamless Account Binding)**：訪客建立之資料可隨時綁定至正式雲端帳號，資料零遺失。
 
-### 3.2 📋 看板與雙向拖曳引擎 (Kanban & DnD Feature)
-- **即時預覽插槽 (Live Drop Slot Indicator)**：跨欄與欄內拖曳時，精準於目標位置展開微光虛線預覽槽。
-- **平滑防抖碰撞策略**：結合 `pointerWithin` 與 `closestCenter` 歐氏幾何中心判定，杜絕快速拖曳時跳欄震盪。
+### 3.2 📋 看板、狀態列拖曳與雙向拖曳引擎 (Kanban & DnD Feature)
+- **狀態列欄位拖曳重排 (Column DnD Reorder)**：支援抓住欄位 Header（或長按 200ms）進行水平平滑拖曳排序，即時預覽換位並持久化順序。
+- **最右側行內極速新增欄位 (Inline Column Creation)**：看板橫向末端提供「+ 新增欄位」卡片，行內輸入名稱 Enter 立即建立新狀態欄位。
+- **卡片即時預覽插槽 (Live Drop Slot Indicator)**：跨欄與欄內拖曳卡片時，精準於目標位置展開微光虛線預覽槽。
+- **平滑防抖碰撞策略**：結合 `pointerWithin` 與 `closestCenter` 歐氏幾何中心判定，杜絕快速拖曳時跳欄震盪，並完美分離 Column 與 Task 拖曳。
 - **Lexorank Base36 排序鍵**：毫秒級任意區間卡片插入，避免大量全量更新。
 - **欄位管理與 WIP 上限**：自訂欄位名稱、顏色標籤、排序與在製品（WIP）超額警示。
 - **多選與批次操作 (Batch Actions)**：支援多選卡片，一鍵批次搬移、變更優先級或刪除。
@@ -108,12 +110,11 @@ src/
 - **頂部/Hero 自然語言速記**：支援文字直接輸入如「後天下午 3 點 提交報告 #work !urgent」，秒級建立。
 - **一鍵切換語音**：輸入框直通語音浮層。
 
-### 3.6 📊 多維度檢視切換 (Multi-Views Feature)
-- **Kanban Board**：泳道卡片流動檢視。
-- **Table View**：結構化資料網格，支援就地修改屬性。
+### 3.6 📊 雙重視圖切換 (Views Feature)
+- **Kanban Board**：泳道卡片流動檢視，支援欄位拖曳排序與行內新增欄位。
 - **Calendar View**：月度/週度時間排程視覺化。
-- **List View**：專注直列待辦核對。
-- **全域同步篩選**：標籤與關鍵字搜尋在所有視圖即時聯動。
+- **全域同步篩選**：標籤與關鍵字搜尋在看板與行事曆即時聯動。
+- **精簡架構**：已徹底移除不便使用之 Table View 與 List View，專注極致看板與日曆體驗。
 
 ### 3.7 ⚙️ 設定中心與 BYOK 加密 (Settings & Security)
 - **BYOK (Bring Your Own Key)**：支援使用者填入自訂 Google Gemini API Key，採本機 AES 加密存儲。
@@ -141,10 +142,11 @@ src/
 ## 5. 全域驗收標準 (Master Acceptance Criteria, Master AC)
 
 - [x] **MAC-1 (全模組 Feature-Driven 結構清晰)**：前端遵循 `src/features/<feature>/` 模組化規範，每個模組均具備專屬 `feature.md` 與獨立出口 `index.ts`。
-- [x] **MAC-2 (看板拖曳穩定與預覽槽)**：跨欄與同欄拖曳時皆能即時呈現預覽插槽，碰撞演算法防抖穩定，Base36 Lexorank 排序正確。
-- [x] **MAC-3 (多模態語音與 AI 解析)**：支援語音輸入與 Gemini AI / 本機 NLP 結構化任務解析及多任務拆解。
-- [x] **MAC-4 (多維度視圖無縫切換)**：看板、表格、日曆、清單四種視圖資料即時同步，支援篩選與排序。
-- [x] **MAC-5 (認證與多端同步)**：支援訪客模式與 Firebase Google/Email 登入綁定，離線優先並同步至雲端。
-- [x] **MAC-6 (安全 BYOK 與設定)**：支援本機加密儲存自訂 Gemini API Key，連線測試正常。
-- [x] **MAC-7 (編譯與型別無誤)**：`npm run build` 與 TypeScript 型別檢查 100% 通過。
+- [x] **MAC-2 (看板卡片與狀態列拖曳穩定)**：支援卡片跨欄與欄內拖曳（含即時預覽插槽）以及狀態列 Header 長按/拖曳橫向排序，順序即時持久化。
+- [x] **MAC-3 (最右側行內新增欄位)**：看板橫向末端提供「+ 新增欄位」行內卡片，輸入名稱 Enter 即刻建立。
+- [x] **MAC-4 (檢視精簡與 Dock 淨化)**：精簡為看板與行事曆雙視圖，底部 Dock 僅保留收件匣、看板、行事曆，移除欄位設定按鈕。
+- [x] **MAC-5 (多模態語音與 AI 解析)**：支援語音輸入與 Gemini AI / 本機 NLP 結構化任務解析及多任務拆解。
+- [x] **MAC-6 (認證與多端同步)**：支援訪客模式與 Firebase Google/Email 登入綁定，離線優先並同步至雲端。
+- [x] **MAC-7 (安全 BYOK 與設定)**：支援本機加密儲存自訂 Gemini API Key，連線測試正常。
+- [x] **MAC-8 (編譯與型別無誤)**：`npm run build` 與 TypeScript 型別檢查 100% 通過。
 

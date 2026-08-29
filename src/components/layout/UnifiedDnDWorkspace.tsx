@@ -17,11 +17,11 @@ import {
   CollisionDetection,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { ColumnId, Task } from "@/core/types/task";
+import { Column, ColumnId, Task } from "@/core/types/task";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { SidebarInbox } from "@/features/inbox";
 import { WorkspaceSplitter } from "./WorkspaceSplitter";
-import { BoardCanvasContainer, TaskCard } from "@/features/kanban";
+import { BoardCanvasContainer, KanbanColumn, TaskCard } from "@/features/kanban";
 
 export const UnifiedDnDWorkspace: React.FC = () => {
   const {
@@ -29,6 +29,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     activeBoardId,
     moveTask,
     reorderColumnTasks,
+    reorderBoardColumns,
     getActiveBoardColumns,
     inboxWidth,
     setActiveDragTaskId,
@@ -37,6 +38,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
   } = useKanbanStore();
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [activeColumn, setActiveColumn] = useState<Column | null>(null);
   const [activeDragVariant, setActiveDragVariant] = useState<"card" | "row">("card");
   const [isMounted, setIsMounted] = useState(false);
 
@@ -45,6 +47,12 @@ export const UnifiedDnDWorkspace: React.FC = () => {
   }, []);
 
   const columns = getActiveBoardColumns();
+
+  const activeColumnTasks = activeColumn
+    ? tasks
+        .filter((t) => t.boardId === activeBoardId && t.columnId === activeColumn.id && t.columnId !== "inbox")
+        .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1))
+    : [];
 
   // Multi-sensor configuration:
   // 1. MouseSensor: 4px movement for instant snappy drag on desktop
@@ -64,10 +72,13 @@ export const UnifiedDnDWorkspace: React.FC = () => {
   );
 
   // Anti-jitter Collision Detection:
-  // 1. Prioritize direct pointer hits on tasks or column containers
-  // 2. Fallback to monotonic closestCenter (eliminates jumping caused by rect overlap)
-  // 3. Fallback to closestCorners
+  // 1. If dragging Column: use closestCenter directly across columns
+  // 2. If dragging Task: prioritize task pointer hits, then column containers, then monotonic closestCenter
   const collisionDetectionStrategy: CollisionDetection = (args) => {
+    if (args.active.data.current?.type === "Column") {
+      return closestCenter(args);
+    }
+
     // 1. Check if pointer is directly within any droppable
     const pointerCollisions = pointerWithin(args);
     if (pointerCollisions.length > 0) {
@@ -105,9 +116,29 @@ export const UnifiedDnDWorkspace: React.FC = () => {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
+
+    // 1. Column Drag Start
+    if (active.data.current?.type === "Column") {
+      const col =
+        columns.find((c) => c.id === active.id) ||
+        (active.data.current.column as Column);
+      if (col) {
+        if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+          try {
+            navigator.vibrate(30);
+          } catch {}
+        }
+        setActiveColumn(col);
+        setActiveTask(null);
+        setActiveDragTaskId(null);
+        setDragOverLocation(null);
+      }
+      return;
+    }
+
+    // 2. Task Drag Start
     const task = tasks.find((t) => t.id === active.id);
     if (task) {
-      // Haptic feedback on mobile touch long-press drag start
       if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
         try {
           navigator.vibrate(30);
@@ -124,6 +155,10 @@ export const UnifiedDnDWorkspace: React.FC = () => {
   // Real-time slot gap / placeholder when dragging across columns or inside column
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
+    if (active.data.current?.type === "Column" || activeColumn) {
+      return;
+    }
+
     if (!over) {
       if (dragOverLocation !== null) {
         setDragOverLocation(null);
@@ -196,19 +231,36 @@ export const UnifiedDnDWorkspace: React.FC = () => {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    // 1. Column Drag End
+    if (active.data.current?.type === "Column" || activeColumn) {
+      const activeColId = active.id as string;
+      setActiveColumn(null);
+      if (over && over.id !== activeColId) {
+        const oldIndex = columns.findIndex((c) => c.id === activeColId);
+        const newIndex = columns.findIndex((c) => c.id === over.id);
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const newColumns = arrayMove(columns, oldIndex, newIndex);
+          reorderBoardColumns(activeBoardId, newColumns);
+        }
+      }
+      return;
+    }
+
+    // 2. Task Drag End
     const finalLocation = dragOverLocation;
     setActiveTask(null);
     setActiveDragTaskId(null);
     setDragOverLocation(null);
 
-    const { active, over } = event;
     if (!over && !finalLocation) return;
 
     const activeId = active.id as string;
     const overId = over?.id as string | undefined;
 
-    const activeTask = tasks.find((t) => t.id === activeId);
-    if (!activeTask) return;
+    const activeTaskItem = tasks.find((t) => t.id === activeId);
+    if (!activeTaskItem) return;
 
     const isOverColumn = overId ? columns.some((col) => col.id === overId) || overId === "inbox" : false;
     const overTask = overId ? tasks.find((t) => t.id === overId) : undefined;
@@ -236,7 +288,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     finalIndex = Math.max(0, Math.min(finalIndex, targetColumnTasks.length));
 
     // Same Column Reordering
-    if (activeTask.columnId === targetColumnId && (activeTask.boardId === targetBoardId || targetColumnId === "inbox")) {
+    if (activeTaskItem.columnId === targetColumnId && (activeTaskItem.boardId === targetBoardId || targetColumnId === "inbox")) {
       const originalColumnTasks = tasks
         .filter((t) =>
           targetColumnId === "inbox"
@@ -295,14 +347,20 @@ export const UnifiedDnDWorkspace: React.FC = () => {
         <BoardCanvasContainer />
       </div>
 
-      {/* Drag Overlay for smooth 60fps ghost card under cursor with pure GPU scale */}
+      {/* Drag Overlay for smooth 60fps ghost card/column under cursor with pure GPU scale */}
       <DragOverlay
         dropAnimation={{
           duration: 180,
           easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
         }}
       >
-        {activeTask ? (
+        {activeColumn ? (
+          <KanbanColumn
+            column={activeColumn}
+            tasks={activeColumnTasks}
+            isOverlay={true}
+          />
+        ) : activeTask ? (
           <div
             style={{
               width:
@@ -325,3 +383,4 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     </DndContext>
   );
 };
+

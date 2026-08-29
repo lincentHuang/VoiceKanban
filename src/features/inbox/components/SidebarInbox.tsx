@@ -273,7 +273,7 @@ export const SidebarInbox: React.FC = () => {
               {insertIndex === idx && (
                 <div
                   key="drop-slot-inbox"
-                  className="h-12 w-full rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/80 dark:bg-blue-950/50 dark:border-blue-500/70 my-1 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+                  className="h-12 w-full rounded-xl border-2 border-blue-400/90 bg-gradient-to-br from-blue-500/10 to-indigo-500/15 dark:from-blue-950/40 dark:to-indigo-950/30 ring-2 ring-blue-400/20 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
                 >
                   <span className="flex items-center gap-1.5 opacity-90">
                     <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
@@ -292,7 +292,7 @@ export const SidebarInbox: React.FC = () => {
           {filteredInboxTasks.length > 0 && insertIndex === filteredInboxTasks.length && (
             <div
               key="drop-slot-inbox-end"
-              className="h-12 w-full rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/80 dark:bg-blue-950/50 dark:border-blue-500/70 my-1 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+              className="h-12 w-full rounded-xl border-2 border-blue-400/90 bg-gradient-to-br from-blue-500/10 to-indigo-500/15 dark:from-blue-950/40 dark:to-indigo-950/30 ring-2 ring-blue-400/20 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
             >
               <span className="flex items-center gap-1.5 opacity-90">
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
@@ -304,9 +304,9 @@ export const SidebarInbox: React.FC = () => {
 
         {filteredInboxTasks.length === 0 && (
           <div
-            className={`h-36 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${isInboxOver
+            className={`h-36 border-2 rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${isInboxOver
               ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500/30 text-blue-600 dark:text-blue-300 shadow-inner"
-              : "border-slate-200 dark:border-slate-800 text-slate-400"
+              : "border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 text-slate-400"
               }`}
           >
             {isInboxOver ? (
