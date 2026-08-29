@@ -370,7 +370,7 @@ export const VoiceCaptureOverlay: React.FC = () => {
       priority: editPriority,
       tags: editTags,
       dueDate: editDueDate || null,
-      completed: editColumnId === "done",
+      completed: false,
     });
 
     try {

@@ -12,11 +12,13 @@ import {
   X,
   Flag,
   ChevronUp,
+  RotateCcw,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
 export const BatchActionBar: React.FC = () => {
   const {
+    isMultiSelectMode,
     selectedTaskIds,
     clearSelection,
     batchMoveTasks,
@@ -25,22 +27,28 @@ export const BatchActionBar: React.FC = () => {
     batchSetPriority,
     setIsMultiSelectMode,
     getActiveBoardColumns,
+    selectAllTasksInBoard,
   } = useKanbanStore();
 
   const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const [isPriorityMenuOpen, setIsPriorityMenuOpen] = useState(false);
+
+  const hasSelection = selectedTaskIds.length > 0;
+  const isVisible = isMultiSelectMode || hasSelection;
 
   useEscapeKey(() => {
     if (isMoveMenuOpen) {
       setIsMoveMenuOpen(false);
     } else if (isPriorityMenuOpen) {
       setIsPriorityMenuOpen(false);
-    } else if (selectedTaskIds.length > 0) {
+    } else if (hasSelection) {
       clearSelection();
+    } else if (isMultiSelectMode) {
+      setIsMultiSelectMode(false);
     }
-  }, selectedTaskIds.length > 0);
+  }, isVisible);
 
-  if (selectedTaskIds.length === 0) return null;
+  if (!isVisible) return null;
 
   const boardColumns = getActiveBoardColumns();
   const allTargetColumns = [
@@ -63,34 +71,48 @@ export const BatchActionBar: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-[calc(100vw-1rem)] sm:max-w-2xl px-1.5 sm:px-4 animate-in slide-in-from-bottom-5 duration-200">
-      <div className="backdrop-blur-2xl bg-slate-900/95 dark:bg-slate-900/98 text-white border border-slate-700/80 shadow-2xl rounded-full px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-3">
-        {/* Left Count */}
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-full max-w-[calc(100vw-1rem)] sm:max-w-2xl px-1.5 sm:px-4 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
+      <div className="backdrop-blur-2xl bg-slate-900/95 dark:bg-slate-900/98 text-white border border-slate-700/80 shadow-2xl rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+        {/* Left Count & Quick Select All */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-orange-500 text-white font-bold text-[10px] sm:text-xs flex items-center justify-center">
+          <div
+            className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full font-bold text-[10px] sm:text-xs flex items-center justify-center transition-colors ${
+              hasSelection ? "bg-orange-500 text-white" : "bg-slate-800 text-slate-400 border border-slate-700"
+            }`}
+          >
             {selectedTaskIds.length}
           </div>
           <span className="text-xs sm:text-sm font-semibold whitespace-nowrap">
             已選 {selectedTaskIds.length} 項
           </span>
+
+          {!hasSelection && (
+            <button
+              onClick={selectAllTasksInBoard}
+              className="ml-0.5 px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white text-[11px] font-bold transition-colors cursor-pointer"
+            >
+              全選看板
+            </button>
+          )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           {/* Move to Column */}
           <div className="relative">
             <button
+              disabled={!hasSelection}
               onClick={() => {
                 setIsMoveMenuOpen(!isMoveMenuOpen);
                 setIsPriorityMenuOpen(false);
               }}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-semibold text-slate-200 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <span>移動至</span>
               <ChevronUp className="w-3 h-3 text-slate-400" />
             </button>
 
-            {isMoveMenuOpen && (
+            {isMoveMenuOpen && hasSelection && (
               <>
                 <div
                   className="fixed inset-0 z-40"
@@ -105,7 +127,7 @@ export const BatchActionBar: React.FC = () => {
                         batchMoveTasks(col.id);
                         setIsMoveMenuOpen(false);
                       }}
-                      className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg flex items-center gap-1.5 transition-colors"
+                      className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <span>{col.icon}</span>
                       <span>{col.title}</span>
@@ -119,18 +141,19 @@ export const BatchActionBar: React.FC = () => {
           {/* Priority */}
           <div className="relative">
             <button
+              disabled={!hasSelection}
               onClick={() => {
                 setIsPriorityMenuOpen(!isPriorityMenuOpen);
                 setIsMoveMenuOpen(false);
               }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-semibold text-slate-200 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <Flag className="w-3 h-3 text-slate-400" />
               <span className="hidden sm:inline-block">優先級</span>
               <ChevronUp className="w-3 h-3 text-slate-400" />
             </button>
 
-            {isPriorityMenuOpen && (
+            {isPriorityMenuOpen && hasSelection && (
               <>
                 <div
                   className="fixed inset-0 z-40"
@@ -144,7 +167,7 @@ export const BatchActionBar: React.FC = () => {
                         batchSetPriority(p);
                         setIsPriorityMenuOpen(false);
                       }}
-                      className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+                      className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                     >
                       {p === "high" ? "🔴 高優先" : p === "medium" ? "🟡 中優先" : "🟢 低優先"}
                     </button>
@@ -154,10 +177,22 @@ export const BatchActionBar: React.FC = () => {
             )}
           </div>
 
+          {/* Mark Uncompleted */}
+          <button
+            disabled={!hasSelection}
+            onClick={() => handleBatchComplete(false)}
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-semibold border border-slate-700 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            title="批次標記為未完成"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+            <span className="hidden sm:inline-block">未完成</span>
+          </button>
+
           {/* Mark Done */}
           <button
+            disabled={!hasSelection}
             onClick={() => handleBatchComplete(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed"
             title="批次標記為已完成"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -166,25 +201,26 @@ export const BatchActionBar: React.FC = () => {
 
           {/* Batch Delete */}
           <button
+            disabled={!hasSelection}
             onClick={() => {
               if (window.confirm(`確定要刪除選取的 ${selectedTaskIds.length} 項任務嗎？`)) {
                 batchDeleteTasks();
               }
             }}
-            className="p-2 rounded-full bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white transition-colors"
+            className="p-2 rounded-full bg-slate-800 hover:bg-rose-600 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer disabled:cursor-not-allowed"
             title="批次刪除選取任務"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
 
-          {/* Cancel Selection */}
+          {/* Cancel Selection / Exit Multi-Select Mode */}
           <button
             onClick={() => {
               clearSelection();
               setIsMultiSelectMode(false);
             }}
-            className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors ml-1"
-            title="取消多選"
+            className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors ml-0.5 cursor-pointer"
+            title="退出多選模式"
           >
             <X className="w-4 h-4" />
           </button>

@@ -11,6 +11,8 @@ export const BottomDock: React.FC = () => {
     setViewMode,
     isInboxSidebarOpen,
     setIsInboxSidebarOpen,
+    isMultiSelectMode,
+    selectedTaskIds,
   } = useKanbanStore();
 
   const [isMobile, setIsMobile] = useState(false);
@@ -42,6 +44,10 @@ export const BottomDock: React.FC = () => {
   const isInboxActive = isInboxSidebarOpen;
   const isKanbanActive = isMobile ? (!isInboxSidebarOpen && viewMode === "kanban") : viewMode === "kanban";
   const isCalendarActive = !isMobile && viewMode === "calendar";
+
+  if (isMultiSelectMode || selectedTaskIds.length > 0) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto max-w-[calc(100vw-5rem)] sm:max-w-none">

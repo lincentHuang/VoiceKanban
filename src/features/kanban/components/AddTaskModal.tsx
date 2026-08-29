@@ -93,7 +93,7 @@ export const AddTaskModal: React.FC = () => {
         startDate: startDate || null,
         dueDate: dueDate || null, // Default null if empty
         isAllDay,
-        completed: columnId === "done",
+        completed: false,
       });
 
       // Reset and close

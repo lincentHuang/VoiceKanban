@@ -748,7 +748,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
                   boardId: newBoardId,
                   columnId: targetColumnId,
                   orderKey: newOrderKey,
-                  completed: targetColumnId === "done" ? true : (taskToMove.columnId === "done" ? false : taskToMove.completed),
+                  completed: taskToMove.completed,
                   updatedAt: new Date().toISOString(),
                 }
               : t
@@ -766,7 +766,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           columnId,
           boardId: columnId === "inbox" ? "global" : boardId,
           orderKey: initialOrderKey(index),
-          completed: columnId === "done" ? true : task.completed,
+          completed: task.completed,
           updatedAt: new Date().toISOString(),
         }));
 
@@ -926,7 +926,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
                   ...t,
                   boardId: targetBoardId,
                   columnId: targetColumnId,
-                  completed: targetColumnId === "done" ? true : (t.columnId === "done" ? false : t.completed),
+                  completed: t.completed,
                   updatedAt: new Date().toISOString(),
                 }
               : t

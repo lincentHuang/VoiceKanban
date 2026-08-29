@@ -141,7 +141,7 @@ export const TableView: React.FC = () => {
                         onValueChange={(newCol) => {
                           updateTask(task.id, {
                             columnId: newCol as ColumnId,
-                            completed: newCol === "done" ? true : (task.columnId === "done" ? false : task.completed),
+                            completed: task.completed,
                           });
                         }}
                       >

@@ -36,7 +36,7 @@ export const SubHeaderToolbar: React.FC = () => {
   ).filter(Boolean);
 
   const inProgressCount = boardTasks.filter((t) => t.columnId === "in_progress").length;
-  const doneCount = boardTasks.filter((t) => t.completed || t.columnId === "done").length;
+  const doneCount = boardTasks.filter((t) => t.completed).length;
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-2">

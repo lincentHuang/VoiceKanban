@@ -111,7 +111,7 @@ export const INITIAL_TASKS: Task[] = [
     isStarred: false,
     tags: [],
     dueDate: null,
-    completed: true,
+    completed: false,
     attachmentsCount: 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

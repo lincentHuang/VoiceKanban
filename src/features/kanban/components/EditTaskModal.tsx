@@ -147,7 +147,7 @@ export const EditTaskModal: React.FC = () => {
     updateTask(task.id, {
       columnId: targetColId,
       boardId: newBoardId,
-      completed: targetColId === "done" ? true : (task.columnId === "done" ? false : task.completed),
+      completed: task.completed,
     });
     setIsMovePopoverOpen(false);
   };
@@ -272,7 +272,7 @@ export const EditTaskModal: React.FC = () => {
       startDate: startDate || null,
       dueDate: dueDate || null,
       isAllDay,
-      completed: columnId === "done" ? true : task.completed,
+      completed: task.completed,
     });
 
     setSaveToast(true);
