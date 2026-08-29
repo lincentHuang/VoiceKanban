@@ -11,17 +11,17 @@ import {
   useSensor,
   useSensors,
   pointerWithin,
-  rectIntersection,
+  closestCenter,
   closestCorners,
   DragOverlay,
+  CollisionDetection,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { ColumnId, Task } from "@/core/types/task";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
-import { SidebarInbox } from "../inbox/SidebarInbox";
+import { SidebarInbox } from "@/features/inbox";
 import { WorkspaceSplitter } from "./WorkspaceSplitter";
-import { BoardCanvasContainer } from "../kanban/BoardCanvasContainer";
-import { TaskCard } from "../kanban/TaskCard";
+import { BoardCanvasContainer, TaskCard } from "@/features/kanban";
 
 export const UnifiedDnDWorkspace: React.FC = () => {
   const {
@@ -63,34 +63,43 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     })
   );
 
-  // Custom collision detection: prioritize items under pointer, fallback to container, then rectIntersection, then closestCorners
-  const collisionDetectionStrategy = (args: Parameters<typeof closestCorners>[0]) => {
-    // 1. First check if pointer is directly within any droppable
+  // Anti-jitter Collision Detection:
+  // 1. Prioritize direct pointer hits on tasks or column containers
+  // 2. Fallback to monotonic closestCenter (eliminates jumping caused by rect overlap)
+  // 3. Fallback to closestCorners
+  const collisionDetectionStrategy: CollisionDetection = (args) => {
+    // 1. Check if pointer is directly within any droppable
     const pointerCollisions = pointerWithin(args);
     if (pointerCollisions.length > 0) {
-      // Prioritize Sortable Task over Column container if pointer is directly on a task
+      // Prioritize Sortable Task directly under pointer
       const taskCollision = pointerCollisions.find(
         (c) => c.data?.droppableContainer?.data?.current?.type === "Task"
       );
       if (taskCollision) {
         return [taskCollision];
       }
+
+      // Check if pointer is over a Column container or inbox
+      const columnCollision = pointerCollisions.find(
+        (c) =>
+          c.data?.droppableContainer?.data?.current?.type === "Column" ||
+          c.id === "inbox" ||
+          columns.some((col) => col.id === c.id)
+      );
+      if (columnCollision) {
+        return [columnCollision];
+      }
+
       return pointerCollisions;
     }
 
-    // 2. Check bounding rect intersection (useful when pointer moves fast or over margins)
-    const rectCollisions = rectIntersection(args);
-    if (rectCollisions.length > 0) {
-      const taskCollision = rectCollisions.find(
-        (c) => c.data?.droppableContainer?.data?.current?.type === "Task"
-      );
-      if (taskCollision) {
-        return [taskCollision];
-      }
-      return rectCollisions;
+    // 2. Center-distance collision detection for smooth tracking without multi-column jitter
+    const centerCollisions = closestCenter(args);
+    if (centerCollisions.length > 0) {
+      return centerCollisions;
     }
 
-    // 3. Fallback to closestCorners
+    // 3. Final fallback
     return closestCorners(args);
   };
 
@@ -144,10 +153,39 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
 
     let targetIndex = targetColumnTasks.length;
+
     if (overTask && overId !== activeId) {
       const overIndex = targetColumnTasks.findIndex((t) => t.id === overId);
-      targetIndex = overIndex >= 0 ? overIndex : targetColumnTasks.length;
+      if (overIndex >= 0) {
+        // Midpoint Y-axis thresholding: compare center of active item with center of hovered item
+        const activeTop = active.rect.current.translated?.top;
+        const activeHeight = active.rect.current.translated?.height ?? 0;
+        const overTop = over.rect.top;
+        const overHeight = over.rect.height;
+
+        let isBelow = false;
+        if (activeTop !== undefined && overTop !== undefined) {
+          const activeCenterY = activeTop + activeHeight / 2;
+          const overCenterY = overTop + overHeight / 2;
+          isBelow = activeCenterY > overCenterY;
+        }
+
+        targetIndex = isBelow ? overIndex + 1 : overIndex;
+      }
+    } else if (isOverColumn && targetColumnTasks.length > 0) {
+      // If hovering directly over column container area (e.g. padding/top/bottom)
+      const activeTop = active.rect.current.translated?.top;
+      const overTop = over.rect.top;
+      if (activeTop !== undefined && overTop !== undefined) {
+        if (activeTop < overTop + 60) {
+          targetIndex = 0;
+        } else {
+          targetIndex = targetColumnTasks.length;
+        }
+      }
     }
+
+    targetIndex = Math.max(0, Math.min(targetIndex, targetColumnTasks.length));
 
     if (
       dragOverLocation?.columnId !== targetColumnId ||
@@ -181,27 +219,6 @@ export const UnifiedDnDWorkspace: React.FC = () => {
 
     const targetBoardId = targetColumnId === "inbox" ? "global" : activeBoardId;
 
-    // Case 1: Same Column Reordering (Downwards and Upwards via arrayMove)
-    if (overTask && activeId !== overId && activeTask.columnId === targetColumnId) {
-      const columnTasks = tasks
-        .filter((t) =>
-          targetColumnId === "inbox"
-            ? t.columnId === "inbox"
-            : t.boardId === targetBoardId && t.columnId === targetColumnId
-        )
-        .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
-
-      const activeIndex = columnTasks.findIndex((t) => t.id === activeId);
-      const overIndex = columnTasks.findIndex((t) => t.id === overId);
-
-      if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
-        const reordered = arrayMove(columnTasks, activeIndex, overIndex);
-        reorderColumnTasks(targetColumnId, targetBoardId, reordered);
-        return;
-      }
-    }
-
-    // Case 2: Cross Column Move or drop on column with live slot index
     const targetColumnTasks = tasks
       .filter((t) =>
         targetColumnId === "inbox"
@@ -211,11 +228,32 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
 
     let finalIndex = finalLocation?.index ?? targetColumnTasks.length;
-    if (overTask && !finalLocation) {
+    if (finalLocation === null && overTask) {
       const overIndex = targetColumnTasks.findIndex((t) => t.id === overId);
       finalIndex = overIndex >= 0 ? overIndex : targetColumnTasks.length;
     }
 
+    finalIndex = Math.max(0, Math.min(finalIndex, targetColumnTasks.length));
+
+    // Same Column Reordering
+    if (activeTask.columnId === targetColumnId && (activeTask.boardId === targetBoardId || targetColumnId === "inbox")) {
+      const originalColumnTasks = tasks
+        .filter((t) =>
+          targetColumnId === "inbox"
+            ? t.columnId === "inbox"
+            : t.boardId === targetBoardId && t.columnId === targetColumnId
+        )
+        .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
+
+      const oldIndex = originalColumnTasks.findIndex((t) => t.id === activeId);
+      if (oldIndex !== -1 && oldIndex !== finalIndex) {
+        const reordered = arrayMove(originalColumnTasks, oldIndex, finalIndex);
+        reorderColumnTasks(targetColumnId, targetBoardId, reordered);
+        return;
+      }
+    }
+
+    // Cross Column Moving
     moveTask(activeId, targetColumnId, finalIndex, false);
   };
 

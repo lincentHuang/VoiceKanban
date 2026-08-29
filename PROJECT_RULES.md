@@ -8,19 +8,51 @@
 
 1. **`@PM` (專案經理 / 唯一對外窗口)**：
    - 負責發動 **Grill Me** 質詢使用者需求盲點與 UX 流程。
-   - 獲得使用者回覆後，產出標準 `PRD.md`（含驗收標準 AC）並自動交接給內部團隊。
+   - **Master PRD 原則**：維護根目錄 `PRD.md` 為**「產品全貌需求規格書（Living Master Document）」**，呈現系統**目前所有現存功能模組**與全域驗收標準，**絕非單一任務或上一次執行的變更日誌**。每次新需求均以增量形式融入產品全景。
+   - 確保各功能模組於 `src/features/<feature>/feature.md` 建立專屬規格文檔。
 
-2. **`@Architect` (架構師)**：
-   - 讀取 `PRD.md`，產出 `types.ts`（前後端型別契約）與資料庫 Schema。
+2. **`@Architect` (Next.js 前端架構師)**：
+   - 依據 `PRD.md` 規劃與維持 Feature-Driven 模組化架構（`src/features/<feature-name>/`）。
+   - 產出/維護 `src/core/types/*.ts`（前後端型別契約）、各 feature 的 `feature.md` 與資料庫 Schema。
 
 3. **`@Backend` (後端工程師)**：
-   - 依據 `types.ts` 實作 API 與資料庫存取，自動執行測試並自修至 100% 通過。
+   - 依據型別契約實作 API 路由、資料庫存取與業務邏輯，自動執行測試並自修至 100% 通過。
 
 4. **`@Frontend` (前端工程師)**：
-   - 依據 `types.ts` 實作 UI 積木，強制包含 **5 種狀態**（Loading / Empty / Error / Success / Active）。
+   - 依據 Feature 模組化架構實作 UI 元件，強制落實 **5 種 UI 狀態**（Loading / Empty / Error / Success / Active）。
 
 5. **`@QA` (測試驗收工程師)**：
-   - 對照 `PRD.md` 的驗收條件，執行極端值、邊界情況與防呆破壞性測試。
+   - 對照 `PRD.md` 與各 `feature.md` 的驗收條件，執行極端值、邊界情況與防呆破壞性測試，產出 `QA_REPORT.md`。
+
+---
+
+## 📂 Next.js 前端目錄架構規範 (Feature-Driven Architecture)
+
+```text
+src/
+├── app/                  # Next.js App Router (頁面路由與 API Handlers)
+├── features/             # 業務功能模組 (Feature-Driven Modules)
+│   ├── <feature-name>/
+│   │   ├── components/   # 該 Feature 專屬 UI 元件
+│   │   ├── hooks/        # 該 Feature 專屬自訂 Hook (可選)
+│   │   ├── services/     # 該 Feature 專屬 API / 業務邏輯 (可選)
+│   │   ├── types/        # 該 Feature 專屬型別定義 (可選)
+│   │   ├── index.ts      # 模組統一對外導出入口
+│   │   └── feature.md    # 該 Feature 功能規格、UI 狀態與驗收清單
+├── components/           # 全域共用元件
+│   ├── ui/               # 基礎原子元件 (Shadcn UI / Radix Primitives)
+│   ├── layout/           # 全域版面與工作區佈局
+│   ├── navbar/           # 全域導覽列
+│   ├── navigation/       # 全域底部 Dock / 導航
+│   ├── toolbar/          # 全域工具列
+│   ├── common/           # 共用複合元件 (如 DateTimePicker)
+│   └── brand/            # 品牌與 Logo 元件
+└── core/                 # 全域核心基礎設施
+    ├── types/            # 全域資料型別契約
+    ├── stores/           # 全域狀態管理 (Zustand)
+    ├── services/         # 全域基礎服務 (Firebase, Gemini, Sync, Storage)
+    └── utils/            # 全域工具函式
+```
 
 ---
 
@@ -31,9 +63,9 @@
 ```text
 [使用者提出需求] 
        ↓
-[@PM 啟動 Grill Me 質詢 ➔ 使用者回覆 ➔ 產出 PRD.md]
+[@PM 啟動 Grill Me 質詢 ➔ 使用者回覆 ➔ 增量更新 Master PRD.md & feature.md]
        ↓ (以下全自動執行)
-[@Architect 產出 types.ts 與 Schema]
+[@Architect 規劃 Feature 模組架構 ＋ 產出 types.ts 與 Schema]
        ↓
 [@Backend 實作 API ＋ 自跑測試通過]
        ↓

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
-import { TaskCard } from "../kanban/TaskCard";
+import { TaskCard } from "@/features/kanban";
 import {
   Inbox,
   Plus,
@@ -273,8 +273,13 @@ export const SidebarInbox: React.FC = () => {
               {insertIndex === idx && (
                 <div
                   key="drop-slot-inbox"
-                  className="h-10 w-full rounded-xl border-2 border-dashed border-blue-400/70 bg-blue-50/40 dark:bg-blue-950/30 my-1 transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
-                />
+                  className="h-12 w-full rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/80 dark:bg-blue-950/50 dark:border-blue-500/70 my-1 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+                >
+                  <span className="flex items-center gap-1.5 opacity-90">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    放置於收件匣
+                  </span>
+                </div>
               )}
               <TaskCard
                 task={task}
@@ -287,8 +292,13 @@ export const SidebarInbox: React.FC = () => {
           {filteredInboxTasks.length > 0 && insertIndex === filteredInboxTasks.length && (
             <div
               key="drop-slot-inbox-end"
-              className="h-10 w-full rounded-xl border-2 border-dashed border-blue-400/70 bg-blue-50/40 dark:bg-blue-950/30 my-1 transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
-            />
+              className="h-12 w-full rounded-xl border-2 border-dashed border-blue-400 bg-blue-50/80 dark:bg-blue-950/50 dark:border-blue-500/70 my-1 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+            >
+              <span className="flex items-center gap-1.5 opacity-90">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                放置於收件匣
+              </span>
+            </div>
           )}
         </SortableContext>
 

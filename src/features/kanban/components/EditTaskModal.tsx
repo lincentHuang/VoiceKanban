@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId, CoverAspectRatio, TRELLO_COLUMN_COLORS, TaskAttachment } from "@/core/types/task";
 import { getDueDateStatus, isoToDateTimeLocal, dateTimeLocalToIso } from "@/core/utils/dateUtils";
-import { MarkdownEditor } from "../editor/MarkdownEditor";
-import { DateTimePicker } from "../common/DateTimePicker";
+import { MarkdownEditor } from "@/features/editor";
+import { DateTimePicker } from "@/components/common/DateTimePicker";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import {
   X,

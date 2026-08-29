@@ -31,6 +31,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
     selectedTaskIds,
     addTask,
     activeBoardId,
+    dragOverLocation,
+    activeDragTaskId,
   } = useKanbanStore();
 
   const [isAddingCard, setIsAddingCard] = useState(false);
@@ -39,6 +41,15 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const filteredTasks = tasks.filter((t) => t.id !== activeDragTaskId);
+  const taskIds = filteredTasks.map((t) => t.id);
+
+  const isColumnOver = dragOverLocation?.columnId === column.id;
+  const insertIndex =
+    isColumnOver && dragOverLocation
+      ? Math.max(0, Math.min(dragOverLocation.index, filteredTasks.length))
+      : -1;
 
   useEffect(() => {
     if (isAddingCard) {
@@ -99,14 +110,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
     setNewCardTitle("");
   };
 
-  const taskIds = tasks.map((t) => t.id);
-
   return (
     <div
       ref={setNodeRef}
       className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-full h-fit backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden ${
-        isOver
-          ? "border-orange-400 bg-orange-50/90 dark:bg-orange-950/80 ring-2 ring-orange-400/40"
+        isColumnOver
+          ? "border-orange-400 bg-orange-50/70 dark:bg-orange-950/60 ring-2 ring-orange-400/30"
           : "border-slate-200/80 dark:border-slate-800"
       }`}
     >
@@ -156,15 +165,46 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks }) => 
         className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 custom-scrollbar min-h-0"
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+          {filteredTasks.map((task, idx) => (
+            <React.Fragment key={task.id}>
+              {insertIndex === idx && (
+                <div
+                  key={`drop-slot-${column.id}-${idx}`}
+                  className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-orange-50/80 dark:bg-orange-950/50 dark:border-orange-500/70 my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+                >
+                  <span className="flex items-center gap-1.5 opacity-90">
+                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                    放置於此
+                  </span>
+                </div>
+              )}
+              <TaskCard task={task} />
+            </React.Fragment>
           ))}
+
+          {filteredTasks.length > 0 && insertIndex === filteredTasks.length && (
+            <div
+              key={`drop-slot-${column.id}-end`}
+              className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-orange-50/80 dark:bg-orange-950/50 dark:border-orange-500/70 my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+            >
+              <span className="flex items-center gap-1.5 opacity-90">
+                <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                放置於此
+              </span>
+            </div>
+          )}
         </SortableContext>
 
-        {/* Drop Highlight during Drag & Drop */}
-        {isOver && tasks.length === 0 && (
-          <div className="h-16 border-2 border-dashed border-orange-500 bg-orange-50/80 dark:bg-orange-950/60 rounded-xl flex items-center justify-center text-xs font-bold text-orange-600 dark:text-orange-300 shadow-inner my-1">
-            ✨ 放開以移入此欄位
+        {/* Drop Highlight during Drag & Drop when column has 0 tasks */}
+        {filteredTasks.length === 0 && isColumnOver && (
+          <div
+            key={`drop-slot-${column.id}-empty`}
+            className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-orange-50/80 dark:bg-orange-950/50 dark:border-orange-500/70 my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+          >
+            <span className="flex items-center gap-1.5 opacity-90">
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+              放置於此
+            </span>
           </div>
         )}
 

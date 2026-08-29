@@ -5,9 +5,7 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ViewMode } from "@/core/types/task";
 import { getDueDateStatus } from "@/core/utils/dateUtils";
 import { KanbanContainer } from "./KanbanContainer";
-import { TableView } from "../views/TableView";
-import { ListView } from "../views/ListView";
-import { CalendarView } from "../views/CalendarView";
+import { TableView, ListView, CalendarView } from "@/features/views";
 import {
   Columns,
   Calendar,

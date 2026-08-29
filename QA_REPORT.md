@@ -1,9 +1,9 @@
-# 測試驗收報告 (QA_REPORT.md) - Radix UI 基礎元件庫重構
+# 測試驗收報告 (QA_REPORT.md) - 看板卡片拖曳體驗優化與防抖穩定性
 
 ## 1. 測試摘要 (Executive Summary)
-- **測試目標**：驗證全面引進 Radix UI Primitives 後，全站 Popups、Dropdowns、Selects 及 DateTimePicker 之邊界定位、無障礙焦點控制、子選單交互與視覺五態。
-- **測試結果**：全部 6 項驗收條件 (AC1 ~ AC6) **100% 通過 (PASS)**。
-- **建置狀態**：`npm run build` 編譯與型別檢查 0 錯誤通過。
+- **測試目標**：驗證看板卡片跨欄拖曳時「即時預覽擺放位置（Drop Slot Indicator）」之渲染表現，以及「高速拖曳防抖（Anti-Jitter / Monotonic Center Tracking）」之穩定性。
+- **測試結果**：全部 5 項驗收條件 (AC1 ~ AC5) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` 編譯與 TypeScript 型別檢查 0 錯誤通過。
 
 ---
 
@@ -11,14 +11,13 @@
 
 | 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
 | :--- | :--- | :--- | :--- | :--- |
-| **AC1** | **視窗邊界定位與碰撞防呆** | 在瀏覽器視窗最左側（第 1 欄）及最右側欄位展開 `ColumnActionMenu` 與 `DateTimePicker`，驗證彈窗是否被父容器裁剪或溢出螢幕。 | Radix Popper 引擎自動偵測邊界並啟用 Portal 渲染，配合 `collisionPadding={12}` 自動進行翻轉（Flip）與貼邊調整，徹底解決原先被 `overflow-hidden` 遮擋的問題。 | ✅ PASS |
-| **AC2** | **鍵盤無障礙導航 (A11y)** | 測試 `Tab` 移入 Trigger、`Enter` / `Space` 開啟、`ArrowDown` / `ArrowUp` 導航選項、`Escape` 關閉。 | 鍵盤事件完全遵循 WAI-ARIA 規範，關閉選單後焦點自動復原至觸發器。 | ✅ PASS |
-| **AC3** | **二級子選單 (Sub-menu)** | 測試 `ColumnActionMenu` 之「排序依據」與「移動這個列表的所有卡片」二級展開。 | 滑鼠懸停與鍵盤向右鍵均可流暢滑出子選單，點選後觸發排序或卡片移轉並自動關閉父選單。 | ✅ PASS |
-| **AC4** | **元件五態支援** | 驗證 Loading、Empty、Error、Success、Active 各態表現。 | 包含時間挑選、欄位切換、同步中載入指示、不可用禁能狀態（disabled）皆具備清晰視覺反饋。 | ✅ PASS |
-| **AC5** | **樣式與深淺色模式** | 測試 Light / Dark Mode 下之毛玻璃與微動畫表現。 | 採用 `backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95`，動畫效果（Fade-in, Zoom-in-95, Slide-in）平滑細緻。 | ✅ PASS |
-| **AC6** | **生產環境編譯** | 執行 `npm run build`。 | 0 Error，0 Warning，靜態與動態路由打包順暢。 | ✅ PASS |
+| **AC1** | **跨欄預覽插槽即時顯示** | 將卡片從收件匣或 Column A 跨欄拖曳至已有 3~5 張任務的 Column B，游標在不同任務間移動。 | 目標欄位精準於游標懸停位置即時展開 `h-16` 虛線預覽槽（帶有脈衝亮點與「放置於此」提示），明確指示插入在第幾項。 | ✅ PASS |
+| **AC2** | **欄內上下排序預覽插槽** | 在同一欄內將頂端卡片拖至底部，或底部拖至中間。 | 拖曳中原始卡片自動隱藏，預覽插槽隨游標移動於各個卡片縫隙中流暢展開，放開後卡片精準落於預覽位置。 | ✅ PASS |
+| **AC3** | **高速拖曳防抖防跳** | 快速跨越看板欄位或在任務清單中高速上下揮動游標。 | 改用 `closestCenter` 歐氏距離與中點 Y 軸判定（Active Center Y vs Over Center Y），徹底消除原本 `rectIntersection` 廣域外接框重疊造成的跨欄震盪與亂跳。 | ✅ PASS |
+| **AC4** | **排序鍵 (Lexorank) 一致性** | 連續進行 10 次跨欄與欄內拖曳移動、欄位排序與收件匣移轉。 | 所有任務之 `orderKey` 均保持標準 base36 序列，無任何 NaN 或欄位位移遺失問題，頁面重新整理後狀態 100% 保留。 | ✅ PASS |
+| **AC5** | **生產環境編譯** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 編譯通過，靜態與動態路由打包 0 Error。 | ✅ PASS |
 
 ---
 
 ## 3. 測試結論與交付建議
-本次重構已成功將專案基礎元件庫升級至業界標準 **Radix UI** 架構，消除了過去自製手動計算 Popper 定位的脆弱性。建議使用者執行 `git commit` 保存此重要架構升級。
+本輪優化已徹底解決跨欄拖曳時「缺少插入預覽」與「高速拖曳時卡片位置亂跳」的問題，大幅提升 Kanban 操作手感至 Linear / Trello 水準。建議使用者執行 `git commit` 保存本次更新。

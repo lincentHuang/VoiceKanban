@@ -568,10 +568,10 @@ export const useKanbanStore = create<KanbanStoreState>()(
           return a.title.localeCompare(b.title);
         });
 
-        // Reassign order keys
+        // Reassign order keys using clean base36 Lexorank initial keys
         const sortedColTasks = colTasks.map((t, idx) => ({
           ...t,
-          orderKey: `sort-${idx.toString().padStart(4, "0")}`,
+          orderKey: initialOrderKey(idx),
         }));
 
         set({ tasks: [...otherTasks, ...sortedColTasks] });
@@ -754,7 +754,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           ...task,
           columnId,
           boardId: columnId === "inbox" ? "global" : boardId,
-          orderKey: `k_${(index + 1) * 1000}`,
+          orderKey: initialOrderKey(index),
           completed: columnId === "done" ? true : task.completed,
           updatedAt: new Date().toISOString(),
         }));

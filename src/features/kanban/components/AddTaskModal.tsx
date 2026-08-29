@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId } from "@/core/types/task";
-import { DateTimePicker } from "../common/DateTimePicker";
+import { DateTimePicker } from "@/components/common/DateTimePicker";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import { X, Calendar, Tag, Star, Plus } from "lucide-react";
 import {

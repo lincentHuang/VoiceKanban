@@ -4,16 +4,19 @@ import React, { useState, useEffect } from "react";
 import { Navbar } from "@/components/navbar/Navbar";
 import { BottomDock } from "@/components/navigation/BottomDock";
 import { UnifiedDnDWorkspace } from "@/components/layout/UnifiedDnDWorkspace";
-import { VoiceFAB } from "@/components/voice/VoiceFAB";
-import { VoiceCaptureOverlay } from "@/components/voice/VoiceCaptureOverlay";
-import { SettingsModal } from "@/components/settings/SettingsModal";
-import { AddTaskModal } from "@/components/kanban/AddTaskModal";
-import { EditTaskModal } from "@/components/kanban/EditTaskModal";
-import { AuthModal } from "@/components/auth/AuthModal";
-import { AuthLandingScreen } from "@/components/auth/AuthLandingScreen";
-import { BindAccountModal } from "@/components/auth/BindAccountModal";
-import { BatchActionBar } from "@/components/kanban/BatchActionBar";
-import { ColumnManagerModal } from "@/components/kanban/ColumnManagerModal";
+import { VoiceFAB, VoiceCaptureOverlay } from "@/features/voice";
+import { SettingsModal } from "@/features/settings";
+import {
+  AddTaskModal,
+  EditTaskModal,
+  BatchActionBar,
+  ColumnManagerModal,
+} from "@/features/kanban";
+import {
+  AuthModal,
+  AuthLandingScreen,
+  BindAccountModal,
+} from "@/features/auth";
 
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
