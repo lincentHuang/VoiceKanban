@@ -497,6 +497,7 @@ export const EditTaskModal: React.FC = () => {
                               value={editingChecklistText}
                               onChange={(e) => setEditingChecklistText(e.target.value)}
                               onKeyDown={(e) => {
+                                if (e.nativeEvent.isComposing || e.key === "Process") return;
                                 if (e.key === "Enter") {
                                   e.preventDefault();
                                   handleSaveEditChecklist(item.id);
@@ -1068,6 +1069,7 @@ export const EditTaskModal: React.FC = () => {
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={(e) => {
+                      if (e.nativeEvent.isComposing || e.key === "Process") return;
                       if (e.key === "Enter") {
                         e.preventDefault();
                         handleAddTag();

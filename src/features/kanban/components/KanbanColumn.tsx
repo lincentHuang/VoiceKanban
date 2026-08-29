@@ -116,12 +116,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
         dueDate: null,
       });
       setNewCardTitle("");
-      setTimeout(() => {
-        inputRef.current?.focus();
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-        }
-      }, 50);
+      setIsAddingCard(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +136,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
   if (isOverlay) {
     return (
       <div className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-[500px] h-fit backdrop-blur-2xl border-2 border-orange-500 rounded-2xl p-3 shadow-2xl scale-105 rotate-2 ring-4 ring-orange-500/25 relative overflow-hidden select-none cursor-grabbing pointer-events-none transition-transform duration-75 ${colorConfig.containerClass}`}>
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-800/60 px-1 shrink-0">
+        <div className="flex items-center justify-between px-1 py-1 shrink-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <GripVertical className="w-3.5 h-3.5 text-orange-500 shrink-0 -ml-0.5" />
             <span className="text-base shrink-0">{column.icon}</span>
@@ -199,7 +194,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
       <div
         {...attributes}
         {...listeners}
-        className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-800/60 px-1 shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
+        className="flex items-center justify-between px-1 py-1 shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
         title="按住標頭可拖曳重新排列欄位順序"
       >
         <div className="flex items-center gap-1.5 min-w-0">
@@ -291,12 +286,13 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
         {/* Inline Add Card Active Form (Matches Media 4) */}
         {isAddingCard && (
           <div className="pt-1 animate-in fade-in zoom-in-95 duration-150">
-            <div className="bg-white dark:bg-slate-800/90 rounded-xl p-2.5 shadow-sm border border-blue-400/80 dark:border-blue-500/60 ring-2 ring-blue-500/20">
+            <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-3 shadow-md border border-blue-400/80 dark:border-blue-500/60 ring-2 ring-blue-500/20">
               <textarea
                 ref={inputRef}
                 value={newCardTitle}
                 onChange={(e) => setNewCardTitle(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing || e.key === "Process") return;
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     handleAddCardSubmit();
@@ -307,7 +303,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
                 }}
                 placeholder="輸入標題或貼上連結"
                 rows={2}
-                className="w-full bg-transparent text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none resize-none leading-relaxed"
+                className="w-full bg-transparent text-[16px] sm:text-sm font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 placeholder:font-normal focus:outline-none resize-none leading-snug"
                 autoFocus
               />
             </div>
@@ -338,7 +334,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
 
       {/* Column Footer: Bottom Add Card & Voice Button Bar (Matches Media 3 & Media 4) */}
       {!isAddingCard && (
-        <div className="pt-2 mt-1 border-t border-slate-200/50 dark:border-slate-800/60 flex items-center gap-1.5 shrink-0">
+        <div className="pt-1.5 flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setIsAddingCard(true)}

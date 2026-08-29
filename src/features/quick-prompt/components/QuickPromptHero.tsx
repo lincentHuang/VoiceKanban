@@ -68,6 +68,7 @@ export const QuickPromptHero: React.FC = () => {
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing || e.key === "Process") return;
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleQuickSubmit(e);
