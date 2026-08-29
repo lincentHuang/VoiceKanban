@@ -80,22 +80,155 @@ export interface BatchActionPayload {
   completed?: boolean;
 }
 
-export const TRELLO_COLUMN_COLORS = [
-  { name: "綠色", value: "bg-emerald-500/20 text-emerald-700 border-emerald-300 dark:border-emerald-700", hex: "#10b981" },
-  { name: "黃色", value: "bg-amber-400/20 text-amber-800 border-amber-300 dark:border-amber-700", hex: "#f59e0b" },
-  { name: "橘色", value: "bg-orange-500/20 text-orange-800 border-orange-300 dark:border-orange-700", hex: "#f97316" },
-  { name: "紅色", value: "bg-rose-500/20 text-rose-800 border-rose-300 dark:border-rose-700", hex: "#f43f5e" },
-  { name: "紫色", value: "bg-purple-500/20 text-purple-800 border-purple-300 dark:border-purple-700", hex: "#a855f7" },
-  { name: "藍色", value: "bg-blue-500/20 text-blue-800 border-blue-300 dark:border-blue-700", hex: "#3b82f6" },
-  { name: "青色", value: "bg-cyan-500/20 text-cyan-800 border-cyan-300 dark:border-cyan-700", hex: "#06b6d4" },
-  { name: "草綠", value: "bg-lime-500/20 text-lime-800 border-lime-300 dark:border-lime-700", hex: "#84cc16" },
-  { name: "粉紅", value: "bg-pink-500/20 text-pink-800 border-pink-300 dark:border-pink-700", hex: "#ec4899" },
-  { name: "灰色", value: "bg-slate-500/20 text-slate-800 border-slate-300 dark:border-slate-700", hex: "#64748b" },
+export interface ColumnColorItem {
+  id: string;
+  name: string;
+  hex: string;
+  borderHex: string;
+  containerClass: string;
+  badgeClass: string;
+  value?: string;
+}
+
+export const TRELLO_COLUMN_COLORS: ColumnColorItem[] = [
+  {
+    id: "amber",
+    name: "柔和淺黃",
+    hex: "#fef3c7",
+    borderHex: "#fde68a",
+    containerClass: "bg-amber-50/80 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/40",
+    badgeClass: "bg-amber-100/90 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200",
+  },
+  {
+    id: "orange",
+    name: "晨曦淺橘",
+    hex: "#ffedd5",
+    borderHex: "#fed7aa",
+    containerClass: "bg-orange-50/80 dark:bg-orange-950/20 border-orange-200/80 dark:border-orange-900/40",
+    badgeClass: "bg-orange-100/90 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200",
+  },
+  {
+    id: "purple",
+    name: "恬靜淺紫",
+    hex: "#f3e8ff",
+    borderHex: "#e9d5ff",
+    containerClass: "bg-purple-50/80 dark:bg-purple-950/20 border-purple-200/80 dark:border-purple-900/40",
+    badgeClass: "bg-purple-100/90 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200",
+  },
+  {
+    id: "emerald",
+    name: "清新淺綠",
+    hex: "#dcfce7",
+    borderHex: "#bbf7d0",
+    containerClass: "bg-emerald-50/80 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40",
+    badgeClass: "bg-emerald-100/90 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200",
+  },
+  {
+    id: "blue",
+    name: "柔霧淺藍",
+    hex: "#e0f2fe",
+    borderHex: "#bae6fd",
+    containerClass: "bg-sky-50/80 dark:bg-sky-950/20 border-sky-200/80 dark:border-sky-900/40",
+    badgeClass: "bg-sky-100/90 dark:bg-sky-900/50 text-sky-800 dark:text-sky-200",
+  },
+  {
+    id: "rose",
+    name: "浪漫淺粉",
+    hex: "#ffe4e6",
+    borderHex: "#fecdd3",
+    containerClass: "bg-rose-50/80 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-900/40",
+    badgeClass: "bg-rose-100/90 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200",
+  },
+  {
+    id: "cyan",
+    name: "冰晶淺青",
+    hex: "#cffafe",
+    borderHex: "#a5f3fc",
+    containerClass: "bg-cyan-50/80 dark:bg-cyan-950/20 border-cyan-200/80 dark:border-cyan-900/40",
+    badgeClass: "bg-cyan-100/90 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-200",
+  },
+  {
+    id: "lime",
+    name: "嫩芽草綠",
+    hex: "#ecfccb",
+    borderHex: "#d9f99d",
+    containerClass: "bg-lime-50/80 dark:bg-lime-950/20 border-lime-200/80 dark:border-lime-900/40",
+    badgeClass: "bg-lime-100/90 dark:bg-lime-900/50 text-lime-800 dark:text-lime-200",
+  },
+  {
+    id: "stone",
+    name: "奶茶燕麥",
+    hex: "#f5f5f4",
+    borderHex: "#e7e5e4",
+    containerClass: "bg-stone-100/80 dark:bg-stone-900/30 border-stone-200/80 dark:border-stone-800/50",
+    badgeClass: "bg-stone-200/80 dark:bg-stone-800/60 text-stone-800 dark:text-stone-200",
+  },
+  {
+    id: "slate",
+    name: "質感冷灰",
+    hex: "#f1f5f9",
+    borderHex: "#e2e8f0",
+    containerClass: "bg-slate-100/80 dark:bg-slate-850/40 border-slate-200/80 dark:border-slate-800/60",
+    badgeClass: "bg-slate-200/80 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200",
+  },
 ];
 
+// Legacy color mapping to smoothly migrate saturated colors to the new pastel design
+const LEGACY_COLOR_MAP: Record<string, string> = {
+  "#10b981": "#dcfce7",
+  "#f59e0b": "#fef3c7",
+  "#f97316": "#ffedd5",
+  "#f43f5e": "#ffe4e6",
+  "#a855f7": "#f3e8ff",
+  "#3b82f6": "#e0f2fe",
+  "#06b6d4": "#cffafe",
+  "#84cc16": "#ecfccb",
+  "#ec4899": "#ffe4e6",
+  "#64748b": "#f1f5f9",
+};
+
+export function getColumnColorConfig(colorHex?: string | null): {
+  hex: string;
+  name: string;
+  containerClass: string;
+  badgeClass: string;
+} {
+  if (!colorHex) {
+    return {
+      hex: "",
+      name: "無顏色",
+      containerClass: "bg-white/95 dark:bg-slate-900/95 border-slate-200/80 dark:border-slate-800",
+      badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
+    };
+  }
+
+  const normalizedHex = LEGACY_COLOR_MAP[colorHex.toLowerCase()] || colorHex.toLowerCase();
+  const matched = TRELLO_COLUMN_COLORS.find(
+    (c) => c.hex.toLowerCase() === normalizedHex || c.hex.toLowerCase() === colorHex.toLowerCase()
+  );
+
+  if (matched) {
+    return {
+      hex: matched.hex,
+      name: matched.name,
+      containerClass: matched.containerClass,
+      badgeClass: matched.badgeClass,
+    };
+  }
+
+  // Fallback for custom hex
+  return {
+    hex: colorHex,
+    name: "自訂色彩",
+    containerClass: "bg-white/90 dark:bg-slate-900/90 border-slate-200/80 dark:border-slate-800",
+    badgeClass: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
+  };
+}
+
 export const DEFAULT_COLUMNS: Column[] = [
-  { id: "todo", title: "待辦事項", icon: "📋", color: "#f59e0b", description: "準備執行的具體任務" },
-  { id: "in_progress", title: "進行中", icon: "⚡", color: "#f97316", description: "當前正在專注處理" },
-  { id: "waiting", title: "等待/阻塞", icon: "⏳", color: "#a855f7", description: "等待外部反饋或依賴中" },
-  { id: "done", title: "已完成", icon: "✅", color: "#10b981", description: "已交付或已驗收" },
+  { id: "todo", title: "待辦事項", icon: "📋", color: "#fef3c7", description: "準備執行的具體任務" },
+  { id: "in_progress", title: "進行中", icon: "⚡", color: "#ffedd5", description: "當前正在專注處理" },
+  { id: "waiting", title: "等待/阻塞", icon: "⏳", color: "#f3e8ff", description: "等待外部反饋或依賴中" },
+  { id: "done", title: "已完成", icon: "✅", color: "#dcfce7", description: "已交付或已驗收" },
 ];
+

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
-import { Column, TRELLO_COLUMN_COLORS } from "@/core/types/task";
+import { Column, TRELLO_COLUMN_COLORS, getColumnColorConfig } from "@/core/types/task";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -117,21 +117,28 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
           {isColorPickerExpanded && (
             <div className="p-2 my-1 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 animate-in fade-in zoom-in-95 duration-100">
               <div className="grid grid-cols-5 gap-1.5 mb-2">
-                {TRELLO_COLUMN_COLORS.map((c) => (
-                  <button
-                    key={c.hex}
-                    type="button"
-                    onClick={() => {
-                      setColumnColor(column.id, c.hex);
-                      setIsOpen(false);
-                    }}
-                    style={{ backgroundColor: c.hex }}
-                    className="w-7 h-7 rounded-lg shadow-xs hover:scale-110 active:scale-95 transition-transform flex items-center justify-center text-white cursor-pointer"
-                    title={c.name}
-                  >
-                    {column.color === c.hex && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </button>
-                ))}
+                {TRELLO_COLUMN_COLORS.map((c) => {
+                  const isSelected =
+                    column.color?.toLowerCase() === c.hex.toLowerCase() ||
+                    getColumnColorConfig(column.color).hex.toLowerCase() === c.hex.toLowerCase();
+                  return (
+                    <button
+                      key={c.hex}
+                      type="button"
+                      onClick={() => {
+                        setColumnColor(column.id, c.hex);
+                        setIsOpen(false);
+                      }}
+                      style={{ backgroundColor: c.hex }}
+                      className={`w-7 h-7 rounded-lg shadow-xs hover:scale-110 active:scale-95 transition-transform flex items-center justify-center border border-slate-300/80 dark:border-slate-600 cursor-pointer ${
+                        isSelected ? "ring-2 ring-orange-500 ring-offset-1 dark:ring-offset-slate-800" : ""
+                      }`}
+                      title={c.name}
+                    >
+                      {isSelected && <Check className="w-3.5 h-3.5 stroke-[3] text-slate-800" />}
+                    </button>
+                  );
+                })}
               </div>
 
               <button

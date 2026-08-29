@@ -15,9 +15,10 @@
    - 基於 `pointerWithin` 與平滑幾何中心 `closestCenter` 的防抖碰撞偵測演算法，完美分離 Column 與 Task 拖曳。
 4. **Lexorank 排序引擎 (Lexorank Engine)**：
    - 任務排序鍵符合 Base36 字元規格，支援任意卡片間隙快速插入與重排。
-5. **欄位管理與自訂 (Column Management & WIP Limits)**：
-   - 支援新增、重命名、變更顏色標籤、刪除欄位與設定 WIP (Work-In-Progress) 數量上限。
-   - 超過 WIP 上限時呈現視覺警示與微動畫。
+5. **欄位管理與全欄位色彩 (Column Management & Full-Column Styling)**：
+   - 支援新增、重命名、變更全欄位柔和淺色主題（包含清新淺綠、溫暖淺黃、晨曦淺橘、恬靜淺紫、柔霧淺藍、浪漫淺粉、冰晶淺青、嫩芽草綠、奶茶燕麥、質感冷灰等淺色調）。
+   - 欄位顏色全面套用於整個欄位容器背景與邊框，移除單一線條，呈現精緻層次與卡片對比度。
+   - 支援刪除欄位與設定 WIP (Work-In-Progress) 數量上限，超過時呈現視覺警示。
 6. **任務全屬性 CRUD (Task CRUD & Modals)**：
    - `AddTaskModal`：快速新增任務（標題、描述、優先級、到期日、標籤、預估時間）。
    - `EditTaskModal`：完整編輯器（含 Markdown 筆記、子任務清單 Checklist、色彩封面 Cover、附件、優先級標籤）。
@@ -32,12 +33,12 @@ src/features/kanban/
 ├── components/
 │   ├── BoardCanvasContainer.tsx   # 看板主畫布容器 (支援視圖切換與篩選)
 │   ├── KanbanContainer.tsx        # 看板欄位橫向滾動與欄位 Sortable 容器 (含最右側新增欄位)
-│   ├── KanbanColumn.tsx           # 單一欄位容器 (包含欄位標頭拖曳把手、卡片列表、預覽槽)
+│   ├── KanbanColumn.tsx           # 單一欄位容器 (包含欄位標頭拖曳把手、全欄位色彩背景、卡片列表、預覽槽)
 │   ├── TaskCard.tsx               # 單一任務卡片 (支援優先級、標籤、封面、子任務進度、到期狀態)
 │   ├── AddTaskModal.tsx           # 新增任務彈窗
 │   ├── EditTaskModal.tsx          # 編輯任務彈窗 (完整屬性編輯)
 │   ├── BatchActionBar.tsx         # 多選批次操作懸浮列
-│   ├── ColumnActionMenu.tsx       # 欄位下拉選單 (排序、清除、編輯)
+│   ├── ColumnActionMenu.tsx       # 欄位下拉選單 (淺色選色器、排序、清除、編輯)
 │   └── ColumnManagerModal.tsx     # 欄位管理與自訂彈窗
 ├── index.ts                       # 模組統一出口
 └── feature.md                     # 功能規格與驗收標準文檔
@@ -62,4 +63,5 @@ src/features/kanban/
 - [x] **AC-KANBAN-5**：支援自訂欄位名稱、顏色、順序與 WIP 上限警示。
 - [x] **AC-KANBAN-6**：任務詳細編輯彈窗完整支援 Markdown 編輯、Checklist、標籤與附件。
 - [x] **AC-KANBAN-7**：多選批次操作列功能（批次移動/刪除/改優先級）正常運作。
+- [x] **AC-KANBAN-8**：欄位顏色套用於整個欄位容器背景與邊框，提供全新柔和淺色選項與高對比勾選識別。
 

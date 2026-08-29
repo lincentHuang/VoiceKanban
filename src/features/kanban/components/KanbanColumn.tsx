@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Column, Task } from "@/core/types/task";
+import { Column, Task, getColumnColorConfig } from "@/core/types/task";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { TaskCard } from "./TaskCard";
 import { ColumnActionMenu } from "./ColumnActionMenu";
@@ -17,6 +17,8 @@ interface KanbanColumnProps {
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOverlay = false }) => {
+  const colorConfig = getColumnColorConfig(column.color);
+
   // Sortable for Column Reordering
   const {
     attributes,
@@ -138,13 +140,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
   // 1. Overlay Style (Matches TaskCard DragOverlay 100%: 3D tilt, shadow, real content)
   if (isOverlay) {
     return (
-      <div className="flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-[500px] h-fit backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl scale-105 rotate-2 ring-4 ring-orange-500/25 relative overflow-hidden select-none cursor-grabbing pointer-events-none transition-transform duration-75">
-        {column.color && (
-          <div
-            style={{ backgroundColor: column.color }}
-            className="absolute top-0 left-4 right-4 h-1 rounded-b-full shadow-xs"
-          />
-        )}
+      <div className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-[500px] h-fit backdrop-blur-2xl border-2 border-orange-500 rounded-2xl p-3 shadow-2xl scale-105 rotate-2 ring-4 ring-orange-500/25 relative overflow-hidden select-none cursor-grabbing pointer-events-none transition-transform duration-75 ${colorConfig.containerClass}`}>
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-800/60 px-1 shrink-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <GripVertical className="w-3.5 h-3.5 text-orange-500 shrink-0 -ml-0.5" />
@@ -152,7 +148,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate">
               {column.title}
             </h3>
-            <span className="ml-0.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs shadow-2xs shrink-0">
+            <span className={`ml-0.5 px-2 py-0.5 rounded-full font-bold text-xs shadow-2xs shrink-0 ${colorConfig.badgeClass}`}>
               {tasks.length}
             </span>
           </div>
@@ -191,36 +187,28 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
     <div
       ref={setSortableRef}
       style={columnStyle}
-      className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-full h-fit backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden group/col ${
+      className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-full h-fit backdrop-blur-xl border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden group/col ${
         isColumnDragging
           ? "opacity-30 border-2 border-orange-500 scale-[0.98] shadow-2xl z-20"
           : isColumnOver
           ? "border-orange-400 bg-orange-50/70 dark:bg-orange-950/60 ring-2 ring-orange-400/30"
-          : "border-slate-200/80 dark:border-slate-800"
+          : colorConfig.containerClass
       }`}
     >
-      {/* Optional Top Color Accent Line */}
-      {column.color && (
-        <div
-          style={{ backgroundColor: column.color }}
-          className="absolute top-0 left-4 right-4 h-1 rounded-b-full shadow-xs"
-        />
-      )}
-
       {/* Column Header (Draggable Handle for Column Sorting) */}
       <div
         {...attributes}
         {...listeners}
-        className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-800/60 px-1 shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50 rounded-xl"
+        className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-800/60 px-1 shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
         title="按住標頭可拖曳重新排列欄位順序"
       >
         <div className="flex items-center gap-1.5 min-w-0">
-          <GripVertical className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover/col:text-slate-400 transition-colors shrink-0 -ml-0.5" />
+          <GripVertical className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover/col:text-slate-600 dark:group-hover/col:text-slate-300 transition-colors shrink-0 -ml-0.5" />
           <span className="text-base shrink-0">{column.icon}</span>
           <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate">
             {column.title}
           </h3>
-          <span className="ml-0.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs shadow-2xs shrink-0">
+          <span className={`ml-0.5 px-2 py-0.5 rounded-full font-bold text-xs shadow-2xs shrink-0 ${colorConfig.badgeClass}`}>
             {tasks.length}
           </span>
         </div>
@@ -233,7 +221,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
           {isMultiSelectMode && tasks.length > 0 && (
             <button
               onClick={handleSelectAllInColumn}
-              className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 text-slate-500 hover:text-orange-600 transition-colors cursor-pointer"
+              className="p-1 rounded-lg bg-white/70 dark:bg-slate-800/80 hover:bg-orange-50 text-slate-500 hover:text-orange-600 transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-700/50"
               title="全選此欄位"
             >
               <CheckSquare className="w-3.5 h-3.5" />
@@ -350,11 +338,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
 
       {/* Column Footer: Bottom Add Card & Voice Button Bar (Matches Media 3 & Media 4) */}
       {!isAddingCard && (
-        <div className="pt-2 mt-1 border-t border-slate-100/60 dark:border-slate-800/80 flex items-center gap-1.5 shrink-0">
+        <div className="pt-2 mt-1 border-t border-slate-200/50 dark:border-slate-800/60 flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => setIsAddingCard(true)}
-            className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white transition-colors text-left group"
+            className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors text-left group cursor-pointer"
           >
             <Plus className="w-4 h-4 text-slate-500 group-hover:text-slate-800 dark:group-hover:text-white" />
             <span>新增卡片</span>
@@ -363,7 +351,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
           <button
             type="button"
             onClick={handleVoiceAddClick}
-            className="p-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/60 border border-orange-200/60 dark:border-orange-900/40 transition-colors shadow-2xs"
+            className="p-1.5 rounded-xl bg-orange-50/90 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/60 border border-orange-200/60 dark:border-orange-900/40 transition-colors shadow-2xs cursor-pointer"
             title={`在「${column.title}」使用語音模式新增`}
           >
             <Mic className="w-3.5 h-3.5" />

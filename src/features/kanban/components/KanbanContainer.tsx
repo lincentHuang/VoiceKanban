@@ -188,20 +188,24 @@ export const KanbanContainer: React.FC = () => {
 
                 {/* Quick Color Selector */}
                 <div className="mb-3">
-                  <div className="text-[10px] font-bold text-slate-400 mb-1">標籤顏色</div>
-                  <div className="flex items-center gap-2 flex-wrap py-1 px-0.5">
-                    {TRELLO_COLUMN_COLORS.slice(0, 8).map((color) => (
+                  <div className="text-[10px] font-bold text-slate-400 mb-1">欄位顏色</div>
+                  <div className="flex items-center gap-1.5 flex-wrap py-1 px-0.5">
+                    {TRELLO_COLUMN_COLORS.map((color) => (
                       <button
                         key={color.hex}
                         type="button"
                         onClick={() => setSelectedColor(color.hex)}
                         style={{ backgroundColor: color.hex }}
-                        className={`w-5 h-5 rounded-full transition-transform shrink-0 cursor-pointer flex items-center justify-center ${selectedColor === color.hex
-                          ? "scale-110 ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-slate-900 shadow-sm"
-                          : "opacity-80 hover:opacity-100 hover:scale-105"
-                          }`}
+                        className={`w-5 h-5 rounded-full transition-transform shrink-0 cursor-pointer flex items-center justify-center border border-slate-300/80 dark:border-slate-600 ${
+                          selectedColor?.toLowerCase() === color.hex.toLowerCase()
+                            ? "scale-110 ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-slate-900 shadow-xs"
+                            : "opacity-85 hover:opacity-100 hover:scale-105"
+                        }`}
+                        title={color.name}
                       >
-                        {selectedColor === color.hex && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                        {selectedColor?.toLowerCase() === color.hex.toLowerCase() && (
+                          <Check className="w-3 h-3 text-slate-800 stroke-[3]" />
+                        )}
                       </button>
                     ))}
                   </div>
