@@ -87,6 +87,7 @@ src/
 
 ### 3.2 📋 看板、狀態列拖曳與雙向拖曳引擎 (Kanban & DnD Feature)
 - **狀態列欄位拖曳重排 (Column DnD Reorder)**：支援抓住欄位 Header（或長按 200ms）進行水平平滑拖曳排序，即時預覽換位並持久化順序。
+- **狀態流程管理視窗拖曳排序與 Popover 圖示選擇**：在 `ColumnManagerModal` 中支援按住 `⋮⋮` 垂直拖曳（Drag & Drop）直覺調整順序；圖示選擇器採用小巧 Popover 彈窗取代傳統下拉選單，並支援「無圖示 (純文字)」選項。
 - **最右側行內極速新增欄位 (Inline Column Creation)**：看板橫向末端提供「+ 新增欄位」卡片，行內輸入名稱 Enter 立即建立新狀態欄位。
 - **卡片即時預覽插槽 (Live Drop Slot Indicator)**：跨欄與欄內拖曳卡片時，精準於目標位置展開微光虛線預覽槽。
 - **平滑防抖碰撞策略**：結合 `pointerWithin` 與 `closestCenter` 歐氏幾何中心判定，杜絕快速拖曳時跳欄震盪，並完美分離 Column 與 Task 拖曳。

@@ -63,7 +63,7 @@ export const QuickPromptHero: React.FC = () => {
       {/* Base 44 Signature Frosted Prompt Container */}
       <div className="backdrop-blur-2xl bg-white/40 dark:bg-slate-900/40 border border-white/60 dark:border-slate-800/60 shadow-glass-elevated rounded-3xl p-3 sm:p-5 text-left transition-all">
         {/* Inner elevated white card */}
-        <form onSubmit={handleQuickSubmit} className="bg-white/95 dark:bg-slate-800/95 rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-100 dark:border-slate-700/80 flex flex-col justify-between min-h-[90px] relative focus-within:ring-2 focus-within:ring-orange-500/20 transition-all">
+        <form onSubmit={handleQuickSubmit} className="bg-white/95 dark:bg-slate-800/95 rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-100 dark:border-slate-700/80 flex flex-col justify-between min-h-[90px] relative focus-within:border-orange-500 transition-all">
           <textarea
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}

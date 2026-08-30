@@ -54,7 +54,7 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <button
-          className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500/40"
+          className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none focus:border-orange-500"
           title="列表選項與顏色"
           aria-label="列表選項"
         >
@@ -130,8 +130,8 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
                         setIsOpen(false);
                       }}
                       style={{ backgroundColor: c.hex }}
-                      className={`w-7 h-7 rounded-lg shadow-xs hover:scale-110 active:scale-95 transition-transform flex items-center justify-center border border-slate-300/80 dark:border-slate-600 cursor-pointer ${
-                        isSelected ? "ring-2 ring-orange-500 ring-offset-1 dark:ring-offset-slate-800" : ""
+                      className={`w-7 h-7 rounded-lg shadow-xs hover:scale-110 active:scale-95 transition-transform flex items-center justify-center border cursor-pointer ${
+                        isSelected ? "border-2 border-slate-900 dark:border-white shadow-sm" : "border-slate-300/80 dark:border-slate-600"
                       }`}
                       title={c.name}
                     >

@@ -157,7 +157,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         {...listeners}
         onClick={handleCardClick}
         className={`group relative bg-white/95 dark:bg-slate-850 backdrop-blur-md rounded-xl px-3 py-2 shadow-2xs hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${isSelected
-          ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
+          ? "border-2 border-orange-500 bg-orange-50/40 dark:bg-orange-950/30"
           : "border-slate-200/80 dark:border-slate-700/80 hover:border-orange-400 dark:hover:border-slate-600"
           } ${isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border border-slate-300/80 dark:border-slate-700/80 shadow-none pointer-events-none" : ""
           } ${task.completed ? "opacity-65 bg-slate-50/80 dark:bg-slate-900/60" : ""}`}
@@ -286,7 +286,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       {...listeners}
       onClick={handleCardClick}
       className={`group relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover border transition-all select-none touch-manipulation cursor-grab active:cursor-grabbing active:scale-[0.99] ${isSelected
-        ? "border-orange-500 ring-2 ring-orange-500/30 bg-orange-50/40 dark:bg-orange-950/30"
+        ? "border-2 border-orange-500 bg-orange-50/40 dark:bg-orange-950/30"
         : "border-slate-100 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600"
         } ${isDragging ? "opacity-25 bg-slate-200/40 dark:bg-slate-800/40 border border-slate-300/80 dark:border-slate-700/80 shadow-none pointer-events-none" : ""
         } ${task.completed ? "opacity-65 bg-slate-50/80 dark:bg-slate-900/60" : ""}`}
@@ -362,7 +362,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               onPointerDown={(e) => e.stopPropagation()}
               onClick={handleToggleComplete}
               className={`p-1 rounded-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center ${task.completed
-                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 ring-1 ring-emerald-500/20"
+                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-500/20"
                 : "text-slate-300 dark:text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                 }`}
               title={task.completed ? "標記為未完成" : "快速標記完成"}
@@ -431,7 +431,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={handleToggleSubtasksExpand}
                 className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 rounded-lg transition-all cursor-pointer group/badge select-none whitespace-nowrap shrink-0 ${isSubtasksExpanded
-                  ? "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 ring-1 ring-blue-400/50 shadow-2xs"
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-400/50 shadow-2xs"
                   : isChecklistAllDone
                     ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold"
                     : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"

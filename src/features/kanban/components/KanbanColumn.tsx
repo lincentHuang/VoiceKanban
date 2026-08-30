@@ -135,11 +135,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
   // 1. Overlay Style (Matches TaskCard DragOverlay 100%: 3D tilt, shadow, real content)
   if (isOverlay) {
     return (
-      <div className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-[500px] h-fit backdrop-blur-2xl border-2 border-orange-500 rounded-2xl p-3 shadow-2xl scale-105 rotate-2 ring-4 ring-orange-500/25 relative overflow-hidden select-none cursor-grabbing pointer-events-none transition-transform duration-75 ${colorConfig.containerClass}`}>
+      <div className={`flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 max-h-[500px] h-fit backdrop-blur-2xl border-2 border-orange-500 rounded-2xl p-3 shadow-2xl scale-105 rotate-2 relative overflow-hidden select-none cursor-grabbing pointer-events-none transition-transform duration-75 ${colorConfig.containerClass}`}>
         <div className="flex items-center justify-between px-1 py-1 shrink-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <GripVertical className="w-3.5 h-3.5 text-orange-500 shrink-0 -ml-0.5" />
-            <span className="text-base shrink-0">{column.icon}</span>
+            {column.icon && <span className="text-base shrink-0">{column.icon}</span>}
             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate">
               {column.title}
             </h3>
@@ -168,7 +168,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
       <div
         ref={setSortableRef}
         style={columnStyle}
-        className="flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 min-h-[220px] h-64 rounded-2xl border-2 border-orange-400/90 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 ring-2 ring-orange-400/20 backdrop-blur-md p-3 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+        className="flex flex-col w-[270px] min-w-[270px] max-w-[270px] shrink-0 min-h-[220px] h-64 rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md p-3 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
       >
         <span className="flex items-center gap-1.5 opacity-90">
           <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
@@ -186,7 +186,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
         isColumnDragging
           ? "opacity-30 border-2 border-orange-500 scale-[0.98] shadow-2xl z-20"
           : isColumnOver
-          ? "border-orange-400 bg-orange-50/70 dark:bg-orange-950/60 ring-2 ring-orange-400/30"
+          ? "border-2 border-orange-400 bg-orange-50/70 dark:bg-orange-950/60"
           : colorConfig.containerClass
       }`}
     >
@@ -199,7 +199,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <GripVertical className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover/col:text-slate-600 dark:group-hover/col:text-slate-300 transition-colors shrink-0 -ml-0.5" />
-          <span className="text-base shrink-0">{column.icon}</span>
+          {column.icon && <span className="text-base shrink-0">{column.icon}</span>}
           <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate">
             {column.title}
           </h3>
@@ -245,7 +245,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
               {insertIndex === idx && (
                 <div
                   key={`drop-slot-${column.id}-${idx}`}
-                  className="h-16 w-full rounded-2xl border-2 border-orange-400/90 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 ring-2 ring-orange-400/20 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+                  className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
                 >
                   <span className="flex items-center gap-1.5 opacity-90">
                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
@@ -260,7 +260,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
           {filteredTasks.length > 0 && insertIndex === filteredTasks.length && (
             <div
               key={`drop-slot-${column.id}-end`}
-              className="h-16 w-full rounded-2xl border-2 border-orange-400/90 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 ring-2 ring-orange-400/20 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+              className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
             >
               <span className="flex items-center gap-1.5 opacity-90">
                 <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
@@ -274,7 +274,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
         {filteredTasks.length === 0 && isColumnOver && (
           <div
             key={`drop-slot-${column.id}-empty`}
-            className="h-16 w-full rounded-2xl border-2 border-orange-400/90 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 ring-2 ring-orange-400/20 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+            className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
           >
             <span className="flex items-center gap-1.5 opacity-90">
               <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
@@ -286,7 +286,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
         {/* Inline Add Card Active Form (Matches Media 4) */}
         {isAddingCard && (
           <div className="pt-1 animate-in fade-in zoom-in-95 duration-150">
-            <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-3 shadow-md border border-blue-400/80 dark:border-blue-500/60 ring-2 ring-blue-500/20">
+            <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-3 shadow-md border-2 border-blue-500/80">
               <textarea
                 ref={inputRef}
                 value={newCardTitle}

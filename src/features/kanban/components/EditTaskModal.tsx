@@ -935,7 +935,7 @@ export const EditTaskModal: React.FC = () => {
                             style={{ backgroundColor: c.hex }}
                             className={`w-11 h-7 rounded-xl shadow-2xs hover:scale-105 active:scale-95 transition-all border ${
                               coverColor === c.hex
-                                ? "ring-2 ring-orange-500 ring-offset-2 border-white"
+                                ? "border-2 border-slate-900 dark:border-white shadow-sm"
                                 : "border-transparent"
                             }`}
                             title={c.name}
@@ -957,7 +957,7 @@ export const EditTaskModal: React.FC = () => {
                             style={{ background: g.value }}
                             className={`h-8 rounded-xl text-[10px] font-bold text-white shadow-2xs hover:scale-102 active:scale-98 transition-all flex items-center justify-center border ${
                               coverColor === g.value
-                                ? "ring-2 ring-orange-500 ring-offset-1 border-white"
+                                ? "border-2 border-slate-900 dark:border-white shadow-sm"
                                 : "border-transparent"
                             }`}
                           >

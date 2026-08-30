@@ -127,7 +127,7 @@ export const KanbanContainer: React.FC = () => {
             {isAddingColumn ? (
               <form
                 onSubmit={handleAddColumnSubmit}
-                className="backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border-2 border-orange-400/90 dark:border-orange-500/80 rounded-2xl p-3.5 shadow-xl animate-in fade-in zoom-in-95 duration-150 relative overflow-hidden ring-4 ring-orange-400/20"
+                className="backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border-2 border-orange-400/90 dark:border-orange-500/80 rounded-2xl p-3.5 shadow-xl animate-in fade-in zoom-in-95 duration-150 relative overflow-hidden"
               >
                 <div
                   style={{ backgroundColor: selectedColor }}
@@ -176,7 +176,7 @@ export const KanbanContainer: React.FC = () => {
                         type="button"
                         onClick={() => setSelectedIcon(icon)}
                         className={`w-7 h-7 rounded-lg text-xs flex items-center justify-center transition-all cursor-pointer ${selectedIcon === icon
-                          ? "bg-orange-100 dark:bg-orange-950/60 ring-2 ring-orange-500 scale-110"
+                          ? "bg-orange-100 dark:bg-orange-950/60 border-2 border-orange-500 scale-110 font-bold"
                           : "hover:bg-slate-100 dark:hover:bg-slate-800"
                           }`}
                       >
@@ -198,7 +198,7 @@ export const KanbanContainer: React.FC = () => {
                         style={{ backgroundColor: color.hex }}
                         className={`w-5 h-5 rounded-full transition-transform shrink-0 cursor-pointer flex items-center justify-center border border-slate-300/80 dark:border-slate-600 ${
                           selectedColor?.toLowerCase() === color.hex.toLowerCase()
-                            ? "scale-110 ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-slate-900 shadow-xs"
+                            ? "scale-110 border-2 border-slate-900 dark:border-white shadow-xs"
                             : "opacity-85 hover:opacity-100 hover:scale-105"
                         }`}
                         title={color.name}
@@ -238,7 +238,7 @@ export const KanbanContainer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsAddingColumn(true)}
-                className="w-full py-4 px-3 rounded-2xl border border-white/25 hover:border-white/45 bg-white/30 hover:bg-white/22 text-slate-100 hover:text-white flex items-center justify-start gap-2 font-bold text-xs cursor-pointer transition-all duration-200 group shadow-md hover:shadow-lg backdrop-blur-xl ring-1 ring-white/10"
+                className="w-full py-4 px-3 rounded-2xl border border-white/25 hover:border-white/45 bg-white/30 hover:bg-white/22 text-slate-100 hover:text-white flex items-center justify-start gap-2 font-bold text-xs cursor-pointer transition-all duration-200 group shadow-md hover:shadow-lg backdrop-blur-xl"
               >
                 <div className="w-6 h-6 rounded-lg text-white flex items-center justify-center transition-colors">
                   <Plus className="w-4 h-4" />

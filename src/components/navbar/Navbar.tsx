@@ -103,7 +103,7 @@ export const Navbar: React.FC = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="搜尋任務、標籤或關鍵字..."
-          className="w-full pl-9 pr-14 py-1.5 text-xs sm:text-sm rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border border-white/80 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/60 placeholder:text-slate-400 text-slate-800 dark:text-slate-200 shadow-xs transition-all"
+          className="w-full pl-9 pr-14 py-1.5 text-xs sm:text-sm rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border border-white/80 dark:border-slate-800 focus:outline-none focus:border-orange-500 placeholder:text-slate-400 text-slate-800 dark:text-slate-200 shadow-xs transition-all"
         />
         <div className="absolute right-2.5 flex items-center gap-1">
           {searchQuery ? (
@@ -146,7 +146,7 @@ export const Navbar: React.FC = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="w-8 h-8 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800 flex items-center justify-center text-slate-700 hover:border-orange-500 transition-all overflow-hidden shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/40"
+              className="w-8 h-8 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800 flex items-center justify-center text-slate-700 hover:border-orange-500 transition-all overflow-hidden shadow-2xs cursor-pointer focus:outline-none focus:border-orange-500"
               aria-label="使用者選單"
             >
               {userSession.avatarUrl ? (

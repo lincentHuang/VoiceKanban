@@ -209,7 +209,7 @@ export const CalendarView: React.FC = () => {
                     !dayCell.isCurrentMonth
                       ? "bg-slate-50/40 dark:bg-slate-900/30 opacity-45"
                       : "bg-white/40 dark:bg-slate-900/40 hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
-                  } ${dayCell.isToday ? "ring-2 ring-orange-500/40 ring-inset bg-orange-50/20" : ""}`}
+                  } ${dayCell.isToday ? "border-2 border-orange-500/80 bg-orange-50/20" : ""}`}
                 >
                   {/* Top Day Number */}
                   <div className="flex items-center justify-between mb-1">

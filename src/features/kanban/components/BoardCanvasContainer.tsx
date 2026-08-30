@@ -352,7 +352,7 @@ export const BoardCanvasContainer: React.FC = () => {
                 onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
                 className={`px-2 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 cursor-pointer select-none ${
                   isMultiSelectMode
-                    ? "bg-orange-500 text-white font-bold shadow-xs ring-2 ring-orange-300/50"
+                    ? "bg-orange-500 text-white font-bold shadow-xs border border-orange-400"
                     : "bg-white/10 hover:bg-white/20 text-white/90"
                 }`}
                 title="多選模式"

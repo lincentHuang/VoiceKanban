@@ -319,7 +319,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
               setIsOpen((prev) => !prev);
             }
           }}
-          className={`w-full px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-all border shadow-2xs group outline-none focus:ring-2 focus:ring-orange-500/30 ${
+          className={`w-full px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-all border shadow-2xs group outline-none focus:border-orange-500 ${
             isValidEnd || isValidStart
               ? "bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
               : "bg-slate-50/60 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border-slate-200/90 dark:border-slate-700 text-slate-500 hover:text-slate-700 dark:text-slate-400"
@@ -543,7 +543,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                       : isInRange
                       ? "bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-200 font-medium rounded-none"
                       : isTodayCell
-                      ? "ring-1.5 ring-orange-500 text-orange-600 font-bold hover:bg-orange-50 dark:hover:bg-slate-800"
+                      ? "border-2 border-orange-500 text-orange-600 font-bold hover:bg-orange-50 dark:hover:bg-slate-800"
                       : cell.isCurrentMonth
                       ? "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                       : "text-slate-300 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/40"

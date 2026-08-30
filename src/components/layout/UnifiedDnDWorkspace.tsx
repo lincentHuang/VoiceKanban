@@ -369,7 +369,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
                   : "246px",
               transformOrigin: "center center",
             }}
-            className="scale-105 rotate-2 shadow-2xl rounded-2xl ring-2 ring-orange-500/30 pointer-events-none transition-transform duration-75 select-none cursor-grabbing opacity-100"
+            className="scale-105 rotate-2 shadow-2xl rounded-2xl border-2 border-orange-500 pointer-events-none transition-transform duration-75 select-none cursor-grabbing opacity-100"
           >
             <TaskCard
               task={activeTask}
