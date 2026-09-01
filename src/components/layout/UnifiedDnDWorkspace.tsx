@@ -326,8 +326,8 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       collisionDetection={collisionDetectionStrategy}
       autoScroll={{
         threshold: {
-          x: 0.2, // 20% width from left/right edges triggers horizontal scrolling
-          y: 0.15,
+          x: 0, // Disable continuous horizontal auto-scroll so drag is rock solid without jitter
+          y: 0.15, // Keep vertical auto-scroll for cards within column
         },
         acceleration: 15,
         interval: 10,

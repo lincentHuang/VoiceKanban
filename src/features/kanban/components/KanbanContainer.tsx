@@ -140,7 +140,7 @@ export const KanbanContainer: React.FC = () => {
           edgeTimerRef.current = setTimeout(() => {
             scrollMagnetToColumn("next");
             edgeTimerRef.current = null;
-          }, 750); // ~1 second gesture
+          }, 800); // 1-second edge hover gesture
         }
       } else if (isNearLeft) {
         setEdgeHoverSide("left");
@@ -148,7 +148,7 @@ export const KanbanContainer: React.FC = () => {
           edgeTimerRef.current = setTimeout(() => {
             scrollMagnetToColumn("prev");
             edgeTimerRef.current = null;
-          }, 750);
+          }, 800);
         }
       } else {
         if (edgeTimerRef.current) {
