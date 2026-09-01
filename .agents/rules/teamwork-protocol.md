@@ -16,7 +16,8 @@ trigger: always_on
 2. **`@Backend`**：實作 API 路由、資料庫存取與業務邏輯，自動執行測試並自修至 100% 通過。
 3. **`@Frontend`**：實作 Feature UI 元件並對接 API / Store，強制落實 **5 種 UI 狀態**（Loading / Empty / Error / Success / Active）。
 4. **`@QA`**：依照 `PRD.md` 與各 `feature.md` 驗收標準進行邊界值、極端情況與防呆測試，產出 `QA_REPORT.md`。
+5. **`@Runner (自動運行)`**：任務完成後，自動啟動/確保本機開發伺服器（`npm run dev`）在後台運行，提供即時預覽。
 
 ## 3. 全員聯合匯報
-- 完成後，以全員聯合匯報格式呈現各角色之交付成果，並提醒使用者進行 `git commit`。
+- 完成後，以全員聯合匯報格式呈現各角色之交付成果，附上本機預覽連結（`http://localhost:3000`），並提醒使用者進行 `git commit`。
 

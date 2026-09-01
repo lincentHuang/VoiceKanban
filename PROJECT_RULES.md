@@ -24,6 +24,9 @@
 5. **`@QA` (測試驗收工程師)**：
    - 對照 `PRD.md` 與各 `feature.md` 的驗收條件，執行極端值、邊界情況與防呆破壞性測試，產出 `QA_REPORT.md`。
 
+6. **`@Runner` (執行與運行工程師)**：
+   - 任務完成並驗收後，自動啟動/確保本機開發伺服器（`npm run dev`）在後台穩定運行，供使用者隨時在瀏覽器體驗與預覽。
+
 ---
 
 ## 📂 Next.js 前端目錄架構規範 (Feature-Driven Architecture)
@@ -58,7 +61,7 @@ src/
 
 ## ⚡ 自動化執行指令（Pipeline Execution）
 
-當使用者提出新需求時，Antigravity 必須依序自動執行以下流水線，**中途不頻繁中斷詢問，直接推進至 QA 驗收完成**：
+當使用者提出新需求時，Antigravity 必須依序自動執行以下流水線，**中途不頻繁中斷詢問，直接推進至 QA 驗收與伺服器運行完成**：
 
 ```text
 [使用者提出需求] 
@@ -73,5 +76,7 @@ src/
        ↓
 [@QA 執行邊界驗收 ➔ 產出 QA_REPORT.md]
        ↓
-[全員聯合匯報 ➔ 提醒使用者 git commit]
+[@Runner 自動啟動 / 確保 Dev Server (npm run dev) 運行中]
+       ↓
+[全員聯合匯報 ➔ 附上預覽連結 http://localhost:3000 ➔ 提醒使用者 git commit]
 ```

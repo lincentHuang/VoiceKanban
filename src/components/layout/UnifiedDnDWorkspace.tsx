@@ -130,7 +130,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
         }
         setActiveColumn(col);
         setActiveTask(null);
-        setActiveDragTaskId(null);
+        setActiveDragTaskId(col.id);
         setDragOverLocation(null);
       }
       return;

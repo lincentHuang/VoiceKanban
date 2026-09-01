@@ -1,8 +1,10 @@
-# 測試驗收報告 (QA_REPORT.md) - 自訂欄位管理：順序調整與 Popover 圖示選擇器
+# 測試驗收報告 (QA_REPORT.md) - 手機版看板磁力滑動置中與拖曳邊緣智慧磁吸切換
 
 ## 1. 測試摘要 (Executive Summary)
-- **測試目標**：驗證看板狀態流程管理視窗（`ColumnManagerModal`）直接進行「▲ / ▼ 欄位順序調整」、全新「彈跳式 Popover 圖示選擇器」、支援「🚫 無圖示 (純文字)」以及徹底移除佔空間向下箭頭 icon。
-- **測試結果**：全部 6 項驗收條件 (AC1 ~ AC6) **100% 通過 (PASS)**。
+- **測試目標**：
+  1. 驗證手機版（小螢幕）瀏覽看板時，左右滑動具備 CSS 磁力吸附效果（`snap-x snap-mandatory`），各狀態欄位（`w-[84vw] max-w-[320px]`）自動置中吸附（`snap-center`），並保留兩側鄰欄邊緣露邊預覽。
+  2. 驗證拖曳動線不受影響：卡片/欄位拖曳期間自動解除 CSS snap 衝突（`snap-none`），確保跨欄位與排序流暢；當拖曳卡片至畫面右側或左側邊緣懸停約 1 秒（750ms）時，系統自動平滑磁吸滾動至下一個/上一個看板欄位，並提供即時微光邊緣引導與震動反饋。
+- **測試結果**：全部 9 項驗收條件 (AC1 ~ AC9) **100% 通過 (PASS)**。
 - **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過。
 
 ---
@@ -11,17 +13,21 @@
 
 | 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
 | :--- | :--- | :--- | :--- | :--- |
-| **AC1** | **彈跳式 Popover 圖示選擇器 (Space-Saving)** | 點擊新增或編輯欄位的圖示按鈕。 | 彈出精緻 Radix Popover 網格面板，徹底移除傳統 `<Select>` 的向下箭頭 (`ChevronDown`)，大幅節省橫向排版空間。 | ✅ PASS |
-| **AC2** | **支援可不選擇圖示（純文字欄位）** | 在圖示選擇器中點選「🚫 不使用圖示 (純文字)」。 | 成功清空圖示；未選擇圖示時按鈕呈現優雅的 `SmilePlus` 虛線預設框，看板標頭乾淨無多餘空白並左對齊文字。 | ✅ PASS |
-| **AC3** | **管理視窗垂直拖曳排序 (Modal In-Place DnD & Staged Confirmation)** | 在彈窗環境中拖曳排序，並僅在點擊「完成」時持久化至看板。 | 拖曳視覺效果完全與卡片一致（`scale-105 rotate-1 shadow-2xl ring-2 ring-orange-500/50`）；拖曳排序於彈窗內暫存，點擊「完成」才一次性套用至看板，若點擊「取消」或關閉則不影響原順序。 | ✅ PASS |
-| **AC4** | **即時編輯既有欄位名稱與圖示** | 點擊現有欄位鉛筆圖示進入行內編輯。 | 行內編輯無縫整合 Popover 圖示選擇器與 Enter/Escape 鍵盤快捷操作，儲存後即時生效。 | ✅ PASS |
-| **AC5** | **看板畫布與 Overlay 無圖示相容性** | 建立無圖示欄位後於看板畫布與拖曳 Overlay 檢視。 | `KanbanColumn` 與 `DragOverlay` 自動適應無圖示狀態，排版自然緊湊無空白佔位。 | ✅ PASS |
-| **AC6** | **生產環境編譯與型別安全** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 編譯通過，TypeScript 型別檢查 0 錯誤通過。 | ✅ PASS |
-| **AC7** | **全面去 Ring 改用 Border (避免滾動/拖曳邊緣裁切)** | 檢視所有拖曳物件、卡片、按鈕、輸入框與彈窗之 Focus / Active / Selected / DropSlot 狀態。 | 全站移除 `ring-*` 外部 box-shadow，改採內層/實體 `border-*` 樣式，徹底杜絕因 `overflow-hidden` 或 `overflow-y-auto` 容器造成的邊框光環被截斷 (Clipping) 問題。 | ✅ PASS |
+| **AC1** | **手機版看板磁力滑動吸附 (Mobile Scroll Snap)** | 在手機小螢幕寬度下左右滑動看板。 | 滑動停止時欄位自動平滑吸附置中（`snap-center`），呈現精緻居中效果。 | ✅ PASS |
+| **AC2** | **鄰欄露邊預覽 (Peek Preview Ratio)** | 手機版單一欄位寬度檢驗。 | 欄位寬度設為 `84vw`（上限 320px），左右兩側自然露出一小部分鄰欄，引導使用者滑動。 | ✅ PASS |
+| **AC3** | **新增欄位卡片吸附相容 (Add Column Card Snap)** | 滑動至看板最右端「+ 新增欄位」卡片。 | 新增欄位卡片同樣支援 `snap-center` 完整置中顯示，編輯表單操作順暢。 | ✅ PASS |
+| **AC4** | **桌面版平滑自由滾動無衝突 (Desktop Graceful Degradation)** | 螢幕寬度大於等於 `640px` (sm: breakpoint) 檢視。 | 自動降級為 `sm:snap-none` 與固定 270px 寬度，多欄並列展示自由滾動。 | ✅ PASS |
+| **AC5** | **拖曳期間解除 Snap 衝突 (Drag Frictionless Interaction)** | 長按並開始拖曳卡片或欄位時。 | 容器即時切換為 `snap-none`，拖曳過程完全不被強制吸附打斷，上下移動與跨欄流暢。 | ✅ PASS |
+| **AC6** | **拖曳邊緣懸停 1 秒磁吸翻頁 (Edge Hover Magnet Scroll)** | 拖曳卡片至畫面右側邊緣（距邊緣 65px 內）懸停約 750ms。 | 畫面自動以平滑動畫（`smooth`）磁吸滾動至下一個看板欄位，並觸發輕微觸覺震動。 | ✅ PASS |
+| **AC7** | **拖曳左側邊緣懸停磁吸回翻 (Left Edge Hover Magnet Scroll)** | 拖曳卡片至畫面左側邊緣懸停約 750ms。 | 畫面自動平滑磁吸滾動至上一個看板欄位，方便跨長距離欄位搬移卡片。 | ✅ PASS |
+| **AC8** | **拖曳邊緣微光引導指示器 (Edge Glowing Guide Indicator)** | 拖曳卡片進入邊緣磁吸區時。 | 右側/左側邊緣立即浮現帶有呼吸動畫的「下一個 ▶ / ◀ 上一個」微光浮層提示。 | ✅ PASS |
+| **AC9** | **生產環境編譯與型別安全 (Build & Typecheck)** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 成功編譯，TypeScript 型別檢查 0 錯誤通過。 | ✅ PASS |
 
 ---
 
 ## 3. 測試結論與交付建議
-所有需求均已精準實作並通過完整回歸測試。建議進行 `git commit` 保存本次更新。
+手機版看板磁力吸附置中與拖曳邊緣懸停智慧磁吸切換功能已完美落地，完全符合使用者期望之極致流暢行動體驗。建議進行 `git commit` 保存本次更新。
+
+
 
 

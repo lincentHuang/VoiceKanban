@@ -24,8 +24,15 @@
 6. **任務全屬性 CRUD (Task CRUD & Modals)**：
    - `AddTaskModal`：快速新增任務（標題、描述、優先級、到期日、標籤、預估時間）。
    - `EditTaskModal`：完整編輯器（含 Markdown 筆記、子任務清單 Checklist、色彩封面 Cover、附件、優先級標籤）。
-7. **多選與批次操作 (Batch Selection & Action Bar)**：
+7. **已完成任務底部折疊收合 (Collapsible Completed Tasks at Column Bottom)**：
+   - 每個欄位自動將未完成與已完成任務分離，已完成任務自動沉底。
+   - 具備簡約精緻的「已完成 (N)」折疊面板，預設折疊隱藏已完成任務，點擊箭頭或整條按鈕平滑展開。
+   - 展開後完整顯示已完成卡片，支援點擊查看詳情與卡片拖曳排序。
+8. **多選與批次操作 (Batch Selection & Action Bar)**：
    - 支援勾選多張卡片，底部浮動 `BatchActionBar` 提供批次移動欄位、批次變更優先級、批次完成與批次刪除。
+9. **手機版看板磁力滑動置中與邊緣懸停磁吸切換 (Mobile Scroll Snap & Edge Magnet Drag Navigation)**：
+   - 手機小螢幕瀏覽時，看板容器啟用 `snap-x snap-mandatory`，各欄位 `w-[84vw] max-w-[320px] snap-center`，滑動時自動置中於畫面中央並保留兩側鄰欄邊緣預覽。
+   - 拖曳動線無縫優化：卡片拖曳期間自動解除 CSS snap 衝突（`snap-none`），避免滾動卡頓；當拖曳卡片至畫面右側或左側邊緣懸停約 1 秒（700ms）時，系統自動平滑磁吸滾動至下一個/上一個看板欄位，並提供即時微光邊緣引導。
 
 ---
 
@@ -34,8 +41,8 @@
 src/features/kanban/
 ├── components/
 │   ├── BoardCanvasContainer.tsx   # 看板主畫布容器 (支援視圖切換與篩選)
-│   ├── KanbanContainer.tsx        # 看板欄位橫向滾動與欄位 Sortable 容器 (含最右側新增欄位)
-│   ├── KanbanColumn.tsx           # 單一欄位容器 (包含欄位標頭拖曳把手、全欄位色彩背景、卡片列表、預覽槽、無圖示相容)
+│   ├── KanbanContainer.tsx        # 看板欄位橫向滾動容器 (含 Scroll Snap、拖曳邊緣磁吸翻頁與行內新增欄位)
+│   ├── KanbanColumn.tsx           # 單一欄位容器 (包含標頭拖曳把手、snap-center、未完成與已完成折疊)
 │   ├── TaskCard.tsx               # 單一任務卡片 (支援優先級、標籤、封面、子任務進度、到期狀態)
 │   ├── AddTaskModal.tsx           # 新增任務彈窗
 │   ├── EditTaskModal.tsx          # 編輯任務彈窗 (完整屬性編輯)
@@ -50,10 +57,10 @@ src/features/kanban/
 
 ## 4. UI 5 種狀態規範 (5 UI States)
 - **Loading**：看板資料初始載入或同步時呈現骨架屏（Skeleton Loader）。
-- **Empty**：欄位無任務時顯示簡潔的 Empty State 虛線區域與「點擊新增任務」提示。
+- **Empty**：欄位無待辦任務時顯示優雅提示（如「所有待辦皆已完成 ✨」）或簡潔 Empty 區域。
 - **Error**：操作失敗時 Toast 提示並自動還原樂觀更新（Optimistic Rollback）。
-- **Success**：任務建立、批次操作、欄位新增或重排完成時給予震動反饋或微動畫提示。
-- **Active**：卡片或欄位拖曳中呈現 3D 浮空 `DragOverlay`，目標位置呈現高亮與預覽插槽。
+- **Success**：任務標記完成、批次操作、欄位新增或重排完成時給予彩帶特效（Confetti）或震動反饋。
+- **Active**：已完成區塊點擊平滑展開/收合，卡片或欄位拖曳中呈現 3D 浮空 `DragOverlay`，目標位置呈現高亮與預覽插槽；拖曳靠近邊緣時顯示動態微光導引。
 
 ---
 
@@ -67,4 +74,6 @@ src/features/kanban/
 - [x] **AC-KANBAN-7**：任務詳細編輯彈窗完整支援 Markdown 編輯、Checklist、標籤與附件。
 - [x] **AC-KANBAN-8**：多選批次操作列功能（批次移動/刪除/改優先級）正常運作。
 - [x] **AC-KANBAN-9**：欄位顏色套用於整個欄位容器背景與邊框，提供全新柔和淺色選項與高對比勾選識別。
+- [x] **AC-KANBAN-10**：各欄位內已完成任務（`completed: true`）自動沉底至最下方，預設收合為「已完成 (N)」折疊面板，點擊流暢展開/收合並支援展開後查看與拖曳。
+- [x] **AC-KANBAN-11**：手機版看板左右滑動具備磁力吸附自動置中（`snap-center`），拖曳卡片期間不卡頓且懸停邊緣約 1 秒平滑磁吸切換至下一欄/上一欄。
 

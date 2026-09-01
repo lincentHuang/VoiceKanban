@@ -2,7 +2,7 @@
 
 本專案遵循 [`PROJECT_RULES.md`](./PROJECT_RULES.md) 與 [`.agents/rules/teamwork-protocol.md`](./.agents/rules/teamwork-protocol.md)。
 - 唯一對外窗口：`@PM`
-- 內部自動串接：`@Architect` ➔ `@Backend` ➔ `@Frontend` ➔ `@QA` ➔ 全員聯合匯報
+- 內部自動串接：`@Architect` ➔ `@Backend` ➔ `@Frontend` ➔ `@QA` ➔ `@Runner` ➔ 全員聯合匯報
 
 <!-- BEGIN:nextjs-agent-rules -->
 

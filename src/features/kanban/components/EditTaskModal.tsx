@@ -102,6 +102,14 @@ export const EditTaskModal: React.FC = () => {
 
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const attachmentFileInputRef = useRef<HTMLInputElement>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustTitleHeight = () => {
+    if (titleTextareaRef.current) {
+      titleTextareaRef.current.style.height = "auto";
+      titleTextareaRef.current.style.height = `${titleTextareaRef.current.scrollHeight}px`;
+    }
+  };
 
   useEffect(() => {
     if (task) {
@@ -120,6 +128,7 @@ export const EditTaskModal: React.FC = () => {
       setSaveToast(false);
       setIsMovePopoverOpen(false);
       setIsCoverModalOpen(false);
+      setTimeout(adjustTitleHeight, 0);
     }
   }, [task]);
 
@@ -290,7 +299,7 @@ export const EditTaskModal: React.FC = () => {
           origin: { y: 0.7 },
           colors: ["#BEF264", "#F97316", "#10B981"],
         });
-      } catch {}
+      } catch { }
     }
     toggleTaskComplete(task.id);
   };
@@ -386,59 +395,304 @@ export const EditTaskModal: React.FC = () => {
         {/* Modal Content */}
         <div className="p-5 sm:p-7 space-y-5">
           {/* Header Bar */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              {/* Title input */}
-              <input
-                type="text"
+          <div className="space-y-2">
+            {/* Top Toolbar Row */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {/* Complete Toggle (Direct Large Icon) */}
+                <button
+                  type="button"
+                  onClick={handleToggleComplete}
+                  className="p-1 rounded-lg transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none"
+                  title={task.completed ? "標記為未完成" : "標記為已完成"}
+                  aria-label={task.completed ? "標記為未完成" : "標記為已完成"}
+                >
+                  <CheckCircle2
+                    className={`w-6 h-6 transition-all duration-200 ${task.completed
+                      ? "text-emerald-500 fill-emerald-100 dark:fill-emerald-950/60 drop-shadow-[0_2px_8px_rgba(16,185,129,0.35)] scale-105"
+                      : "text-slate-300 dark:text-slate-600 hover:text-emerald-500 hover:fill-emerald-50 dark:hover:fill-emerald-950/30"
+                      }`}
+                  />
+                </button>
+
+                {/* Star Important Toggle (Direct Large Icon) */}
+                <button
+                  type="button"
+                  onClick={handleToggleStar}
+                  className="p-1 rounded-lg transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none"
+                  title={isStarred ? "取消重要標記" : "標記為重要事項"}
+                  aria-label={isStarred ? "取消重要標記" : "標記為重要事項"}
+                >
+                  <Star
+                    className={`w-6 h-6 transition-all duration-200 ${isStarred
+                      ? "fill-amber-400 text-amber-500 drop-shadow-[0_2px_8px_rgba(245,158,11,0.45)] scale-105"
+                      : "text-slate-300 dark:text-slate-600 hover:text-amber-400 hover:fill-amber-100 dark:hover:fill-amber-950/30"
+                      }`}
+                  />
+                </button>
+
+
+              </div>
+
+              {/* Top Right Controls (Frameless Large Icons) */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Move Card Popover Button (Direct Large Icon) */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMovePopoverOpen(!isMovePopoverOpen);
+                      setIsCoverModalOpen(false);
+                    }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-blue-500 transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none"
+                    title="移動卡片"
+                    aria-label="移動卡片"
+                  >
+                    <MoveRight className="w-6 h-6" />
+                  </button>
+
+                  {isMovePopoverOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsMovePopoverOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 px-2 py-1 block">選取目標欄位</span>
+                        {allTargetColumns.map((col) => (
+                          <button
+                            key={col.id}
+                            type="button"
+                            onClick={() => handleMoveColumn(col.id)}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-colors ${columnId === col.id
+                              ? "bg-orange-500 text-white font-bold"
+                              : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                              }`}
+                          >
+                            <span>{col.icon}</span>
+                            <span>{col.title}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Cover Setting Popover Button (Direct Large Icon) */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCoverModalOpen(!isCoverModalOpen);
+                      setIsMovePopoverOpen(false);
+                    }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-orange-500 transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none"
+                    title="封面設定 (比例/色彩/圖片)"
+                    aria-label="封面設定"
+                  >
+                    <Palette
+                      className={`w-6 h-6 transition-colors ${coverColor ? "text-orange-500 drop-shadow-[0_2px_8px_rgba(249,115,22,0.35)]" : ""
+                        }`}
+                    />
+                  </button>
+
+                  {/* Comprehensive Cover Picker Popover */}
+                  {isCoverModalOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsCoverModalOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-80 max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-100">設定卡片封面與比例</span>
+                          <button
+                            onClick={() => setIsCoverModalOpen(false)}
+                            className="text-slate-400 hover:text-slate-600 p-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Section 1: Aspect Ratio & Orientation */}
+                        <div>
+                          <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
+                            封面比例與版型
+                          </span>
+                          <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                            {ASPECT_RATIO_OPTIONS.slice(0, 3).map((ratio) => (
+                              <button
+                                key={ratio.id}
+                                onClick={() => {
+                                  setCoverAspectRatio(ratio.id);
+                                  updateTask(task.id, { coverAspectRatio: ratio.id });
+                                }}
+                                className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center justify-center gap-1 border transition-all ${coverAspectRatio === ratio.id
+                                  ? "bg-orange-500 text-white border-orange-500 shadow-xs"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
+                                  }`}
+                              >
+                                {ratio.icon}
+                                <span>{ratio.label}</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {ASPECT_RATIO_OPTIONS.slice(3).map((ratio) => (
+                              <button
+                                key={ratio.id}
+                                onClick={() => {
+                                  setCoverAspectRatio(ratio.id);
+                                  updateTask(task.id, { coverAspectRatio: ratio.id });
+                                }}
+                                className={`p-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 border transition-all ${coverAspectRatio === ratio.id
+                                  ? "bg-orange-500 text-white border-orange-500 shadow-xs"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
+                                  }`}
+                              >
+                                {ratio.icon}
+                                <span>{ratio.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Section 2: Solid Colors */}
+                        <div>
+                          <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
+                            經典主題色彩
+                          </span>
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {TRELLO_COLUMN_COLORS.map((c) => (
+                              <button
+                                key={c.hex}
+                                onClick={() => handleApplyCover(c.hex)}
+                                style={{ backgroundColor: c.hex }}
+                                className={`w-11 h-7 rounded-xl shadow-2xs hover:scale-105 active:scale-95 transition-all border ${coverColor === c.hex
+                                  ? "border-2 border-slate-900 dark:border-white shadow-sm"
+                                  : "border-transparent"
+                                  }`}
+                                title={c.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Section 3: Gradients */}
+                        <div>
+                          <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
+                            極光漸層風格
+                          </span>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {GRADIENT_COVERS.map((g) => (
+                              <button
+                                key={g.name}
+                                onClick={() => handleApplyCover(g.value)}
+                                style={{ background: g.value }}
+                                className={`h-8 rounded-xl text-[10px] font-bold text-white shadow-2xs hover:scale-102 active:scale-98 transition-all flex items-center justify-center border ${coverColor === g.value
+                                  ? "border-2 border-slate-900 dark:border-white shadow-sm"
+                                  : "border-transparent"
+                                  }`}
+                              >
+                                {g.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Section 4: Image Upload */}
+                        <div>
+                          <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
+                            上傳本機圖片封面
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => coverFileInputRef.current?.click()}
+                            className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-slate-300/80 dark:border-slate-700 hover:border-orange-400"
+                          >
+                            <Upload className="w-3.5 h-3.5 text-orange-500" />
+                            <span>挑選相片圖檔...</span>
+                          </button>
+                          <input
+                            type="file"
+                            ref={coverFileInputRef}
+                            onChange={handleCoverFileUpload}
+                            accept="image/*"
+                            className="hidden"
+                          />
+                        </div>
+
+                        {/* Section 5: Clear Cover */}
+                        {coverColor && (
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <button
+                              onClick={() => {
+                                setCoverColor("");
+                                updateTask(task.id, { coverColor: "" });
+                                setIsCoverModalOpen(false);
+                              }}
+                              className="w-full py-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl font-semibold transition-colors"
+                            >
+                              ✕ 移除當前封面
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setEditingTaskId(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none"
+                  title="關閉"
+                  aria-label="關閉"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Second Row: Full Width Multi-line Task Title */}
+            <div className="w-full pt-1">
+              <textarea
+                ref={titleTextareaRef}
+                rows={1}
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  adjustTitleHeight();
+                }}
                 onBlur={() => handleSave()}
-                className="w-full text-lg sm:text-xl font-bold bg-transparent border-b border-transparent hover:border-slate-300 focus:border-orange-500 focus:outline-none py-1 transition-colors"
+                className="w-full text-xl sm:text-2xl font-bold bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-orange-500 focus:outline-none py-1 transition-colors resize-none overflow-hidden leading-snug text-slate-800 dark:text-slate-100 block"
                 placeholder="任務標題..."
               />
             </div>
 
-            {/* Top Right Controls */}
-            <div className="flex items-center gap-2">
-              {/* Star Important Toggle */}
-              <button
-                type="button"
-                onClick={handleToggleStar}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  isStarred
-                    ? "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700 shadow-xs"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-amber-600 border-slate-200 hover:border-amber-400"
-                }`}
-                title={isStarred ? "取消重要標記" : "標記為重要事項"}
-              >
-                <Star
-                  className={`w-3.5 h-3.5 ${
-                    isStarred ? "fill-amber-500 text-amber-500" : "text-slate-400"
-                  }`}
-                />
-                <span>{isStarred ? "重要" : "設為重要"}</span>
-              </button>
-
-              {/* Complete Toggle */}
-              <button
-                onClick={handleToggleComplete}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  task.completed
-                    ? "bg-emerald-500 text-white border-emerald-500 shadow-xs"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 hover:border-emerald-500"
-                }`}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{task.completed ? "已完成" : "標記完成"}</span>
-              </button>
-
-              <button
-                onClick={() => setEditingTaskId(null)}
-                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            {/* Third Row: Due Date / Event Range directly below title */}
+            <div className="pt-0.5">
+              <DateTimePicker
+                value={dueDate}
+                startDate={startDate}
+                isAllDay={isAllDay}
+                onChange={(dates) => {
+                  setStartDate(dates.startDate || null);
+                  setDueDate(dates.dueDate);
+                  setIsAllDay(dates.isAllDay);
+                  updateTask(task.id, {
+                    startDate: dates.startDate || null,
+                    dueDate: dates.dueDate,
+                    isAllDay: dates.isAllDay,
+                  });
+                }}
+                align="left"
+                placeholder="+ 設定到期日或活動時段"
+              />
             </div>
           </div>
 
@@ -473,9 +727,8 @@ export const EditTaskModal: React.FC = () => {
                   <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mb-3 overflow-hidden">
                     <div
                       style={{ width: `${progressPercent}%` }}
-                      className={`h-full transition-all duration-300 ${
-                        progressPercent === 100 ? "bg-emerald-500" : "bg-orange-500"
-                      }`}
+                      className={`h-full transition-all duration-300 ${progressPercent === 100 ? "bg-emerald-500" : "bg-orange-500"
+                        }`}
                     />
                   </div>
                 )}
@@ -539,11 +792,10 @@ export const EditTaskModal: React.FC = () => {
                                 <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
                               )}
                               <span
-                                className={`text-xs sm:text-sm break-words flex-1 ${
-                                  item.completed
-                                    ? "line-through text-slate-400 dark:text-slate-500"
-                                    : "text-slate-700 dark:text-slate-200"
-                                }`}
+                                className={`text-xs sm:text-sm break-words flex-1 ${item.completed
+                                  ? "line-through text-slate-400 dark:text-slate-500"
+                                  : "text-slate-700 dark:text-slate-200"
+                                  }`}
                               >
                                 {item.title}
                               </span>
@@ -618,7 +870,56 @@ export const EditTaskModal: React.FC = () => {
                 />
               </div>
 
-              {/* 3. Attachments Section (附件檔案 - 支援圖片/資料，最大不能超過10MB) */}
+
+            </div>
+
+            {/* Right Action Sidebar */}
+            <div className="lg:col-span-5 space-y-4">
+
+              {/* Action: Tags */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4 text-slate-400" />
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    標籤管理
+                  </h4>
+                </div>
+                <div className="flex gap-1 mb-1.5">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.nativeEvent.isComposing || e.key === "Process") return;
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                    placeholder="輸入標籤按 Enter..."
+                    className="flex-1 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {tags.map((t) => (
+                    <span
+                      key={t}
+                      className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium flex items-center gap-1"
+                    >
+                      #{t}
+                      <button
+                        onClick={() => handleRemoveTag(t)}
+                        className="hover:text-rose-500 text-slate-400 text-xs"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Attachments Section (附件檔案 - 支援圖片/資料，最大不能超過10MB) */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -735,7 +1036,7 @@ export const EditTaskModal: React.FC = () => {
                 )}
               </div>
 
-              {/* 4. Activity & Comments (留言與活動紀錄) */}
+              {/* Activity & Comments (留言與活動紀錄) */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <MessageSquare className="w-4 h-4 text-slate-400" />
@@ -782,319 +1083,6 @@ export const EditTaskModal: React.FC = () => {
                       {userSession.name} 已將這張卡片加入「{currentColumn?.title}」
                     </div>
                   )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Action Sidebar */}
-            <div className="lg:col-span-5 space-y-4">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                卡片屬性與動作
-              </span>
-
-              {/* Action 1: Move Card */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsMovePopoverOpen(!isMovePopoverOpen)}
-                  className="w-full text-left px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold flex items-center justify-between transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <MoveRight className="w-3.5 h-3.5 text-blue-500" />
-                    <span>移動卡片</span>
-                  </span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isMovePopoverOpen ? "rotate-180" : ""}`} />
-                </button>
-
-                {isMovePopoverOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setIsMovePopoverOpen(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 px-2 py-1 block">選取目標欄位</span>
-                      {allTargetColumns.map((col) => (
-                        <button
-                          key={col.id}
-                          type="button"
-                          onClick={() => handleMoveColumn(col.id)}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-colors ${
-                            columnId === col.id
-                              ? "bg-orange-500 text-white font-bold"
-                              : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                          }`}
-                        >
-                          <span>{col.icon}</span>
-                          <span>{col.title}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Action 2: Cover Customization & Aspect Ratio Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsCoverModalOpen(!isCoverModalOpen)}
-                  className="w-full text-left px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold flex items-center justify-between transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <Palette className="w-3.5 h-3.5 text-orange-500" />
-                    <span>封面設定 (比例/色彩/圖)</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    {coverColor && (
-                      <span
-                        style={{
-                          background: isImageCover ? `url(${coverColor}) center/cover` : coverColor,
-                          backgroundColor: !isImageCover && !coverColor.startsWith("linear") ? coverColor : undefined,
-                        }}
-                        className="w-4 h-4 rounded-full border border-white shadow-2xs inline-block"
-                      />
-                    )}
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  </span>
-                </button>
-
-                {/* Comprehensive Cover Picker Popover */}
-                {isCoverModalOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setIsCoverModalOpen(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-2 w-80 max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-100">設定卡片封面與比例</span>
-                      <button
-                        onClick={() => setIsCoverModalOpen(false)}
-                        className="text-slate-400 hover:text-slate-600 p-1"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    {/* Section 1: Aspect Ratio & Orientation (1:1, 3:4, 9:16, 16:9, bar) */}
-                    <div>
-                      <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
-                        封面比例與版型
-                      </span>
-                      <div className="grid grid-cols-3 gap-1.5 mb-1.5">
-                        {ASPECT_RATIO_OPTIONS.slice(0, 3).map((ratio) => (
-                          <button
-                            key={ratio.id}
-                            onClick={() => {
-                              setCoverAspectRatio(ratio.id);
-                              updateTask(task.id, { coverAspectRatio: ratio.id });
-                            }}
-                            className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center justify-center gap-1 border transition-all ${
-                              coverAspectRatio === ratio.id
-                                ? "bg-orange-500 text-white border-orange-500 shadow-xs"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
-                            }`}
-                          >
-                            {ratio.icon}
-                            <span>{ratio.label}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {ASPECT_RATIO_OPTIONS.slice(3).map((ratio) => (
-                          <button
-                            key={ratio.id}
-                            onClick={() => {
-                              setCoverAspectRatio(ratio.id);
-                              updateTask(task.id, { coverAspectRatio: ratio.id });
-                            }}
-                            className={`p-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border transition-all ${
-                              coverAspectRatio === ratio.id
-                                ? "bg-orange-500 text-white border-orange-500 shadow-xs"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200"
-                            }`}
-                          >
-                            {ratio.icon}
-                            <span>{ratio.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Section 2: Solid Colors (10 Trello Colors) */}
-                    <div>
-                      <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
-                        經典主題色彩
-                      </span>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {TRELLO_COLUMN_COLORS.map((c) => (
-                          <button
-                            key={c.hex}
-                            onClick={() => handleApplyCover(c.hex)}
-                            style={{ backgroundColor: c.hex }}
-                            className={`w-11 h-7 rounded-xl shadow-2xs hover:scale-105 active:scale-95 transition-all border ${
-                              coverColor === c.hex
-                                ? "border-2 border-slate-900 dark:border-white shadow-sm"
-                                : "border-transparent"
-                            }`}
-                            title={c.name}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Section 3: Gradients */}
-                    <div>
-                      <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
-                        極光漸層風格
-                      </span>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {GRADIENT_COVERS.map((g) => (
-                          <button
-                            key={g.name}
-                            onClick={() => handleApplyCover(g.value)}
-                            style={{ background: g.value }}
-                            className={`h-8 rounded-xl text-[10px] font-bold text-white shadow-2xs hover:scale-102 active:scale-98 transition-all flex items-center justify-center border ${
-                              coverColor === g.value
-                                ? "border-2 border-slate-900 dark:border-white shadow-sm"
-                                : "border-transparent"
-                            }`}
-                          >
-                            {g.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Section 4: Image Upload */}
-                    <div>
-                      <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">
-                        上傳本機圖片封面
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => coverFileInputRef.current?.click()}
-                        className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-slate-300/80 dark:border-slate-700 hover:border-orange-400"
-                      >
-                        <Upload className="w-3.5 h-3.5 text-orange-500" />
-                        <span>挑選相片圖檔...</span>
-                      </button>
-                      <input
-                        type="file"
-                        ref={coverFileInputRef}
-                        onChange={handleCoverFileUpload}
-                        accept="image/*"
-                        className="hidden"
-                      />
-                    </div>
-
-                    {/* Section 5: Clear Cover */}
-                    {coverColor && (
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <button
-                          onClick={() => {
-                            setCoverColor("");
-                            updateTask(task.id, { coverColor: "" });
-                            setIsCoverModalOpen(false);
-                          }}
-                          className="w-full py-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl font-semibold transition-colors"
-                        >
-                          ✕ 移除當前封面
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-
-              {/* Action 3: Star / Important Toggle */}
-              <div>
-                <button
-                  type="button"
-                  onClick={handleToggleStar}
-                  className={`w-full py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-between transition-all ${
-                    isStarred
-                      ? "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200 hover:bg-slate-200"
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <Star
-                      className={`w-4 h-4 ${
-                        isStarred ? "fill-amber-500 text-amber-500" : "text-slate-400"
-                      }`}
-                    />
-                    <span>重要性標記</span>
-                  </span>
-                  <span className="text-[11px] font-bold">
-                    {isStarred ? "⭐ 重要" : "一般"}
-                  </span>
-                </button>
-              </div>
-
-              {/* Action 4: Optional Due Date / Event Range */}
-              <div>
-                <label className="text-[11px] font-semibold text-slate-500 block mb-1.5">
-                  到期日 / 活動時段
-                </label>
-                <DateTimePicker
-                  value={dueDate}
-                  startDate={startDate}
-                  isAllDay={isAllDay}
-                  onChange={(dates) => {
-                    setStartDate(dates.startDate || null);
-                    setDueDate(dates.dueDate);
-                    setIsAllDay(dates.isAllDay);
-                    updateTask(task.id, {
-                      startDate: dates.startDate || null,
-                      dueDate: dates.dueDate,
-                      isAllDay: dates.isAllDay,
-                    });
-                  }}
-                  align="right"
-                  placeholder="+ 設定到期日或活動時段"
-                />
-              </div>
-
-              {/* Action 5: Tags */}
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                  標籤管理
-                </label>
-                <div className="flex gap-1 mb-1.5">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.nativeEvent.isComposing || e.key === "Process") return;
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                    placeholder="輸入標籤按 Enter..."
-                    className="flex-1 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-1">
-                  {tags.map((t) => (
-                    <span
-                      key={t}
-                      className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium flex items-center gap-1"
-                    >
-                      #{t}
-                      <button
-                        onClick={() => handleRemoveTag(t)}
-                        className="hover:text-rose-500 text-slate-400 text-xs"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
                 </div>
               </div>
 
