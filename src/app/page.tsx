@@ -17,6 +17,7 @@ import {
   AuthLandingScreen,
   BindAccountModal,
 } from "@/features/auth";
+import { SearchModal } from "@/features/search";
 
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
@@ -68,6 +69,7 @@ export default function Home() {
       <BatchActionBar />
 
       {/* Overlays & Modals */}
+      <SearchModal />
       <VoiceCaptureOverlay />
       <SettingsModal />
       <AddTaskModal />

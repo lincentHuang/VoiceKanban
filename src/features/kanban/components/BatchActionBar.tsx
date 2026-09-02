@@ -70,34 +70,49 @@ export const BatchActionBar: React.FC = () => {
     batchToggleComplete(completed);
   };
 
-  return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-full max-w-[calc(100vw-1rem)] sm:max-w-2xl px-1.5 sm:px-4 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
-      <div className="backdrop-blur-2xl bg-slate-900/95 dark:bg-slate-900/98 text-white border border-slate-700/80 shadow-2xl rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
-        {/* Left Count & Quick Select All */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div
-            className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full font-bold text-[10px] sm:text-xs flex items-center justify-center transition-colors ${
-              hasSelection ? "bg-orange-500 text-white" : "bg-slate-800 text-slate-400 border border-slate-700"
-            }`}
-          >
-            {selectedTaskIds.length}
-          </div>
-          <span className="text-xs sm:text-sm font-semibold whitespace-nowrap">
-            已選 {selectedTaskIds.length} 項
-          </span>
-
-          {!hasSelection && (
-            <button
-              onClick={selectAllTasksInBoard}
-              className="ml-0.5 px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white text-[11px] font-bold transition-colors cursor-pointer"
+    return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-full max-w-[calc(100vw-1.25rem)] sm:max-w-2xl px-1 sm:px-4 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
+      <div className="backdrop-blur-2xl bg-slate-900/95 dark:bg-slate-900/98 text-white border border-slate-700/80 shadow-2xl rounded-2xl sm:rounded-full p-2.5 sm:px-5 sm:py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+        {/* Row 1 on mobile: Selection Count & Quick Exit */}
+        <div className="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div
+              className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full font-bold text-[10px] sm:text-xs flex items-center justify-center transition-colors shrink-0 ${
+                hasSelection ? "bg-orange-500 text-white shadow-xs" : "bg-slate-800 text-slate-400 border border-slate-700"
+              }`}
             >
-              全選看板
-            </button>
-          )}
+              {selectedTaskIds.length}
+            </div>
+            <span className="text-xs sm:text-sm font-semibold whitespace-nowrap">
+              已選 {selectedTaskIds.length} 項
+            </span>
+
+            {!hasSelection && (
+              <button
+                onClick={selectAllTasksInBoard}
+                className="ml-1 px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap"
+              >
+                全選看板
+              </button>
+            )}
+          </div>
+
+          {/* Mobile-only Exit Button (Row 1 Right) */}
+          <button
+            onClick={() => {
+              clearSelection();
+              setIsMultiSelectMode(false);
+            }}
+            className="sm:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition-colors cursor-pointer"
+            title="退出多選模式"
+          >
+            <span className="text-[11px] font-medium">退出多選</span>
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1 sm:gap-1.5">
+        {/* Row 2 on mobile: Action Buttons */}
+        <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-1.5 w-full sm:w-auto pt-1.5 sm:pt-0 border-t border-slate-800/80 sm:border-t-0">
           {/* Move to Column */}
           <div className="relative">
             <button
@@ -106,7 +121,7 @@ export const BatchActionBar: React.FC = () => {
                 setIsMoveMenuOpen(!isMoveMenuOpen);
                 setIsPriorityMenuOpen(false);
               }}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-semibold text-slate-200 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl sm:rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-semibold text-slate-200 transition-colors cursor-pointer disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             >
               <span>移動至</span>
               <ChevronUp className="w-3 h-3 text-slate-400" />
@@ -146,11 +161,11 @@ export const BatchActionBar: React.FC = () => {
                 setIsPriorityMenuOpen(!isPriorityMenuOpen);
                 setIsMoveMenuOpen(false);
               }}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-semibold text-slate-200 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl sm:rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-xs font-semibold text-slate-200 transition-colors cursor-pointer disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             >
-              <Flag className="w-3 h-3 text-slate-400" />
-              <span className="hidden sm:inline-block">優先級</span>
-              <ChevronUp className="w-3 h-3 text-slate-400" />
+              <Flag className="w-3 h-3 text-slate-400 shrink-0" />
+              <span className="inline-block">優先級</span>
+              <ChevronUp className="w-3 h-3 text-slate-400 shrink-0" />
             </button>
 
             {isPriorityMenuOpen && hasSelection && (
@@ -181,7 +196,7 @@ export const BatchActionBar: React.FC = () => {
           <button
             disabled={!hasSelection}
             onClick={() => handleBatchComplete(false)}
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-semibold border border-slate-700 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl sm:rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-semibold border border-slate-700/80 transition-colors cursor-pointer disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             title="批次標記為未完成"
           >
             <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
@@ -192,11 +207,11 @@ export const BatchActionBar: React.FC = () => {
           <button
             disabled={!hasSelection}
             onClick={() => handleBatchComplete(true)}
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl sm:rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white text-xs font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             title="批次標記為已完成"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline-block">完成</span>
+            <span className="inline-block">完成</span>
           </button>
 
           {/* Batch Delete */}
@@ -207,19 +222,19 @@ export const BatchActionBar: React.FC = () => {
                 batchDeleteTasks();
               }
             }}
-            className="p-2 rounded-full bg-slate-800 hover:bg-rose-600 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="p-2 rounded-xl sm:rounded-full bg-slate-800 hover:bg-rose-600 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer disabled:cursor-not-allowed shrink-0"
             title="批次刪除選取任務"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
 
-          {/* Cancel Selection / Exit Multi-Select Mode */}
+          {/* Desktop-only Cancel Selection / Exit Multi-Select Mode */}
           <button
             onClick={() => {
               clearSelection();
               setIsMultiSelectMode(false);
             }}
-            className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors ml-0.5 cursor-pointer"
+            className="hidden sm:flex p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors ml-0.5 cursor-pointer shrink-0"
             title="退出多選模式"
           >
             <X className="w-4 h-4" />

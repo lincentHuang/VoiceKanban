@@ -118,6 +118,8 @@ interface KanbanStoreState {
   // Filters & Search
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  isSearchModalOpen: boolean;
+  setIsSearchModalOpen: (open: boolean) => void;
   priorityFilter: Priority | "all";
   setPriorityFilter: (priority: Priority | "all") => void;
   tagFilter: string | "all";
@@ -990,6 +992,8 @@ export const useKanbanStore = create<KanbanStoreState>()(
       // Filters
       searchQuery: "",
       setSearchQuery: (searchQuery) => set({ searchQuery }),
+      isSearchModalOpen: false,
+      setIsSearchModalOpen: (isSearchModalOpen) => set({ isSearchModalOpen }),
       priorityFilter: "all",
       setPriorityFilter: (priorityFilter) => set({ priorityFilter }),
       tagFilter: "all",

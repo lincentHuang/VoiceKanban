@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import {
-  Mic,
   Search,
-  Plus,
   KeyRound,
   Cloud,
   CloudOff,
@@ -27,26 +25,26 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { InstallPwaMenuItem } from "@/features/pwa-mobile";
+
 
 export const Navbar: React.FC = () => {
   const {
     searchQuery,
     setSearchQuery,
+    isSearchModalOpen,
+    setIsSearchModalOpen,
     byokConfig,
-    setIsVoiceOverlayOpen,
-    setVoiceState,
     setIsSettingsModalOpen,
     userSession,
     setIsBindModalOpen,
     logout,
     syncState,
     triggerSync,
-    openAddTaskModal,
     setIsColumnManagerOpen,
   } = useKanbanStore();
 
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Periodically refresh relative time display every 15s
   useEffect(() => {
@@ -56,28 +54,18 @@ export const Navbar: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Global Ctrl+K / Cmd+K key listener
+  // Global Ctrl+K / Cmd+K key listener to open Search Modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
-      } else if (e.key === "Escape") {
-        if (document.activeElement === searchInputRef.current) {
-          searchInputRef.current?.blur();
-        }
+        setIsSearchModalOpen(true);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  const handleStartVoice = () => {
-    setVoiceState("recording");
-    setIsVoiceOverlayOpen(true);
-  };
+  }, [setIsSearchModalOpen]);
 
   const isGuest = userSession.isGuest || userSession.provider === "guest";
 
@@ -94,52 +82,47 @@ export const Navbar: React.FC = () => {
         )}
       </div>
 
-      {/* Center: Centered Search Bar */}
-      <div className="flex items-center flex-1 max-w-md sm:max-w-lg mx-auto relative">
-        <Search className="w-4 h-4 absolute left-3.5 text-slate-400" />
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="搜尋任務、標籤或關鍵字..."
-          className="w-full pl-9 pr-14 py-1.5 text-xs sm:text-sm rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border border-white/80 dark:border-slate-800 focus:outline-none focus:border-orange-500 placeholder:text-slate-400 text-slate-800 dark:text-slate-200 shadow-xs transition-all"
-        />
-        <div className="absolute right-2.5 flex items-center gap-1">
+      {/* Center: Desktop Triggerable Search Bar */}
+      <button
+        type="button"
+        onClick={() => setIsSearchModalOpen(true)}
+        className="hidden sm:flex items-center flex-1 max-w-xs md:max-w-md mx-auto relative px-3.5 py-1.5 rounded-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border border-white/80 dark:border-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:border-orange-500/50 shadow-xs transition-all cursor-pointer text-left group"
+      >
+        <Search className="w-4 h-4 text-slate-400 group-hover:text-orange-500 transition-colors shrink-0" />
+        <span className="ml-2.5 text-xs sm:text-sm text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 truncate">
+          {searchQuery ? searchQuery : "搜尋任務、標籤或關鍵字..."}
+        </span>
+        <div className="ml-auto flex items-center gap-1 shrink-0">
           {searchQuery ? (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="text-xs text-slate-400 hover:text-slate-600 px-1"
+            <span
+              onClick={(e) => {
+                e.stopPropagation();
+                setSearchQuery("");
+              }}
+              className="text-xs text-slate-400 hover:text-rose-500 px-1 py-0.5 rounded-full transition-colors"
+              title="清除搜尋條件"
             >
               ✕
-            </button>
+            </span>
           ) : (
-            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-400 font-mono text-[10px] border border-slate-200 dark:border-slate-700 shadow-2xs">
+            <kbd className="inline-block px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-400 font-mono text-[10px] border border-slate-200 dark:border-slate-700 shadow-2xs">
               ⌘K
             </kbd>
           )}
         </div>
-      </div>
+      </button>
 
-      {/* Right: Quick Add, Voice, BYOK, User Profile */}
+      {/* Right: Mobile Search Button & User Profile */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Quick Add Button */}
+        {/* Mobile Search Icon Button */}
         <button
-          onClick={() => openAddTaskModal()}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+          type="button"
+          onClick={() => setIsSearchModalOpen(true)}
+          className="sm:hidden w-8 h-8 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:border-orange-500 hover:text-orange-500 transition-all shadow-2xs cursor-pointer active:scale-95"
+          aria-label="開啟搜尋"
+          title="搜尋任務"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline-block">建立</span>
-        </button>
-
-        {/* Quick Voice CTA Button */}
-        <button
-          onClick={handleStartVoice}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-base44-lime hover:bg-base44-limeDark text-slate-900 font-bold text-xs shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-          title="一鍵語音建立"
-        >
-          <Mic className="w-3.5 h-3.5 text-slate-900" />
-          <span className="hidden md:inline-block">一鍵語音</span>
+          <Search className="w-4 h-4" />
         </button>
 
         {/* User Profile & Settings Dropdown */}
@@ -305,7 +288,11 @@ export const Navbar: React.FC = () => {
               />
             </DropdownMenuItem>
 
+            {/* PWA 在手機安裝應用按鈕 (若已在 Standalone/原生模式則自動隱藏) */}
+            <InstallPwaMenuItem />
+
             <DropdownMenuSeparator />
+
 
             {/* Auth / Logout */}
             {isGuest ? (

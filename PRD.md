@@ -98,7 +98,9 @@ src/
 - **精準中線切入與平滑防抖碰撞策略**：同欄排序結合 `pointerWithin` 與卡片垂直中線（Midpoint Thresholding）幾何判定，拖至最頂端、兩張卡片縫隙或最底端皆能 100% 精準切入，杜絕快速拖曳時跳欄震盪，並完美分離 Column 與 Task 拖曳。
 - **Lexorank Base36 排序鍵**：毫秒級任意區間卡片插入，避免大量全量更新。
 - **欄位管理、全欄位柔和色彩與 WIP 上限**：支援自訂欄位名稱、柔和淺色系全欄位主題色調（取代單一線條，呈現精緻底色與邊框）、排序與在製品（WIP）超額警示。
-- **多選與批次操作 (Batch Actions)**：支援多選卡片，一鍵批次搬移、變更優先級或刪除。
+- **多選與批次操作 (Batch Actions & Mobile Responsive Bar)**：
+  - 支援多選卡片，一鍵批次搬移欄位、變更優先級、完成與刪除。
+  - **響應式兩行佈局 (Mobile Two-Line Layout)**：於手機小螢幕下（`< sm`），底部浮動 `BatchActionBar` 自動切換為雙行卡片佈局（第一行：選取計數與退出多選按鈕；第二行：移動至、優先級、未完成、完成與刪除動作列），徹底杜絕按鈕壓縮換行跑版，桌機寬螢幕（`≥ sm`）則維持俐落單行膠囊列。
 - **手機版看板磁力滑動置中與邊緣懸停磁吸切換 (Mobile Scroll Snap & Edge Magnet Drag Navigation)**：
   - 手機版（小螢幕）瀏覽時，看板欄位具備 CSS磁力吸附（`snap-x snap-mandatory`），滑動時各狀態欄位自動於螢幕中央吸附置中（`snap-center`），並以 `84vw` 寬度提供鄰近欄位露邊預覽。
   - 拖曳動線無縫優化：卡片拖曳期間取消連續性左右橫向滾動（防止拖曳過程畫面晃動或微飄），**完全由「拖曳至右側/左側邊緣懸停約 1 秒（800ms）」精準觸發畫面直接平滑磁吸切換至下一個/上一個欄位**，並搭配即時邊緣微光指引。
@@ -137,6 +139,32 @@ src/
 - **工具列支援**：粗體、斜體、清單、程式碼區塊、標題一鍵插入。
 - **子任務清單 (Checklists)**：支援進度條（Progress Bar）即時連動完成率。
 
+### 3.9 🔍 響應式搜尋與 Search Modal (Search Feature)
+- **Header 瘦身與空間專注**：全面移除頂部 Header 上的「建立（+）」與「一鍵語音（Mic）」按鈕，使 Header 回歸純粹的導覽與搜尋功能。
+- **全響應式搜尋觸發體驗**：
+  - **桌機版（`≥ sm`）**：搜尋列設計為微互動膠囊列觸發器（含 `⌘K` 快捷鍵提示），點擊或鍵盤輸入瞬開 Search Modal。
+  - **手機版（`< sm`）**：搜尋列轉為右上角精緻搜尋按鈕圖示，徹底消除小螢幕空間不足導致輸入框被擠壓變形的問題。
+- **Command Palette 風格 Search Modal**：
+  - 自動聚焦搜尋輸入框、支援即時關鍵字模糊過濾（任務標題、內文描述、標籤）。
+  - 嚴格落實 UI 5 態（引導空狀態、無相符結果狀態、即時結果清單、鍵盤選取高亮態）。
+  - 任務卡片結果直觀呈現所屬欄位色標、標籤、截止日與星號，點擊可直接開啟任務詳情編輯（`setEditingTaskId`）或一鍵在看板中套用篩選。
+
+### 3.10 📱 行動端封裝、Capacitor App 與 PWA (Mobile App & PWA Feature)
+- **Capacitor 跨平台雙平台原生封裝 (iOS & Android Native Container)**：
+  - 應用識別碼 (App ID / Bundle ID)：`com.voicekanban.app`，中文應用顯示名稱：**「聲動看板」**。
+  - 混合容錯雙軌架構：建立完整 `capacitor.config.ts`，支援本地靜態包裝與生產伺服器 API 容錯代理，解決 Next.js Route Handlers（語音辨識、BYOK 驗證）於原生端運行之需要。
+  - 原生權限與設備適配：配置 iOS `Info.plist`（`NSMicrophoneUsageDescription`）與 Android `AndroidManifest.xml`（`RECORD_AUDIO`, `INTERNET`），確保語音輸入無縫啟用；適配行動裝置 Safe Area Insets（動態島與底部 Home Bar 避讓）。
+- **全規格 Progressive Web App (PWA) 支援**：
+  - 標準 Web App Manifest（`manifest.webmanifest`）：包含繁中完整名稱、短名稱、主題色標（`#f97316` 橘色與白底）、192x192 / 512x512 高解析度圖示與 Maskable 圖示，支援 `standalone` 獨立全螢幕運行模式。
+  - 輕量強健 Service Worker 快取（`public/sw.js`）：離線快取關鍵資源、網路優先降級策略，提供斷網狀態下的平滑快取展示。
+  - 完整 iOS Web App Meta Tags：支援 `apple-mobile-web-app-capable`、`apple-mobile-web-app-status-bar-style`、動態主題色與 Apple Touch Icons。
+- **頭像設定選單整合「在手機安裝應用」按鈕 (Install PWA Call-to-Action)**：
+  - **位置與入口**：位於頂部 Navbar 點擊使用者頭像後的下拉選單（設定區塊），提供直觀的「在手機安裝應用」選項（手機圖示與 PWA 標籤）。
+  - **智慧環境狀態偵測 (自動隱藏)**：當偵測到使用者已在獨立 PWA 模式（`display-mode: standalone`）或 Capacitor 原生 App 容器內執行時，自動隱藏該按鈕，維持選單純淨。
+  - **雙軌平台安裝體驗 (Dual-Platform Flow)**：
+    - **Android / 桌面 Chrome / Edge**：攔截並保存 `beforeinstallprompt` 事件，點擊按鈕直接觸發系統原生「安裝應用程式」視窗。
+    - **iOS Safari**：針對 Safari 無法自動觸發安裝之系統限制，點擊後彈出精緻 3 步驟圖文導引彈窗（`IosInstallGuideModal`），圖示化指引使用者點擊底部「分享 ⎋」➔ 滑動點擊「加入主畫面 ➕」➔ 右上角「新增」。
+
 ---
 
 ## 4. UI 5 種狀態處理規範 (5 UI States Standard)
@@ -163,4 +191,9 @@ src/
 - [x] **MAC-9 (編譯與型別無誤)**：`npm run build` 與 TypeScript 型別檢查 100% 通過。
 - [x] **MAC-10 (手機版看板磁力置中與拖曳邊緣切換)**：手機版左右滑動具備磁力吸附自動置中（`snap-center`），卡片拖曳期間不卡頓且懸停邊緣約 1 秒自動磁吸平滑切換至下一欄/上一欄。
 - [x] **MAC-11 (看板卡片上下動態像素切入判定與邊界免空白空間)**：拖曳卡片至目標卡片上下邊緣動態像素/百分比閥值時精確判定插入點，頂部卡片上緣必定切入最上方（Index 0），底部卡片下緣必定切入最下方（Index Max），無需預留空白即可流暢插入。
+- [x] **MAC-12 (Header 瘦身與全響應式 Search Modal 搜尋體驗)**：Header 成功移除「建立」與「一鍵語音」按鈕；桌機版點擊搜尋框或按 `⌘K` 開啟 Search Modal；手機版自動轉為右上角按鈕圖示開啟 Modal，輸入框不被擠壓，搜尋支援即時任務過濾與直接開啟編輯。
+- [x] **MAC-13 (Capacitor 跨平台雙平台專案與設定)**：整合 `@capacitor/core`、`@capacitor/cli`、`@capacitor/ios` 與 `@capacitor/android`，完成 `capacitor.config.ts`（App ID: `com.voicekanban.app`，名稱: 聲動看板），生成標準 `ios/` 與 `android/` 專案工程，配置麥克風權限與雙平台建置指令。
+- [x] **MAC-14 (PWA 標準支援與 Service Worker 離線快取)**：具備合法 `manifest.webmanifest`、各尺寸高解析度圖示、全螢幕獨立模式、iOS Safe Area Insets、以及 `public/sw.js` 資源快取與自動註冊。
+- [x] **MAC-15 (頭像選單 PWA 安裝按鈕與雙軌引導體驗)**：在 Navbar 頭像下拉選單中提供「在手機安裝應用」選項；若處於 Standalone/原生 App 模式則自動隱藏；Android/Chrome 觸發系統安裝視窗，iOS Safari 彈出 3 步驟圖文導引視窗（`IosInstallGuideModal`），符合 UI 5 態規範。
+
 

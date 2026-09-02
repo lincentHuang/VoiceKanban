@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">聲動看板</string>
+    <string name="title_activity_main">聲動看板</string>
+    <string name="package_name">com.voicekanban.app</string>
+    <string name="custom_url_scheme">com.voicekanban.app</string>
+</resources>
