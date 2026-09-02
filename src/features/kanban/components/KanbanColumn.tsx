@@ -70,23 +70,31 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
   const uncompletedTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
 
-  const filteredActiveTasks = isOverlay
+  const isColumnOver = !isOverlay && dragOverLocation?.columnId === column.id;
+
+  // Determine if the drag is cross-column (item from another column hovering here)
+  const isCrossColumnDrag = isColumnOver && activeDragTaskId && !uncompletedTasks.some(t => t.id === activeDragTaskId) && !completedTasks.some(t => t.id === activeDragTaskId);
+
+  const visibleActiveTasks = isOverlay
     ? uncompletedTasks
-    : uncompletedTasks.filter((t) => t.id !== activeDragTaskId);
-  const filteredCompletedTasks = isOverlay
+    : isCrossColumnDrag
+    ? uncompletedTasks.filter((t) => t.id !== activeDragTaskId)
+    : uncompletedTasks;
+  const visibleCompletedTasks = isOverlay
     ? completedTasks
-    : completedTasks.filter((t) => t.id !== activeDragTaskId);
+    : isCrossColumnDrag
+    ? completedTasks.filter((t) => t.id !== activeDragTaskId)
+    : completedTasks;
 
   // Rendered tasks in DOM
   const renderedTasks = isCompletedExpanded
-    ? [...filteredActiveTasks, ...filteredCompletedTasks]
-    : filteredActiveTasks;
+    ? [...visibleActiveTasks, ...visibleCompletedTasks]
+    : visibleActiveTasks;
   const taskIds = renderedTasks.map((t) => t.id);
 
-  const isColumnOver = !isOverlay && dragOverLocation?.columnId === column.id;
   const insertIndex =
-    isColumnOver && dragOverLocation
-      ? Math.max(0, Math.min(dragOverLocation.index, renderedTasks.length))
+    isCrossColumnDrag && dragOverLocation
+      ? Math.max(0, Math.min(dragOverLocation.index, visibleActiveTasks.length))
       : -1;
 
   useEffect(() => {
@@ -201,8 +209,6 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
       className={`flex flex-col w-[84vw] max-w-[320px] min-w-[270px] sm:w-[270px] sm:min-w-[270px] sm:max-w-[270px] snap-center shrink-0 max-h-full h-fit backdrop-blur-xl border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden group/col ${
         isColumnDragging
           ? "opacity-30 border-2 border-orange-500 scale-[0.98] shadow-2xl z-20"
-          : isColumnOver
-          ? "border-2 border-orange-400 bg-orange-50/70 dark:bg-orange-950/60"
           : colorConfig.containerClass
       }`}
     >
@@ -256,20 +262,20 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
           scrollContainerRef.current = el;
           setDroppableRef(el);
         }}
-        className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 custom-scrollbar min-h-0"
+        className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 pt-1 pb-6 custom-scrollbar min-h-[60px]"
       >
-        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+        <SortableContext items={taskIds} strategy={isCrossColumnDrag ? () => null : verticalListSortingStrategy}>
           {/* 1. Active / Uncompleted Tasks List */}
-          {filteredActiveTasks.map((task, idx) => (
+          {visibleActiveTasks.map((task, idx) => (
             <React.Fragment key={task.id}>
               {insertIndex === idx && (
                 <div
                   key={`drop-slot-${column.id}-${idx}`}
-                  className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+                  className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
                 >
-                  <span className="flex items-center gap-1.5 opacity-90">
-                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                    放置於此
+                  <span className="flex items-center gap-1.5 opacity-80">
+                    <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+                    插入此處
                   </span>
                 </div>
               )}
@@ -278,27 +284,27 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
           ))}
 
           {/* Drop Slot when hovering at end of active tasks (and completed tasks are collapsed or absent) */}
-          {filteredActiveTasks.length > 0 && !isCompletedExpanded && insertIndex >= filteredActiveTasks.length && (
+          {visibleActiveTasks.length > 0 && !isCompletedExpanded && insertIndex >= visibleActiveTasks.length && (
             <div
               key={`drop-slot-${column.id}-end`}
-              className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+              className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
             >
-              <span className="flex items-center gap-1.5 opacity-90">
-                <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                放置於此
+              <span className="flex items-center gap-1.5 opacity-80">
+                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+                插入此處
               </span>
             </div>
           )}
 
           {/* Empty hint when all active tasks are completed */}
-          {filteredActiveTasks.length === 0 && filteredCompletedTasks.length > 0 && (
+          {visibleActiveTasks.length === 0 && completedTasks.length > 0 && (
             <div className="py-3 px-2 text-center text-xs font-medium text-slate-400 dark:text-slate-500 bg-black/5 dark:bg-white/5 rounded-xl border border-dashed border-slate-200/80 dark:border-slate-700/60 select-none">
               待辦事項已全部完成 ✨
             </div>
           )}
 
           {/* 2. Collapsible Completed Tasks Section at Column Bottom */}
-          {filteredCompletedTasks.length > 0 && (
+          {visibleCompletedTasks.length > 0 && (
             <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/40 mt-2">
               {/* Collapsible Accordion Header Toggle */}
               <button
@@ -312,7 +318,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
                   <span className="truncate">已完成</span>
                   <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 shrink-0">
-                    {filteredCompletedTasks.length}
+                    {visibleCompletedTasks.length}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-slate-400 group-hover/comp:text-slate-600 dark:group-hover/comp:text-slate-200 transition-colors">
@@ -330,18 +336,18 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
               {/* Expanded Completed Tasks List */}
               {isCompletedExpanded && (
                 <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                  {filteredCompletedTasks.map((task, idx) => {
-                    const overallIdx = filteredActiveTasks.length + idx;
+                  {visibleCompletedTasks.map((task, idx) => {
+                    const overallIdx = visibleActiveTasks.length + idx;
                     return (
                       <React.Fragment key={task.id}>
                         {insertIndex === overallIdx && (
                           <div
                             key={`drop-slot-comp-${column.id}-${idx}`}
-                            className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+                            className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
                           >
-                            <span className="flex items-center gap-1.5 opacity-90">
-                              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                              放置於此
+                            <span className="flex items-center gap-1.5 opacity-80">
+                              <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+                              插入此處
                             </span>
                           </div>
                         )}
@@ -352,11 +358,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
                   {insertIndex >= renderedTasks.length && (
                     <div
                       key={`drop-slot-${column.id}-comp-end`}
-                      className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+                      className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
                     >
-                      <span className="flex items-center gap-1.5 opacity-90">
-                        <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                        放置於此
+                      <span className="flex items-center gap-1.5 opacity-80">
+                        <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+                        插入此處
                       </span>
                     </div>
                   )}
@@ -367,14 +373,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
         </SortableContext>
 
         {/* Drop Highlight during Drag & Drop when column has 0 tasks */}
-        {filteredActiveTasks.length === 0 && filteredCompletedTasks.length === 0 && isColumnOver && (
+        {visibleActiveTasks.length === 0 && visibleCompletedTasks.length === 0 && isColumnOver && (
           <div
             key={`drop-slot-${column.id}-empty`}
-            className="h-16 w-full rounded-2xl border-2 border-dashed border-orange-400 bg-gradient-to-br from-orange-500/10 via-amber-500/10 to-orange-500/15 dark:from-orange-950/40 dark:to-amber-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-orange-600 dark:text-orange-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+            className="h-14 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 pointer-events-none shadow-2xs"
           >
-            <span className="flex items-center gap-1.5 opacity-90">
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-              放置於此
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+              放置於此欄位
             </span>
           </div>
         )}

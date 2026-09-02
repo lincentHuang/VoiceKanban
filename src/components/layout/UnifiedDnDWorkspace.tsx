@@ -178,49 +178,73 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       return;
     }
 
+    const activeTaskItem = tasks.find((t) => t.id === activeId);
     const targetBoardId = targetColumnId === "inbox" ? "global" : activeBoardId;
-    const targetColumnTasks = tasks
-      .filter((t) =>
-        targetColumnId === "inbox"
-          ? t.columnId === "inbox" && t.id !== activeId
-          : t.boardId === targetBoardId && t.columnId === targetColumnId && t.id !== activeId
-      )
-      .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
 
-    let targetIndex = targetColumnTasks.length;
+    // Check if dragging across columns
+    const isCrossColumn =
+      activeTaskItem &&
+      (activeTaskItem.columnId !== targetColumnId ||
+        (targetColumnId !== "inbox" && activeTaskItem.boardId !== targetBoardId));
 
-    if (overTask && overId !== activeId) {
-      const overIndex = targetColumnTasks.findIndex((t) => t.id === overId);
-      if (overIndex >= 0) {
-        // Midpoint Y-axis thresholding: compare center of active item with center of hovered item
+    let targetIndex = 0;
+
+    if (isCrossColumn) {
+      // 跨欄拖曳時：預覽位置固定在第一個 (index 0)
+      targetIndex = 0;
+    } else {
+      // 同欄拖曳：原有精確計算邏輯
+      const targetColumnTasks = tasks
+        .filter((t) =>
+          targetColumnId === "inbox"
+            ? t.columnId === "inbox" && t.id !== activeId
+            : t.boardId === targetBoardId && t.columnId === targetColumnId && t.id !== activeId
+        )
+        .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
+
+      targetIndex = targetColumnTasks.length;
+
+      if (overTask && overId !== activeId) {
+        const overIndex = targetColumnTasks.findIndex((t) => t.id === overId);
+        if (overIndex >= 0) {
+          const activeTop = active.rect.current.translated?.top;
+          const activeHeight = active.rect.current.translated?.height ?? 60;
+          const overTop = over.rect.top;
+          const overHeight = over.rect.height;
+
+          let isBelow = false;
+          if (activeTop !== undefined && overTop !== undefined && overHeight > 0) {
+            const activeCenterY = activeTop + activeHeight / 2;
+            const overCenterY = overTop + overHeight / 2;
+            isBelow = activeCenterY > overCenterY;
+          }
+
+          targetIndex = isBelow ? overIndex + 1 : overIndex;
+        }
+      } else if (isOverColumn && targetColumnTasks.length > 0) {
+        // If hovering directly over column container area (e.g. header padding or bottom empty zone)
         const activeTop = active.rect.current.translated?.top;
-        const activeHeight = active.rect.current.translated?.height ?? 0;
+        const activeHeight = active.rect.current.translated?.height ?? 60;
         const overTop = over.rect.top;
         const overHeight = over.rect.height;
-
-        let isBelow = false;
-        if (activeTop !== undefined && overTop !== undefined) {
+        if (activeTop !== undefined && overTop !== undefined && overHeight > 0) {
           const activeCenterY = activeTop + activeHeight / 2;
-          const overCenterY = overTop + overHeight / 2;
-          isBelow = activeCenterY > overCenterY;
+          const overThirdHeight = overHeight / 3;
+          if (activeCenterY < overTop + overThirdHeight) {
+            // Near top of column -> index 0
+            targetIndex = 0;
+          } else if (activeCenterY > overTop + overHeight - overThirdHeight) {
+            // Near bottom of column -> column end
+            targetIndex = targetColumnTasks.length;
+          } else {
+            // Middle of column -> use closest task
+            targetIndex = targetColumnTasks.length;
+          }
         }
+      }
 
-        targetIndex = isBelow ? overIndex + 1 : overIndex;
-      }
-    } else if (isOverColumn && targetColumnTasks.length > 0) {
-      // If hovering directly over column container area (e.g. padding/top/bottom)
-      const activeTop = active.rect.current.translated?.top;
-      const overTop = over.rect.top;
-      if (activeTop !== undefined && overTop !== undefined) {
-        if (activeTop < overTop + 60) {
-          targetIndex = 0;
-        } else {
-          targetIndex = targetColumnTasks.length;
-        }
-      }
+      targetIndex = Math.max(0, Math.min(targetIndex, targetColumnTasks.length));
     }
-
-    targetIndex = Math.max(0, Math.min(targetIndex, targetColumnTasks.length));
 
     if (
       dragOverLocation?.columnId !== targetColumnId ||
@@ -298,15 +322,30 @@ export const UnifiedDnDWorkspace: React.FC = () => {
         .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
 
       const oldIndex = originalColumnTasks.findIndex((t) => t.id === activeId);
-      if (oldIndex !== -1 && oldIndex !== finalIndex) {
-        const reordered = arrayMove(originalColumnTasks, oldIndex, finalIndex);
+
+      // Use the over item's direct index in the original array (standard dnd-kit pattern).
+      // This matches SortableContext's visual displacement exactly and avoids
+      // the off-by-one from dragOverLocation (which uses a filtered N-1 array).
+      let newIndex = oldIndex;
+      if (overTask) {
+        const overIdx = originalColumnTasks.findIndex((t) => t.id === overId);
+        if (overIdx >= 0) {
+          newIndex = overIdx;
+        }
+      } else {
+        // Dropped over column container empty area (top/bottom) — use dragOverLocation
+        newIndex = finalIndex;
+      }
+
+      if (oldIndex !== -1 && newIndex >= 0 && oldIndex !== newIndex) {
+        const reordered = arrayMove(originalColumnTasks, oldIndex, newIndex);
         reorderColumnTasks(targetColumnId, targetBoardId, reordered);
         return;
       }
     }
 
-    // Cross Column Moving
-    moveTask(activeId, targetColumnId, finalIndex, false);
+    // Cross Column Moving: Always move to top (first position)
+    moveTask(activeId, targetColumnId, 0, false);
   };
 
   if (!isMounted) {

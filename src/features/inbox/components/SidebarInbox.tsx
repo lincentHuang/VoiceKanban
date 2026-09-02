@@ -70,13 +70,20 @@ export const SidebarInbox: React.FC = () => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-  const filteredInboxTasks = inboxTasks.filter((t) => t.id !== activeDragTaskId);
-  const inboxTaskIds = filteredInboxTasks.map((t) => t.id);
-
   const isInboxOver = dragOverLocation?.columnId === "inbox";
+  const isCrossColumnDrag =
+    isInboxOver &&
+    activeDragTaskId !== null &&
+    !inboxTasks.some((t) => t.id === activeDragTaskId);
+
+  const visibleInboxTasks = isInboxOver
+    ? inboxTasks.filter((t) => t.id !== activeDragTaskId)
+    : inboxTasks;
+  const inboxTaskIds = visibleInboxTasks.map((t) => t.id);
+
   const insertIndex =
     isInboxOver && dragOverLocation
-      ? Math.max(0, Math.min(dragOverLocation.index, filteredInboxTasks.length))
+      ? Math.max(0, Math.min(dragOverLocation.index, visibleInboxTasks.length))
       : -1;
 
   const handleQuickAdd = (e: React.FormEvent) => {
@@ -267,17 +274,17 @@ export const SidebarInbox: React.FC = () => {
 
       {/* Cards List in Inbox (Droppable & Sortable with Adaptive Row Layout & Drop Insertion Slot) */}
       <div className={`flex-1 overflow-y-auto overflow-x-hidden my-2.5 pr-1 pb-13 sm:pb-14 custom-scrollbar min-h-0 ${!isMobile && inboxWidth >= 420 ? "space-y-2" : "space-y-2.5"}`}>
-        <SortableContext items={inboxTaskIds} strategy={verticalListSortingStrategy}>
-          {filteredInboxTasks.map((task, idx) => (
+        <SortableContext items={inboxTaskIds} strategy={isCrossColumnDrag ? () => null : verticalListSortingStrategy}>
+          {visibleInboxTasks.map((task, idx) => (
             <React.Fragment key={task.id}>
               {insertIndex === idx && (
                 <div
-                  key="drop-slot-inbox"
-                  className="h-12 w-full rounded-xl border-2 border-dashed border-blue-400 bg-gradient-to-br from-blue-500/10 to-indigo-500/15 dark:from-blue-950/40 dark:to-indigo-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+                  key={`drop-slot-inbox-${idx}`}
+                  className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
                 >
-                  <span className="flex items-center gap-1.5 opacity-90">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                    放置於收件匣
+                  <span className="flex items-center gap-1.5 opacity-80">
+                    <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+                    放入收件匣
                   </span>
                 </div>
               )}
@@ -289,23 +296,23 @@ export const SidebarInbox: React.FC = () => {
             </React.Fragment>
           ))}
 
-          {filteredInboxTasks.length > 0 && insertIndex === filteredInboxTasks.length && (
+          {visibleInboxTasks.length > 0 && insertIndex >= visibleInboxTasks.length && (
             <div
               key="drop-slot-inbox-end"
-              className="h-12 w-full rounded-xl border-2 border-dashed border-blue-400 bg-gradient-to-br from-blue-500/10 to-indigo-500/15 dark:from-blue-950/40 dark:to-indigo-950/30 backdrop-blur-md my-1 flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300 shadow-inner transition-all duration-150 animate-in fade-in zoom-in-95 pointer-events-none"
+              className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
             >
-              <span className="flex items-center gap-1.5 opacity-90">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                放置於收件匣
+              <span className="flex items-center gap-1.5 opacity-80">
+                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+                放入收件匣
               </span>
             </div>
           )}
         </SortableContext>
 
-        {filteredInboxTasks.length === 0 && (
+        {visibleInboxTasks.length === 0 && (
           <div
             className={`h-36 border-2 rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${isInboxOver
-              ? "border-2 border-blue-500 bg-blue-50/80 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 shadow-inner"
+              ? "border-2 border-slate-400 bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 shadow-inner"
               : "border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 text-slate-400"
               }`}
           >

@@ -10,9 +10,12 @@
    - 支援抓住欄位 Header（或長按 200ms）進行水平平滑拖曳排序，即時預覽換位並持久化順序。
 2. **最右側行內極速新增欄位 (Inline Column Creation)**：
    - 看板橫向末端提供「+ 新增欄位」卡片，行內輸入名稱 Enter 立即建立新狀態欄位。
-3. **雙向卡片拖曳與即時預覽槽 (Bi-directional DnD & Live Slot Indicator)**：
-   - 跨欄與同欄拖曳時，精確於目標位置渲染虛線高亮預覽槽（Live Drop Slot），指示落點。
-   - 基於 `pointerWithin` 與平滑幾何中心 `closestCenter` 的防抖碰撞偵測演算法，完美分離 Column 與 Task 拖曳。
+3. **雙向卡片拖曳、幽靈佔位與素雅灰色預覽槽 (Bi-directional DnD, Ghost Card & Subtle Gray Drop Slot)**：
+   - 拖曳卡片時，原始位置保持本體幽靈佔位（Ghost Placeholder，`opacity-35`），杜絕欄位高度瞬間塌陷所導致的跳動與版面位移。
+   - 目標切入位置以**素雅灰色塊（Subtle Gray Drop Block）**呈現清晰插槽，高度適中（`h-12`），取代過粗線條或過大方塊。
+   - 目標欄位維持常態優雅底色與邊框，不出現干擾性橘色高亮外框。
+   - **跨欄拖曳極速頂部定位**：從其他欄位或收件匣拖入新欄位時，預覽插槽直接固定在最上方第一個（Index 0），放開後卡片精準成為第一項。
+   - **同欄排序**：基於 `pointerWithin` 與卡片垂直中線（Midpoint Thresholding）幾何判定，拖至最頂端、兩張卡片縫隙或最底端皆能 100% 精準切入。
 4. **Lexorank 排序引擎 (Lexorank Engine)**：
    - 任務排序鍵符合 Base36 字元規格，支援任意卡片間隙快速插入與重排。
 5. **欄位管理、垂直拖曳排序與彈跳式圖示選擇器 (Column Management, DnD Reordering & Popover Icon Picker)**：
@@ -28,7 +31,7 @@
    - 每個欄位自動將未完成與已完成任務分離，已完成任務自動沉底。
    - 具備簡約精緻的「已完成 (N)」折疊面板，預設折疊隱藏已完成任務，點擊箭頭或整條按鈕平滑展開。
    - 展開後完整顯示已完成卡片，支援點擊查看詳情與卡片拖曳排序。
-8. **多選與批次操作 (Batch Selection & Action Bar)**：
+8. **多選與批次操作 (Batch Actions)**：
    - 支援勾選多張卡片，底部浮動 `BatchActionBar` 提供批次移動欄位、批次變更優先級、批次完成與批次刪除。
 9. **手機版看板磁力滑動置中與邊緣懸停磁吸切換 (Mobile Scroll Snap & Edge Magnet Drag Navigation)**：
    - 手機小螢幕瀏覽時，看板容器啟用 `snap-x snap-mandatory`，各欄位 `w-[84vw] max-w-[320px] snap-center`，滑動時自動置中於畫面中央並保留兩側鄰欄邊緣預覽。
@@ -76,4 +79,5 @@ src/features/kanban/
 - [x] **AC-KANBAN-9**：欄位顏色套用於整個欄位容器背景與邊框，提供全新柔和淺色選項與高對比勾選識別。
 - [x] **AC-KANBAN-10**：各欄位內已完成任務（`completed: true`）自動沉底至最下方，預設收合為「已完成 (N)」折疊面板，點擊流暢展開/收合並支援展開後查看與拖曳。
 - [x] **AC-KANBAN-11**：手機版看板左右滑動具備磁力吸附自動置中（`snap-center`），拖曳卡片期間不卡頓且懸停邊緣約 1 秒平滑磁吸切換至下一欄/上一欄。
+- [x] **AC-KANBAN-12**：拖曳卡片至目標卡片上下邊緣動態像素區域時精確判定插入點，頂部卡片上緣必定切入最上方（Index 0），底部卡片下緣必定切入最下方（Index Max），無需預留空白即可流暢插入。
 
