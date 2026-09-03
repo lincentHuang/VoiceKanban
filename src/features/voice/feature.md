@@ -11,15 +11,10 @@
    - `AudioVisualizer` 透過 Web Audio API 即時分析麥克風頻譜，渲染動態脈衝聲波。
 2. **多語言支援與自動偵測 (Multi-language Support)**：
    - 支援繁體中文（zh-TW）、英文（en-US）、日文（ja-JP）等多語系切換與自動語言偵測。
-3. **Gemini AI 結構化任務解析 (AI Structured Extraction)**：
-   - 呼叫 `/api/voice/extract` API 路由，透過 Gemini JSON Schema 輸出結構化資料：
-     - `title`（簡潔任務名稱）
-     - `description`（背景細節）
-     - `dueDate`（解析相對時間如「下週三下午兩點」轉換為 ISO 格式）
-     - `priority`（low / medium / high / urgent）
-     - `targetColumnId`（依語意智能推斷欄位：todo / in_progress / done / inbox）
-     - `tags`（萃取標籤關鍵字）
-     - `checklist`（拆解多步驟子項目）
+3. **Gemini AI / 本機 NLP 結構化任務解析 (AI Structured Extraction)**：
+   - 聚焦精確萃取**任務標題 (`title`)** 與 **目標欄位 (`targetColumnId`)**，以及可選之到期時間與優先級。
+   - **簡潔直覺建立**：語音新增卡片時**不額外於說明欄位（`description`）填充逐字稿備註**，保持卡片說明純淨。
+   - 支援辨識欄位關鍵字（進行中、待辦清單、已完成、等待/卡關、收件夾及自訂欄位名稱），自動分流對應欄位。
 4. **多任務自動拆解 (Multi-task Auto Splitting)**：
    - 當使用者一口氣說出多件事（例如：「明天下午開會，順便記得買牛奶還有寄發票」），AI 自動辨識並拆解成多張獨立任務卡片。
 5. **本機 Local NLP 備援解析 (Offline / Fallback Local Parser)**：

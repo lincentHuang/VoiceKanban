@@ -266,9 +266,14 @@ export const VoiceCaptureOverlay: React.FC = () => {
       if (voiceMode === "offline_learning" || !byokConfig.apiKey || !byokConfig.apiKey.trim()) {
         const fallbackText = spokenText || (liveLanguage === "zh-TW" ? "完成首頁 Base 44 設計樣式切版與微調，高優先級，放進進行中" : "Complete project milestone review by tomorrow 3pm urgent");
         
+        const activeBoard = boards.find((b) => b.id === activeBoardId);
         const context = {
           boards: boards.map((b) => ({ id: b.id, name: b.name })),
           activeBoardId: activeBoardId || (boards[0]?.id ?? "board-work"),
+          columns: (activeBoard?.columns || DEFAULT_COLUMNS).map((c) => ({
+            id: c.id,
+            title: c.title,
+          })),
         };
 
         const result = learningEngine.extractWithLearning(fallbackText, context);
@@ -364,7 +369,7 @@ export const VoiceCaptureOverlay: React.FC = () => {
 
     addTask({
       title: editTitle.trim(),
-      description: extractedTask?.transcript ? `🎙️ 語音逐字稿：${extractedTask.transcript}` : "",
+      description: "",
       boardId: editBoardId,
       columnId: editColumnId,
       priority: editPriority,

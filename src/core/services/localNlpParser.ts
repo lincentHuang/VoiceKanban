@@ -281,22 +281,74 @@ export function matchBoardAndColumn(
     }
   }
 
-  // Match Columns
-  if (lower.includes("進行中") || lower.includes("in progress") || lower.includes("doing")) {
-    targetColumnId = "in_progress";
-    matchedColumnName = "進行中";
-  } else if (lower.includes("待辦") || lower.includes("待處理") || lower.includes("to do") || lower.includes("todo")) {
-    targetColumnId = "todo";
-    matchedColumnName = "待辦清單";
-  } else if (lower.includes("已完成") || lower.includes("完成") || lower.includes("done") || lower.includes("finished")) {
-    targetColumnId = "done";
-    matchedColumnName = "已完成";
-  } else if (lower.includes("等待") || lower.includes("卡住") || lower.includes("waiting") || lower.includes("block")) {
-    targetColumnId = "waiting";
-    matchedColumnName = "等待/卡關";
-  } else if (lower.includes("收件夾") || lower.includes("收集箱") || lower.includes("inbox")) {
-    targetColumnId = "inbox";
-    matchedColumnName = "收件夾";
+  // Match Custom Columns from context if available
+  if (context.columns && context.columns.length > 0) {
+    for (const col of context.columns) {
+      const cleanColTitle = col.title.replace(/[^\w\u4e00-\u9fa5]/g, "").toLowerCase();
+      if (cleanColTitle.length >= 2 && lower.includes(cleanColTitle)) {
+        targetColumnId = col.id;
+        matchedColumnName = col.title;
+        break;
+      }
+    }
+  }
+
+  // Match Standard Columns with extended natural language keywords
+  if (!matchedColumnName) {
+    if (
+      lower.includes("進行中") ||
+      lower.includes("in progress") ||
+      lower.includes("doing") ||
+      lower.includes("正在做") ||
+      lower.includes("處理中") ||
+      lower.includes("執行中")
+    ) {
+      targetColumnId = "in_progress";
+      matchedColumnName = "進行中";
+    } else if (
+      lower.includes("待辦") ||
+      lower.includes("待處理") ||
+      lower.includes("to do") ||
+      lower.includes("todo") ||
+      lower.includes("準備做") ||
+      lower.includes("未開始")
+    ) {
+      targetColumnId = "todo";
+      matchedColumnName = "待辦清單";
+    } else if (
+      lower.includes("已完成") ||
+      lower.includes("完成") ||
+      lower.includes("done") ||
+      lower.includes("finished") ||
+      lower.includes("做完了") ||
+      lower.includes("搞定") ||
+      lower.includes("結案")
+    ) {
+      targetColumnId = "done";
+      matchedColumnName = "已完成";
+    } else if (
+      lower.includes("等待") ||
+      lower.includes("卡住") ||
+      lower.includes("卡關") ||
+      lower.includes("waiting") ||
+      lower.includes("block") ||
+      lower.includes("暫停") ||
+      lower.includes("擱置") ||
+      lower.includes("阻塞")
+    ) {
+      targetColumnId = "waiting";
+      matchedColumnName = "等待/卡關";
+    } else if (
+      lower.includes("收件夾") ||
+      lower.includes("收件匣") ||
+      lower.includes("收集箱") ||
+      lower.includes("inbox") ||
+      lower.includes("隨手記") ||
+      lower.includes("靈感")
+    ) {
+      targetColumnId = "inbox";
+      matchedColumnName = "收件夾";
+    }
   }
 
   return {
@@ -330,8 +382,9 @@ export function extractCleanTitle(
 
   // Remove leftover board/column intent words and filler particles
   clean = clean.replace(/(高優先級|中優先級|低優先級|高優先|中優先|低優先|優先級|優先等級)/g, " ");
-  clean = clean.replace(/(放進|放到|移到|移至|標記為|設為|放入|前要|前需|前)/g, " ");
-  clean = clean.replace(/\b(put into|move to|set priority to|mark as|by|at)\b\s*/gi, " ");
+  clean = clean.replace(/(放進|放到|移到|移至|標記為|設為|放入|加入|置於|放至|前要|前需|前)/g, " ");
+  clean = clean.replace(/(進行中|待辦事項|待辦清單|待辦|收件夾|收件匣|收集箱|等待\/卡關|等待|卡關|已完成|完成)/g, " ");
+  clean = clean.replace(/\b(put into|move to|set priority to|mark as|by|at|in progress|todo|to do|inbox|done|waiting)\b\s*/gi, " ");
   clean = clean.replace(/^[，,。！!？?\s:：]+|[，,。！!？?\s:：]+$/g, "").trim();
 
   const boilerplatePrefixes = [
