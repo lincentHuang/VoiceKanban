@@ -78,13 +78,13 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
   const visibleActiveTasks = isOverlay
     ? uncompletedTasks
     : isCrossColumnDrag
-    ? uncompletedTasks.filter((t) => t.id !== activeDragTaskId)
-    : uncompletedTasks;
+      ? uncompletedTasks.filter((t) => t.id !== activeDragTaskId)
+      : uncompletedTasks;
   const visibleCompletedTasks = isOverlay
     ? completedTasks
     : isCrossColumnDrag
-    ? completedTasks.filter((t) => t.id !== activeDragTaskId)
-    : completedTasks;
+      ? completedTasks.filter((t) => t.id !== activeDragTaskId)
+      : completedTasks;
 
   // Rendered tasks in DOM
   const renderedTasks = isCompletedExpanded
@@ -206,16 +206,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
       ref={setSortableRef}
       style={columnStyle}
       data-column-id={column.id}
-      className={`flex flex-col w-[84vw] max-w-[320px] min-w-[270px] sm:w-[270px] sm:min-w-[270px] sm:max-w-[270px] snap-center shrink-0 max-h-full h-fit backdrop-blur-xl border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden group/col ${
-        isColumnDragging
+      className={`flex flex-col w-[84vw] max-w-[320px] min-w-[270px] sm:w-[270px] sm:min-w-[270px] sm:max-w-[270px] snap-center shrink-0 max-h-full h-fit backdrop-blur-xl border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden group/col ${isColumnDragging
           ? "opacity-30 border-2 border-orange-500 scale-[0.98] shadow-2xl z-20"
           : colorConfig.containerClass
-      }`}
+        }`}
     >
       {/* Column Header (Draggable Handle for Column Sorting) */}
       <div
         {...attributes}
         {...listeners}
+        data-column-header="true"
         className="flex items-center justify-between px-1 py-1 shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
         title="按住標頭可拖曳重新排列欄位順序"
       >
@@ -262,7 +262,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
           scrollContainerRef.current = el;
           setDroppableRef(el);
         }}
-        className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 pt-1 pb-6 custom-scrollbar min-h-[60px]"
+        className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 pt-1 pb-1 custom-scrollbar min-h-[60px]"
       >
         <SortableContext items={taskIds} strategy={isCrossColumnDrag ? () => null : verticalListSortingStrategy}>
           {/* 1. Active / Uncompleted Tasks List */}

@@ -375,7 +375,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex-1 min-h-0 w-full flex p-2.5 sm:p-3 items-start overflow-hidden gap-0">
+      <div className="flex-1 min-h-0 w-full flex p-2.5 sm:p-3 items-start overflow-hidden gap-0 relative">
         {/* Left Container: Global Inbox Panel */}
         <SidebarInbox />
 

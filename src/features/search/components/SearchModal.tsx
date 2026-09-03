@@ -148,7 +148,7 @@ export const SearchModal: React.FC = () => {
   const isSearching = inputVal.trim().length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center pt-14 sm:pt-24 px-3 sm:px-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center pt-10 sm:pt-20 px-3 sm:px-4 animate-in fade-in duration-150 overflow-hidden">
       {/* Click outside to close */}
       <div
         className="fixed inset-0 -z-10"
@@ -161,7 +161,7 @@ export const SearchModal: React.FC = () => {
         role="dialog"
         aria-modal="true"
         aria-label="搜尋任務"
-        className="w-full max-w-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[82vh] transition-all animate-in zoom-in-95 duration-200"
+        className="w-full max-w-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-4rem)] sm:max-h-[82vh] transition-all animate-in zoom-in-95 duration-200"
       >
         {/* Search Input Bar */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 dark:border-slate-800/80 shrink-0">

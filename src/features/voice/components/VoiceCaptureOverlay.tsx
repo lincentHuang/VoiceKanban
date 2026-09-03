@@ -411,22 +411,23 @@ export const VoiceCaptureOverlay: React.FC = () => {
   return (
     <div
       onClick={handleClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 relative overflow-hidden"
+        className="w-full max-w-xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-7 relative overflow-hidden"
       >
         {/* Close button */}
         <button
+          type="button"
           onClick={handleClose}
-          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Mode Selector & Status Header */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 pr-8">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 pr-8 shrink-0">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-lime-100 dark:bg-lime-950/60 text-lime-800 dark:text-lime-300 border border-lime-300/60">
               <BrainCircuit className="w-3.5 h-3.5 text-lime-600" />
@@ -590,8 +591,8 @@ export const VoiceCaptureOverlay: React.FC = () => {
 
         {/* State 4 & 5: Preview & Active Confirmation (The Grill-me Consensus Card) */}
         {voiceState === "preview" && (
-          <div className="flex flex-col text-left animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex-1 flex flex-col min-h-0 text-left animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-orange-600">
                   <Sparkles className="w-4 h-4" />
@@ -605,10 +606,13 @@ export const VoiceCaptureOverlay: React.FC = () => {
               </div>
 
               {/* Language Tag */}
-              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 shrink-0">
                 {extractedTask?.detectedLanguage === "en-US" ? "🇺🇸 English" : "🇹🇼 繁體中文"}
               </span>
             </div>
+
+            {/* Scrollable Preview Body */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3">
 
             {noticeMessage && (
               <div className="mb-3 p-2.5 rounded-xl bg-lime-50 dark:bg-lime-950/30 border border-lime-200/80 dark:border-lime-800 text-[11px] text-lime-800 dark:text-lime-300 flex items-center gap-1.5">
@@ -767,9 +771,10 @@ export const VoiceCaptureOverlay: React.FC = () => {
                 </div>
               </div>
             </div>
+            </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
               <button
                 type="button"
                 onClick={() => {

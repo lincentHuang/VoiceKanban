@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { compressImage } from "@/core/utils/imageUtils";
+import { uploadFile } from "@/core/utils/uploadUtils";
 
 interface MarkdownEditorProps {
   value: string;
@@ -120,22 +121,16 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, 0);
   };
 
-  // Handle local image file upload with safe compression
+  // Handle local image file upload with R2 and compression
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
         setIsCompressing(true);
-        const compressedUrl = await compressImage(file, 1400, 1400, 0.82);
-        insertText(`\n![${file.name.replace(/[\[\]]/g, "")}](${compressedUrl})\n`);
+        const res = await uploadFile(file, file.name, "editor");
+        insertText(`\n![${file.name.replace(/[\[\]]/g, "")}](${res.url})\n`);
       } catch (err) {
         console.error("Image processing error:", err);
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const base64Url = event.target?.result as string;
-          insertText(`\n![${file.name}](${base64Url})\n`);
-        };
-        reader.readAsDataURL(file);
       } finally {
         setIsCompressing(false);
         e.target.value = "";
@@ -143,7 +138,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
   };
 
-  // Handle paste image from clipboard into textarea with compression
+  // Handle paste image from clipboard into textarea with R2 and compression
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
@@ -153,16 +148,10 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           e.preventDefault();
           try {
             setIsCompressing(true);
-            const compressedUrl = await compressImage(file, 1400, 1400, 0.82);
-            insertText(`\n![貼上的截圖](${compressedUrl})\n`);
+            const res = await uploadFile(file, `screenshot-${Date.now()}.png`, "editor");
+            insertText(`\n![貼上的截圖](${res.url})\n`);
           } catch (err) {
             console.error("Paste image error:", err);
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              const base64Url = event.target?.result as string;
-              insertText(`\n![貼上的截圖](${base64Url})\n`);
-            };
-            reader.readAsDataURL(file);
           } finally {
             setIsCompressing(false);
           }

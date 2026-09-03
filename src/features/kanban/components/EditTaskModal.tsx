@@ -8,6 +8,7 @@ import { MarkdownEditor } from "@/features/editor";
 import { DateTimePicker } from "@/components/common/DateTimePicker";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import { compressImage } from "@/core/utils/imageUtils";
+import { uploadFile } from "@/core/utils/uploadUtils";
 import {
   X,
   Calendar,
@@ -33,9 +34,11 @@ import {
   Check,
   Paperclip,
   FileText,
+  Eye,
   Download,
   ExternalLink,
   Columns3,
+  Loader2,
 } from "lucide-react";
 import {
   DndContext,
@@ -131,6 +134,8 @@ export const EditTaskModal: React.FC = () => {
   const [editingChecklistId, setEditingChecklistId] = useState<string | null>(null);
   const [editingChecklistText, setEditingChecklistText] = useState("");
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isMovePopoverOpen, setIsMovePopoverOpen] = useState(false);
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
@@ -138,9 +143,26 @@ export const EditTaskModal: React.FC = () => {
   const [isExpandConfirm, setIsExpandConfirm] = useState(false);
   const [saveToast, setSaveToast] = useState(false);
 
+  // Mobile & Drawer Swipe-down States
+  const [isMobile, setIsMobile] = useState(false);
+  const [drawerDragY, setDrawerDragY] = useState(0);
+  const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
+  const [isClosingDrawer, setIsClosingDrawer] = useState(false);
+
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const attachmentFileInputRef = useRef<HTMLInputElement>(null);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollContentRef = useRef<HTMLDivElement>(null);
+  const touchStartYRef = useRef<number>(0);
+  const touchStartTimeRef = useRef<number>(0);
+  const isPullingFromTopRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const adjustTitleHeight = () => {
     if (titleTextareaRef.current) {
@@ -167,9 +189,78 @@ export const EditTaskModal: React.FC = () => {
       setSaveToast(false);
       setIsMovePopoverOpen(false);
       setIsCoverModalOpen(false);
+      setDrawerDragY(0);
+      setIsDraggingDrawer(false);
+      setIsClosingDrawer(false);
       setTimeout(adjustTitleHeight, 0);
     }
   }, [task]);
+
+  const handleCloseDrawer = () => {
+    if (isMobile) {
+      setIsClosingDrawer(true);
+      setTimeout(() => {
+        setEditingTaskId(null);
+      }, 200);
+    } else {
+      setEditingTaskId(null);
+    }
+  };
+
+  // Touch handlers for pull-to-close drawer gesture
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isMobile) return;
+    const clientY = e.touches[0].clientY;
+    touchStartYRef.current = clientY;
+    touchStartTimeRef.current = Date.now();
+
+    // Check if scroll is at the very top
+    const scrollTop = scrollContentRef.current ? scrollContentRef.current.scrollTop : 0;
+    if (scrollTop <= 2) {
+      isPullingFromTopRef.current = true;
+    } else {
+      isPullingFromTopRef.current = false;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isMobile || !isPullingFromTopRef.current) return;
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - touchStartYRef.current;
+
+    // Only allow downward drag
+    if (deltaY > 0) {
+      setIsDraggingDrawer(true);
+      // Add slight resistance to dragging
+      const dampedY = deltaY < 150 ? deltaY : 150 + (deltaY - 150) * 0.6;
+      setDrawerDragY(dampedY);
+    } else {
+      setDrawerDragY(0);
+      setIsDraggingDrawer(false);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isMobile || !isPullingFromTopRef.current) return;
+    isPullingFromTopRef.current = false;
+    setIsDraggingDrawer(false);
+
+    const touchDuration = Date.now() - touchStartTimeRef.current;
+    const velocity = drawerDragY / Math.max(touchDuration, 1);
+
+    // If dragged more than 90px or fast swipe down
+    if (drawerDragY > 90 || (drawerDragY > 40 && velocity > 0.4)) {
+      if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(15);
+        } catch {}
+      }
+      handleCloseDrawer();
+    } else {
+      // Snap back to 0
+      setDrawerDragY(0);
+    }
+  };
 
   useEscapeKey(() => {
     if (isCoverModalOpen) {
@@ -179,7 +270,7 @@ export const EditTaskModal: React.FC = () => {
     } else if (isExpandConfirm) {
       setIsExpandConfirm(false);
     } else if (editingTaskId) {
-      setEditingTaskId(null);
+      handleCloseDrawer();
     }
   }, !!editingTaskId);
 
@@ -287,51 +378,32 @@ export const EditTaskModal: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 10MB limit (10 * 1024 * 1024 bytes)
-    if (file.size > 10 * 1024 * 1024) {
-      setAttachmentError("檔案大小超過 10MB 限制！請選擇小於 10MB 的檔案。");
+    // 25MB limit
+    if (file.size > 25 * 1024 * 1024) {
+      setAttachmentError("檔案大小超過 25MB 限制！請選擇小於 25MB 的檔案。");
       setTimeout(() => setAttachmentError(null), 3500);
       e.target.value = "";
       return;
     }
 
     try {
-      let finalUrl = "";
-      if (file.type.startsWith("image/")) {
-        try {
-          finalUrl = await compressImage(file, 1600, 1600, 0.85);
-        } catch {
-          // fallback
-        }
-      }
-
-      if (!finalUrl) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const base64Url = event.target?.result as string;
-          const newAttachment: TaskAttachment = {
-            id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            name: file.name,
-            size: file.size,
-            type: file.type || "application/octet-stream",
-            url: base64Url,
-            createdAt: new Date().toISOString(),
-          };
-          addAttachment(task.id, newAttachment);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        const newAttachment: TaskAttachment = {
-          id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          name: file.name,
-          size: file.size,
-          type: file.type || "application/octet-stream",
-          url: finalUrl,
-          createdAt: new Date().toISOString(),
-        };
-        addAttachment(task.id, newAttachment);
-      }
+      setIsUploadingAttachment(true);
+      const res = await uploadFile(file, file.name, "attachments");
+      const newAttachment: TaskAttachment = {
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: res.name,
+        size: res.size,
+        type: res.type,
+        url: res.url,
+        createdAt: new Date().toISOString(),
+      };
+      addAttachment(task.id, newAttachment);
+    } catch (err: any) {
+      console.error("Attachment upload error:", err);
+      setAttachmentError("檔案上傳失敗，請稍後重試");
+      setTimeout(() => setAttachmentError(null), 3500);
     } finally {
+      setIsUploadingAttachment(false);
       e.target.value = "";
     }
   };
@@ -411,15 +483,19 @@ export const EditTaskModal: React.FC = () => {
     updateTask(task.id, { coverColor: val, coverAspectRatio: newRatio });
   };
 
-  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Url = event.target?.result as string;
-        handleApplyCover(base64Url, "banner");
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsUploadingCover(true);
+        const res = await uploadFile(file, file.name, "covers");
+        handleApplyCover(res.url, "banner");
+      } catch (err) {
+        console.error("Cover upload error:", err);
+      } finally {
+        setIsUploadingCover(false);
+        e.target.value = "";
+      }
     }
   };
 
@@ -442,13 +518,41 @@ export const EditTaskModal: React.FC = () => {
 
   return (
     <div
-      onClick={() => setEditingTaskId(null)}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-y-auto"
+      onClick={handleCloseDrawer}
+      className={`fixed inset-0 z-50 flex ${
+        isMobile ? "items-end" : "items-center"
+      } justify-center ${
+        isMobile ? "p-0" : "p-3 sm:p-4"
+      } bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-4xl my-auto backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl relative text-slate-800 dark:text-slate-100"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: isMobile
+            ? isClosingDrawer
+              ? "translateY(100%)"
+              : `translateY(${drawerDragY}px)`
+            : undefined,
+          transition: isDraggingDrawer
+            ? "none"
+            : "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+        className={`w-full ${
+          isMobile
+            ? "max-h-[88dvh] h-[88dvh] rounded-t-[2rem] rounded-b-none border-t border-x border-white/80 dark:border-slate-800"
+            : "max-w-4xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] rounded-3xl border border-white/80 dark:border-slate-800"
+        } flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 shadow-2xl relative text-slate-800 dark:text-slate-100 overflow-hidden`}
       >
+        {/* Mobile Drag Handle */}
+        {isMobile && (
+          <div className="w-full flex items-center justify-center pt-2.5 pb-1 shrink-0 cursor-grab active:cursor-grabbing touch-none select-none">
+            <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+          </div>
+        )}
+
         {/* Top Cover Banner */}
         {coverColor && (
           <div
@@ -456,7 +560,9 @@ export const EditTaskModal: React.FC = () => {
               background: isImageCover ? `url(${coverColor}) center/cover no-repeat` : coverColor,
               backgroundColor: !isImageCover && !coverColor.startsWith("linear") ? coverColor : undefined,
             }}
-            className={`w-full ${getModalCoverHeightClass()} rounded-t-3xl relative flex items-end justify-between px-4 pb-3 pt-6 group/cover transition-all duration-300 shadow-xs`}
+            className={`w-full ${getModalCoverHeightClass()} ${
+              isMobile ? "" : "rounded-t-3xl"
+            } relative flex items-end justify-between px-4 pb-3 pt-6 group/cover transition-all duration-300 shadow-xs shrink-0`}
           >
             {/* Aspect Ratio Badge Indicator */}
             <span className="text-[10px] bg-black/60 text-white px-2.5 py-1 rounded-lg backdrop-blur-md uppercase font-bold tracking-wider shadow-xs">
@@ -488,7 +594,7 @@ export const EditTaskModal: React.FC = () => {
         )}
 
         {/* Modal Content */}
-        <div className="p-5 sm:p-7 space-y-5">
+        <div ref={scrollContentRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-7 space-y-5">
           {/* Header Bar */}
           <div className="space-y-2">
             {/* Top Toolbar Row */}
@@ -549,11 +655,19 @@ export const EditTaskModal: React.FC = () => {
                   {isMovePopoverOpen && (
                     <>
                       <div
-                        className="fixed inset-0 z-40"
+                        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs sm:bg-transparent"
                         onClick={() => setIsMovePopoverOpen(false)}
                       />
-                      <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 px-2 py-1 block">選取目標欄位</span>
+                      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-56 max-h-[80vh] sm:max-h-none overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in space-y-1">
+                        <div className="flex items-center justify-between pb-1 px-1 border-b border-slate-100 dark:border-slate-800 sm:border-0 sm:pb-0">
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 sm:text-[10px] sm:text-slate-400">選取目標欄位</span>
+                          <button
+                            onClick={() => setIsMovePopoverOpen(false)}
+                            className="text-slate-400 hover:text-slate-600 p-1 sm:hidden"
+                          >
+                            ✕
+                          </button>
+                        </div>
                         {allTargetColumns.map((col) => (
                           <button
                             key={col.id}
@@ -595,10 +709,10 @@ export const EditTaskModal: React.FC = () => {
                   {isCoverModalOpen && (
                     <>
                       <div
-                        className="fixed inset-0 z-40"
+                        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs sm:bg-transparent"
                         onClick={() => setIsCoverModalOpen(false)}
                       />
-                      <div className="absolute right-0 top-full mt-2 w-80 max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
+                      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-80 max-w-[calc(100vw-2rem)] max-h-[85vh] sm:max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
                         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                           <span className="text-xs font-bold text-slate-800 dark:text-slate-100">設定卡片封面與比例</span>
                           <button
@@ -664,7 +778,7 @@ export const EditTaskModal: React.FC = () => {
                                 key={c.hex}
                                 onClick={() => handleApplyCover(c.hex)}
                                 style={{ backgroundColor: c.hex }}
-                                className={`w-11 h-7 rounded-xl shadow-2xs hover:scale-105 active:scale-95 transition-all border ${coverColor === c.hex
+                                className={`w-full h-7 rounded-xl shadow-2xs hover:scale-105 active:scale-95 transition-all border ${coverColor === c.hex
                                   ? "border-2 border-slate-900 dark:border-white shadow-sm"
                                   : "border-transparent"
                                   }`}
@@ -703,11 +817,21 @@ export const EditTaskModal: React.FC = () => {
                           </span>
                           <button
                             type="button"
+                            disabled={isUploadingCover}
                             onClick={() => coverFileInputRef.current?.click()}
-                            className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-slate-300/80 dark:border-slate-700 hover:border-orange-400"
+                            className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-slate-300/80 dark:border-slate-700 hover:border-orange-400 disabled:opacity-50"
                           >
-                            <Upload className="w-3.5 h-3.5 text-orange-500" />
-                            <span>挑選相片圖檔...</span>
+                            {isUploadingCover ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+                                <span>上傳至 R2 雲端中...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-3.5 h-3.5 text-orange-500" />
+                                <span>挑選相片圖檔...</span>
+                              </>
+                            )}
                           </button>
                           <input
                             type="file"
@@ -758,7 +882,7 @@ export const EditTaskModal: React.FC = () => {
                 {/* Close Button */}
                 <button
                   type="button"
-                  onClick={() => setEditingTaskId(null)}
+                  onClick={handleCloseDrawer}
                   className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none"
                   title="關閉"
                   aria-label="關閉"
@@ -972,11 +1096,21 @@ export const EditTaskModal: React.FC = () => {
 
                   <button
                     type="button"
+                    disabled={isUploadingAttachment}
                     onClick={() => attachmentFileInputRef.current?.click()}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors disabled:opacity-50"
                   >
-                    <Plus className="w-3.5 h-3.5 text-orange-500" />
-                    <span>上傳附件</span>
+                    {isUploadingAttachment ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+                        <span>上傳中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-3.5 h-3.5 text-orange-500" />
+                        <span>上傳附件</span>
+                      </>
+                    )}
                   </button>
 
                   <input

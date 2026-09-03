@@ -437,14 +437,14 @@ export const ColumnManagerModal: React.FC = () => {
   return (
     <div
       onClick={() => setIsColumnManagerOpen(false)}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative"
+        className="w-full max-w-lg max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-7 relative overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600">
               <SlidersHorizontal className="w-5 h-5" />
@@ -460,6 +460,7 @@ export const ColumnManagerModal: React.FC = () => {
           </div>
 
           <button
+            type="button"
             onClick={() => setIsColumnManagerOpen(false)}
             className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           >
@@ -467,8 +468,10 @@ export const ColumnManagerModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Existing Columns List (Drag & Drop Sortable) */}
-        <div className="mt-4 space-y-2 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar my-4 pr-1 space-y-4">
+          {/* Existing Columns List (Drag & Drop Sortable) */}
+          <div className="space-y-2">
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
               現有狀態欄位 ({localColumns.length})
@@ -540,16 +543,19 @@ export const ColumnManagerModal: React.FC = () => {
             </button>
           </div>
         </form>
+        </div>
 
         {/* Footer */}
-        <div className="pt-4 mt-2 flex justify-end gap-2">
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 shrink-0">
           <button
+            type="button"
             onClick={() => setIsColumnManagerOpen(false)}
             className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors cursor-pointer"
           >
             取消
           </button>
           <button
+            type="button"
             onClick={handleConfirmFinish}
             className="px-5 py-2 rounded-xl bg-base44-orange hover:bg-base44-orangeHover text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
           >

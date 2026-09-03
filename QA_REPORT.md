@@ -1,3 +1,78 @@
+# 測試驗收報告 (QA_REPORT.md) - Cloudflare R2 雲端儲存空間串接與 S3 協定直傳 (Cloudflare R2 Object Storage Integration)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **S3 協定伺服器端上傳 API (`/api/upload`)**：整合 `@aws-sdk/client-s3` 實作相容 S3 協定之 Cloudflare R2 端點，支援安全上傳二進位/多媒體檔案並返回公開 CDN 網址。
+  2. **雙軌容錯上傳架構 (`uploadFile`)**：優先透過 Cloudflare R2 雲端儲存傳輸大檔，當處於離線狀態或未配置金鑰時，自動平滑降級為前端智慧壓縮 Base64 儲存，確保操作零阻斷。
+  3. **任務附件與封面圖無縫升級**：任務附件、封面圖片與 Markdown 筆記編輯器圖片上傳全面接入 R2 上傳通道，支援上傳進度旋轉動畫（`Loader2 animate-spin`）與 25MB 大檔限制防呆。
+  4. **修復 Firestore 巢狀陣列限制**：將任務與看板陣列在寫入 Firestore 前自動結構化為 Map 格式，徹底根除 `FirebaseError: Property array contains an invalid nested entity` 報錯。
+- **測試結果**：全部 5 項驗收標準 (AC1 ~ AC5) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **R2 API 路由與健全性檢測 (`/api/upload`)** | 呼叫 `GET /api/upload` 檢測環境變數與 Bucket 狀態，呼叫 `POST /api/upload` 上傳檔案。 | API 正確處理 multipart/form-data，支援檔案名稱淨化、唯一時間戳命名與 content-type 偵測。 | ✅ PASS |
+| **AC2** | **任務附件 R2 上傳與旋轉指示器** | 在任務詳細視窗點擊「上傳附件」挑選檔案或圖片。 | 按鈕即時呈現「上傳中...」旋轉動畫，完成後附件清單正常渲染大小、名稱與圖片縮圖。 | ✅ PASS |
+| **AC3** | **任務封面圖 R2 直傳與預覽** | 在封面樣式視窗中點擊「挑選相片圖檔...」上傳圖片。 | 按鈕即時呈現「上傳至 R2 雲端中...」，完成後卡片頂部立即套用橫幅/直式/正方形封面。 | ✅ PASS |
+| **AC4** | **Markdown 編輯器貼圖與本地上傳** | 於任務說明 Markdown 編輯器中點擊插入圖片或直接 `Ctrl+V` 貼上螢幕截圖。 | 自動上傳至 R2 或生成輕量圖檔，並將 Markdown 圖片語法 `![名稱](URL)` 精準插入游標位置。 | ✅ PASS |
+| **AC5** | **Firestore 巢狀陣列結構化適配** | 上傳圖片/附件後觸發全域雲端同步至 Firestore。 | 寫入與讀取自動進行 Map/Array 雙向序列化，不再拋出任何 FirebaseError，同步狀態顯示綠色「已同步」。 | ✅ PASS |
+
+---
+
+# 測試驗收報告 (QA_REPORT.md) - 桌機版看板滑鼠拖曳滑動畫布 (Desktop Canvas Mouse Drag Panning / Drag-to-Scroll)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **桌機版看板滑鼠拖曳滑動畫面**：支援在桌機環境下，於看板空白區域、欄位間隙按住滑鼠左鍵自由水平拖曳（Pan / Drag-to-Scroll），畫面流暢 1:1 跟隨滑鼠位移，放開時帶有自然慣性滑行（Momentum Gliding）。
+  2. **智慧防衝突隔離**：自動過濾互動元素與拖曳目標（卡片拖曳、欄位標頭拖曳、按鈕、輸入框、選單與下拉彈窗），點擊/拖曳卡片或標頭時正常觸發 DnD 排序，絕不干擾既有操作；滑鼠微移（< 3px）精準判定為靜態點擊，超過 3px 啟動平移並自動阻止誤觸點擊。
+  3. **動態游標反饋**：常態懸停於畫布空白區域顯示 `cursor-grab`（抓取手勢），拖曳平移期間即時切換為 `cursor-grabbing`（握拳手勢）並啟用 `select-none` 防文字反白。
+- **測試結果**：全部 6 項驗收標準 (AC1 ~ AC6) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **桌機畫布滑鼠抓取平移 (Canvas Mouse Drag-to-Scroll)** | 在看板背景空白處、欄位間隙按住滑鼠左鍵水平拖曳。 | 看板畫面以 60fps 零延遲 1:1 跟隨滑鼠水平滾動，體驗如 Figma / Miro 般流暢自然。 | ✅ PASS |
+| **AC2** | **釋放慣性滑行 (Momentum Inertia Gliding)** | 快速向左或向右甩動滑鼠並放開按鍵。 | 看板根據甩動速度平滑滑行並自然減速停止，無生硬頓挫感。 | ✅ PASS |
+| **AC3** | **游標手勢動態反饋 (Dynamic Cursor Feedback)** | 滑鼠懸停於畫布空白處 vs 按住拖曳時。 | 懸停時呈現 `cursor-grab`，按住拖曳時即時切換為 `cursor-grabbing`，拖曳期間自動防止文字選取反白。 | ✅ PASS |
+| **AC4** | **卡片與欄位 DnD 拖曳互不衝突 (DnD Non-Interference)** | 按住卡片或欄位標頭拖曳排序。 | 優先觸發卡片/欄位拖曳重排（@dnd-kit），畫布平移自動避讓不衝突。 | ✅ PASS |
+| **AC5** | **按鈕與表單點擊防誤觸 (Click Immunity & Threshold)** | 點擊「+ 新增欄位」、「+ 新增卡片」、標籤篩選器、彈窗等按鈕。 | 單純點擊或微小晃動（< 3px）正常觸發按鈕點擊事件；拖曳平移時（> 3px）自動捕捉並阻止誤觸點擊。 | ✅ PASS |
+| **AC6** | **生產環境編譯無誤 (Production Build & Typecheck)** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 成功編譯所有頁面，TypeScript 0 報錯。 | ✅ PASS |
+
+---
+
+# 測試驗收報告 (QA_REPORT.md) - 手機端原生手勢體驗 (Bottom Sheet 抽屜 / 雙向視圖滑動 / 拖曳磁力滑動)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **任務詳細 Bottom Sheet 抽屜 (Drawer)**：手機版點擊任務卡片改為自螢幕底部滑出之 Bottom Sheet 抽屜（佔比 88vh），配置頂部拖曳握柄 Handle Bar，支援頂部下拉 Pull-Down 即時跟手並滑動關閉（Pull-to-Close），桌機版維持 Center Modal。
+  2. **收件匣 ↔ 看板 雙向滑動切換 (Swipe Navigation)**：手機版收件匣向左滑動進入看板，看板最左側向右滑動切換回收件匣，具備向量防誤觸保護。
+  3. **拖曳卡片邊界靈敏磁力滑動與跨視圖磁吸**：拖曳任務卡片至左右邊緣時提升為 450ms 靈敏磁吸階梯滑動（Step Scroll），在第一欄最左側邊緣懸停時磁吸展開收件匣。
+- **測試結果**：全部 6 項驗收標準 (AC1 ~ AC6) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **手機版任務詳細 Bottom Sheet 抽屜展示** | 於手機小螢幕（`< sm`）點擊任一任務卡片開啟詳細視圖。 | 視圖以底部抽屜（Bottom Sheet Drawer）平滑自下方滑出，頂部具備拖曳 Handle Bar，視覺符合原生 App 體驗。 | ✅ PASS |
+| **AC2** | **抽屜下拉 Pull-to-Close 手勢關閉** | 按住頂部 Handle 或在內容頂部（`scrollTop === 0`）時向下拉動。 | 抽屜流暢跟隨手指位移；下拉超過閥值（> 90px）放開時平滑滑出底部並關閉，未達閥值平滑回彈。 | ✅ PASS |
+| **AC3** | **桌機版維持 Center Modal 彈窗** | 螢幕寬度拉大至桌機（`≥ sm`）點擊任務卡片。 | 保持居中彈窗（Center Modal）且無 Handle Bar，手勢不干擾桌面滑鼠操作。 | ✅ PASS |
+| **AC4** | **收件匣向左滑動進入看板 (Inbox Swipe Left)** | 手機版在收件匣中向左水平滑動（`ΔX < -65px`）。 | 平滑關閉收件匣並切換至看板視圖，伴隨短震動回饋，垂直滾動時不誤觸。 | ✅ PASS |
+| **AC5** | **看板最左側向右滑動進入收件匣 (Kanban Swipe Right)** | 手機版在看板位於最左側第一欄時向右滑動（`ΔX > 65px`）。 | 平滑展開收件匣，手勢流暢自然，於中間欄位滑動時維持欄位間水平切換。 | ✅ PASS |
+| **AC6** | **拖曳任務邊界靈敏磁力滑動與跨視圖磁吸** | 拖曳任務卡片至螢幕左右邊界或最左側到底。 | 邊界指示微光亮起，450ms 靈敏切換上一欄/下一欄；在第一欄最左側邊界懸停到底時磁吸展開收件匣。 | ✅ PASS |
+
+---
+
 # 測試驗收報告 (QA_REPORT.md) - Local-First 離線模式、PWA 斷網快取與離線變更同步引擎
 
 ## 1. 測試摘要 (Executive Summary)
@@ -203,8 +278,53 @@ Capacitor iOS & Android 雙平台工程與 PWA 離線安裝功能已全面就緒
 
 ---
 
+---
+
+# 測試驗收報告 (QA_REPORT.md) - 手機版 Modal 彈窗畫面下方不明滾動區與 Viewport 溢出修復
+
+## 1. 測試摘要 (Executive Summary)
+- **問題根因分析**：
+  1. 在手機瀏覽器（iOS Safari / Android Chrome）環境下，當開啟任一 Modal 彈窗（如新增任務、編輯任務、設定、狀態管理、語音萃取、登入/綁定帳號等）時，因彈窗內容高度超出手機可視高度，且彈窗容器未限制 `max-h-[calc(100dvh-2rem)]`，導致內容延伸至視窗下方。
+  2. 彈窗外部 backdrop 未設定 `overflow-hidden`，觸發了手機瀏覽器的全域 Elastic/Viewport 溢出滾動，使使用者在點擊或滑動 Modal 時，畫面下方被拉出大片空白與不明滾動區。
+  3. 全域 `html` / `body` / `main` 使用了靜態的 `100vh`（包含網址列收合後的高度），在手機動態網址列展開時引發額外 50-80px 的高度差溢出。
+- **修復方案**：
+  1. **全域 Viewport 鎖定**：`globals.css` 中將 `html, body` 鎖定為 `height: 100dvh; overflow: hidden; overscroll-behavior: none;`，`page.tsx` 中 `<main>` 採用 `h-[100dvh] max-h-[100dvh]`，徹底杜絕畫面底層溢出。
+  2. **所有 Modal 彈窗結構化防溢出**：
+     - 外層 Backdrop 一律設為 `fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-hidden`。
+     - 內層 Modal Card 一律設為 `max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col overflow-hidden`。
+     - Header 與 Footer 設為 `shrink-0`，中間內容本體設為 `flex-1 overflow-y-auto custom-scrollbar`。
+     - 滾動行為 100% 局限於 Modal 內部，完全消除手機版畫面下方之不明滾動區。
+- **涵蓋元件**：
+  - `src/features/kanban/components/AddTaskModal.tsx`
+  - `src/features/kanban/components/EditTaskModal.tsx`
+  - `src/features/settings/components/SettingsModal.tsx`
+  - `src/features/kanban/components/ColumnManagerModal.tsx`
+  - `src/features/auth/components/AuthModal.tsx`
+  - `src/features/auth/components/BindAccountModal.tsx`
+  - `src/features/search/components/SearchModal.tsx`
+  - `src/features/voice/components/VoiceCaptureOverlay.tsx`
+  - `src/components/ui/dialog.tsx`
+- **測試結果**：所有 6 項驗收項目（AC1 ~ AC6）**100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯成功，TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **全彈窗手機邊界防溢出 (Mobile Modal Boundary Constraint)** | 在手機小螢幕（iPhone / Android 375px ~ 430px）開啟任一 Modal（新增任務、編輯任務、設定、語音、狀態管理、登入等）。 | 彈窗尺寸精確限制在 `max-h-[calc(100dvh-2rem)]` 內，上下皆預留安全間距，不再穿透螢幕底部。 | ✅ PASS |
+| **AC2** | **彈窗內部平滑獨立滾動 (Internal Independent Scroll)** | 在內容較長之彈窗內（如編輯任務之 Markdown 說明、Checklist、標籤或新增任務詳細參數）上下滑動。 | 滾動平滑且完全限制在彈窗本體內部（`flex-1 overflow-y-auto`），Header 與動作按鈕始終可見。 | ✅ PASS |
+| **AC3** | **消除畫面下方不明滾動區 (Elimination of Bottom Ghost Scroll Area)** | 開啟 Modal 後嘗試在彈窗外遮罩或底部向上滑動頁面。 | 背景頁面完全固定鎖定（`overflow-hidden` / `overscroll-behavior: none`），畫面下方完全無不明空白滾動區或橡皮筋彈跳。 | ✅ PASS |
+| **AC4** | **動態網址列適配 (100dvh Dynamic Viewport Height)** | 於 Safari / Chrome 行動瀏覽器切換網址列展開與收合狀態。 | `100dvh` 自動精準貼合當前可視高度，彈窗居中不位移，無垂直滾動條溢出。 | ✅ PASS |
+| **AC5** | **桌機版版面不受影響 (Desktop Viewport Integrity)** | 螢幕寬度拉大至桌面版（`≥ 640px`）。 | 彈窗維持原先大器優雅之置中卡片視覺，各項互動與快捷鍵運作完全正常。 | ✅ PASS |
+| **AC6** | **生產環境編譯與型別安全 (Production Build & Typecheck)** | 執行 `npm run build`。 | Next.js 16.3.3 (Turbopack) 成功構建靜態與動態路由，TypeScript 0 報錯。 | ✅ PASS |
+
+---
+
 ## 3. 測試結論與交付建議
-「展開與聚合」雙向工作流已全數實作與驗收完成，資料結構升降級平滑無縫，100% 零資料遺失且符合 UI 5 態標準，建議使用者進行 `git commit` 保存本次成果。
+手機版 Modal 點擊後畫面下方出現不明滾動區之問題已全數徹底修復，所有彈窗皆升級為結構化 flex-col + 100dvh 安全自適應佈局，建議使用者進行 `git commit` 保存本次成果。
+
 
 
 

@@ -13,6 +13,7 @@
     "build:cap": "next build && cap sync"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1125.0",
     "@capacitor/core": "^8.5.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

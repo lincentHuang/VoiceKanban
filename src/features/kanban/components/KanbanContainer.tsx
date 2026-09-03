@@ -6,6 +6,7 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { getDueDateStatus } from "@/core/utils/dateUtils";
 import { TRELLO_COLUMN_COLORS } from "@/core/types/task";
 import { KanbanColumn } from "./KanbanColumn";
+import { useBoardDragScroll } from "../hooks/useBoardDragScroll";
 import { Plus, X, Check, Sparkles, ChevronRight, ChevronLeft } from "lucide-react";
 
 const QUICK_ICONS = ["📋", "⚡", "⏳", "✅", "🚀", "💡", "🎯", "🔥", "📌", "⭐"];
@@ -20,6 +21,7 @@ export const KanbanContainer: React.FC = () => {
     getActiveBoardColumns,
     addColumnToActiveBoard,
     activeDragTaskId,
+    setIsInboxSidebarOpen,
   } = useKanbanStore();
 
   const [isAddingColumn, setIsAddingColumn] = useState(false);
@@ -28,16 +30,33 @@ export const KanbanContainer: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState("#3b82f6");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [edgeHoverSide, setEdgeHoverSide] = useState<"left" | "right" | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const addCardContainerRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const edgeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isDragging = activeDragTaskId !== null;
 
+  // Desktop Mouse Drag Panning (Drag-to-Scroll)
+  const {
+    containerRef: scrollContainerRef,
+    isPanning,
+    handleMouseDown: handleCanvasMouseDown,
+  } = useBoardDragScroll({ disabled: isDragging });
+
   const columns = getActiveBoardColumns();
   const columnIds = columns.map((col) => col.id);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     if (isAddingColumn) {
@@ -104,7 +123,7 @@ export const KanbanContainer: React.FC = () => {
     }
   }, []);
 
-  // Edge hover detector during drag (triggers magnet scroll after 750ms hover at edge)
+  // Edge hover detector during drag (triggers magnet scroll after 450ms hover at edge)
   useEffect(() => {
     if (!isDragging) {
       if (edgeTimerRef.current) {
@@ -140,15 +159,25 @@ export const KanbanContainer: React.FC = () => {
           edgeTimerRef.current = setTimeout(() => {
             scrollMagnetToColumn("next");
             edgeTimerRef.current = null;
-          }, 800); // 1-second edge hover gesture
+          }, 450); // 450ms responsive edge magnet
         }
       } else if (isNearLeft) {
         setEdgeHoverSide("left");
         if (!edgeTimerRef.current) {
           edgeTimerRef.current = setTimeout(() => {
-            scrollMagnetToColumn("prev");
+            // If already at the far left edge on mobile, magnet switch to Inbox!
+            if (isMobile && container.scrollLeft <= 15) {
+              setIsInboxSidebarOpen(true);
+              if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+                try {
+                  navigator.vibrate(25);
+                } catch {}
+              }
+            } else {
+              scrollMagnetToColumn("prev");
+            }
             edgeTimerRef.current = null;
-          }, 800);
+          }, 450);
         }
       } else {
         if (edgeTimerRef.current) {
@@ -180,7 +209,40 @@ export const KanbanContainer: React.FC = () => {
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
     };
-  }, [isDragging, scrollMagnetToColumn]);
+  }, [isDragging, isMobile, scrollMagnetToColumn, setIsInboxSidebarOpen]);
+
+  // Mobile Swipe Right from leftmost edge -> Switch to Inbox
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isMobile || isDragging) return;
+    touchStartPosRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isMobile || isDragging) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Only switch to inbox if user is at the leftmost edge of the Kanban board
+    if (container.scrollLeft <= 15) {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - touchStartPosRef.current.x;
+      const deltaY = endY - touchStartPosRef.current.y;
+
+      // Swipe right (deltaX > 65) with horizontal dominance
+      if (deltaX > 65 && Math.abs(deltaX) > Math.abs(deltaY) * 1.35) {
+        setIsInboxSidebarOpen(true);
+        if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+          try {
+            navigator.vibrate(20);
+          } catch {}
+        }
+      }
+    }
+  };
 
   const handleAddColumnSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -263,12 +325,19 @@ export const KanbanContainer: React.FC = () => {
         </div>
       )}
 
-      {/* Main Kanban Horizontal Scroll Container with Mobile Scroll Snap */}
+      {/* Main Kanban Horizontal Scroll Container with Mobile Scroll Snap & Desktop Drag Panning */}
       <div
         ref={scrollContainerRef}
+        onMouseDown={handleCanvasMouseDown}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         style={{ scrollPadding: "0 1rem" }}
-        className={`w-full h-full max-h-full overflow-x-auto overflow-y-hidden px-4 sm:px-3 pt-2 pb-2 sm:pb-2.5 custom-scrollbar scroll-smooth ${
-          isDragging ? "snap-none" : "snap-x snap-mandatory sm:snap-none"
+        className={`w-full h-full max-h-full overflow-x-auto overflow-y-hidden px-4 sm:px-3 pt-2 pb-2 sm:pb-2.5 custom-scrollbar ${
+          isPanning
+            ? "cursor-grabbing select-none scroll-auto"
+            : isDragging
+            ? "cursor-default snap-none scroll-auto"
+            : "cursor-grab snap-x snap-mandatory sm:snap-none scroll-smooth"
         }`}
       >
         {/* Kanban Horizontal Sortable Area */}

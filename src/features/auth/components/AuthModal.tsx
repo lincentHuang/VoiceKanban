@@ -88,37 +88,38 @@ export const AuthModal: React.FC = () => {
   return (
     <div
       onClick={() => setIsAuthModalOpen(false)}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-xl animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/65 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative overflow-hidden"
+        className="w-full max-w-md max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-7 relative overflow-hidden"
       >
         {/* Close button */}
         <button
+          type="button"
           onClick={() => setIsAuthModalOpen(false)}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           aria-label="關閉"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
-        <div className="text-center pb-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 text-white flex items-center justify-center mx-auto shadow-md mb-2.5">
+        <div className="text-center pb-2 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 text-white flex items-center justify-center mx-auto shadow-md mb-2">
             {authMode === "login" ? <LogIn className="w-6 h-6" /> : <UserPlus className="w-6 h-6" />}
           </div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             {authMode === "login" ? "登入 VoiceKanban" : "註冊 VoiceKanban 帳號"}
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-center gap-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center justify-center gap-1">
             <Cloud className="w-3.5 h-3.5 text-orange-500" />
             <span>跨裝置 Firestore 即時雙向同步與無縫資料整併</span>
           </p>
         </div>
 
         {/* Tab Switcher: Login vs Register */}
-        <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-4 text-xs font-semibold">
+        <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-3 text-xs font-semibold shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -148,6 +149,9 @@ export const AuthModal: React.FC = () => {
             註冊新帳號
           </button>
         </div>
+
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-0.5">
 
         {/* Status Alerts (Error / Success States) */}
         {errorMsg && (
@@ -287,14 +291,15 @@ export const AuthModal: React.FC = () => {
             <span>{authMode === "login" ? "登入帳號" : "完成註冊並同步"}</span>
           </button>
         </form>
+        </div>
 
         {/* Quick Demo Guest Login */}
-        <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-center flex items-center justify-center gap-1 text-xs">
+        <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-center flex items-center justify-center gap-1 text-xs shrink-0">
           <button
             type="button"
             disabled={loadingProvider !== null}
             onClick={() => handleProviderLogin("guest")}
-            className="text-orange-600 hover:text-orange-700 dark:text-orange-400 font-semibold hover:underline flex items-center gap-1"
+            className="text-orange-600 hover:text-orange-700 dark:text-orange-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>以訪客模式 (Guest) 體驗</span>

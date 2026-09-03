@@ -153,6 +153,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       <div
         ref={setNodeRef}
         style={style}
+        data-task-card="true"
         {...attributes}
         {...listeners}
         onClick={handleCardClick}
@@ -282,6 +283,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      data-task-card="true"
       {...attributes}
       {...listeners}
       onClick={handleCardClick}

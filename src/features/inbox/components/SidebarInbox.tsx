@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
@@ -36,12 +36,17 @@ export const SidebarInbox: React.FC = () => {
     selectedTaskIds,
     selectAllTasksInInbox,
     clearSelection,
+    setViewMode,
   } = useKanbanStore();
 
   const [newTitle, setNewTitle] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [inboxSort, setInboxSort] = useState<"date" | "priority" | "title">("date");
   const [isMobile, setIsMobile] = useState(false);
+
+  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDraggingTask = activeDragTaskId !== null;
+  const edgeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -51,6 +56,89 @@ export const SidebarInbox: React.FC = () => {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Drag near right edge -> magnet switch to Kanban on mobile
+  useEffect(() => {
+    if (!isDraggingTask || !isMobile) {
+      if (edgeTimerRef.current) {
+        clearTimeout(edgeTimerRef.current);
+        edgeTimerRef.current = null;
+      }
+      return;
+    }
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const isNearRightEdge = e.clientX >= window.innerWidth - 50;
+      if (isNearRightEdge) {
+        if (!edgeTimerRef.current) {
+          edgeTimerRef.current = setTimeout(() => {
+            setIsInboxSidebarOpen(false);
+            setViewMode("kanban");
+            if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+              try {
+                navigator.vibrate(25);
+              } catch {}
+            }
+            edgeTimerRef.current = null;
+          }, 450); // 450ms edge magnet
+        }
+      } else {
+        if (edgeTimerRef.current) {
+          clearTimeout(edgeTimerRef.current);
+          edgeTimerRef.current = null;
+        }
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (edgeTimerRef.current) {
+        clearTimeout(edgeTimerRef.current);
+        edgeTimerRef.current = null;
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+
+    return () => {
+      if (edgeTimerRef.current) {
+        clearTimeout(edgeTimerRef.current);
+        edgeTimerRef.current = null;
+      }
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+    };
+  }, [isDraggingTask, isMobile, setIsInboxSidebarOpen, setViewMode]);
+
+  // Mobile Swipe Left gesture -> Switch to Kanban
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isMobile || isDraggingTask) return;
+    touchStartPosRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isMobile || isDraggingTask) return;
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const deltaX = endX - touchStartPosRef.current.x;
+    const deltaY = endY - touchStartPosRef.current.y;
+
+    // Swipe left (deltaX < -65) with horizontal dominance (|deltaX| > |deltaY| * 1.35)
+    if (deltaX < -65 && Math.abs(deltaX) > Math.abs(deltaY) * 1.35) {
+      setIsInboxSidebarOpen(false);
+      setViewMode("kanban");
+      if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(20);
+        } catch {}
+      }
+    }
+  };
 
   const { setNodeRef, isOver } = useDroppable({
     id: "inbox",
@@ -99,7 +187,7 @@ export const SidebarInbox: React.FC = () => {
     setIsVoiceOverlayOpen(true);
   };
 
-  if (!isInboxSidebarOpen) {
+  if (!isMobile && !isInboxSidebarOpen) {
     return null;
   }
 
@@ -108,12 +196,22 @@ export const SidebarInbox: React.FC = () => {
   return (
     <aside
       ref={setNodeRef}
-      style={{ width: isMobile ? "100%" : `${inboxWidth}px` }}
-      className={`h-full w-full sm:w-auto shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xl p-3 sm:p-3.5 relative overflow-hidden ${isDraggingSplitter ? "transition-none select-none" : "transition-all duration-300 ease-in-out"
-        } ${isOver
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{ width: isMobile ? undefined : `${inboxWidth}px` }}
+      className={`h-full sm:w-auto shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xl p-3 sm:p-3.5 overflow-hidden transition-all duration-300 ease-out ${
+        isMobile
+          ? `absolute inset-2.5 z-20 ${
+              isInboxSidebarOpen
+                ? "translate-x-0 opacity-100 pointer-events-auto shadow-2xl"
+                : "-translate-x-[calc(100%+1rem)] opacity-0 pointer-events-none"
+            }`
+          : "relative opacity-100 pointer-events-auto w-auto"
+      } ${isDraggingSplitter ? "transition-none select-none" : ""} ${
+        isOver
           ? "border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-950/40"
           : ""
-        }`}
+      }`}
     >
       {/* Inbox Header */}
       <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">

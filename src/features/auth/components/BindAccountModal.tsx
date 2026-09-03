@@ -84,36 +84,37 @@ export const BindAccountModal: React.FC = () => {
   return (
     <div
       onClick={() => setIsBindModalOpen(false)}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-xl animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/65 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative overflow-hidden"
+        className="w-full max-w-md max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-7 relative overflow-hidden"
       >
         {/* Close Button */}
         <button
+          type="button"
           onClick={() => setIsBindModalOpen(false)}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           aria-label="關閉"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
-        <div className="text-center pb-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 text-white flex items-center justify-center mx-auto shadow-md mb-2.5">
+        <div className="text-center pb-2 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 text-white flex items-center justify-center mx-auto shadow-md mb-2">
             <Link2 className="w-6 h-6" />
           </div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             綁定正式帳號
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             將目前的訪客資料無縫合併至正式帳號
           </p>
         </div>
 
         {/* Migration Guarantee Callout */}
-        <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20 border border-orange-200/80 dark:border-orange-900/50 text-xs text-orange-900 dark:text-orange-200 flex items-start gap-2.5">
+        <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20 border border-orange-200/80 dark:border-orange-900/50 text-xs text-orange-900 dark:text-orange-200 flex items-start gap-2.5 shrink-0">
           <Sparkles className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold">無縫資料整併保障：</span>
@@ -122,7 +123,7 @@ export const BindAccountModal: React.FC = () => {
         </div>
 
         {/* Tab Switcher: Register vs Login */}
-        <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-4 text-xs font-semibold">
+        <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl mb-3 text-xs font-semibold shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -152,6 +153,9 @@ export const BindAccountModal: React.FC = () => {
             綁定既有帳號
           </button>
         </div>
+
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-0.5">
 
         {/* Status Alerts (Error / Success States) */}
         {errorMsg && (
@@ -288,6 +292,7 @@ export const BindAccountModal: React.FC = () => {
             <span>{bindMode === "register" ? "註冊新帳號並整併資料" : "登入並整併資料"}</span>
           </button>
         </form>
+        </div>
       </div>
     </div>
   );

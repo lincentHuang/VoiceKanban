@@ -11,6 +11,64 @@ export interface SyncResult {
 }
 
 /**
+ * Helper to ensure tasks are deserialized into an array regardless of whether
+ * they were stored in Firestore as an array or a map (object)
+ */
+export function deserializeTasks(data: any): Task[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (typeof data === "object") {
+    return Object.values(data);
+  }
+  return [];
+}
+
+/**
+ * Helper to ensure boards are deserialized into an array regardless of whether
+ * they were stored in Firestore as an array or a map (object)
+ */
+export function deserializeBoards(data: any): Board[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (typeof data === "object") {
+    return Object.values(data);
+  }
+  return [];
+}
+
+/**
+ * Converts array of tasks into a Firestore-safe map keyed by task ID
+ * to prevent "Property array contains an invalid nested entity" errors caused by nested arrays (e.g. attachments, checklist).
+ */
+export function serializeTasks(tasks: Task[]): Record<string, Task> {
+  const map: Record<string, Task> = {};
+  if (Array.isArray(tasks)) {
+    tasks.forEach((t) => {
+      if (t && t.id) {
+        map[t.id] = t;
+      }
+    });
+  }
+  return map;
+}
+
+/**
+ * Converts array of boards into a Firestore-safe map keyed by board ID
+ * to prevent "Property array contains an invalid nested entity" errors caused by nested arrays (e.g. columns).
+ */
+export function serializeBoards(boards: Board[]): Record<string, Board> {
+  const map: Record<string, Board> = {};
+  if (Array.isArray(boards)) {
+    boards.forEach((b) => {
+      if (b && b.id) {
+        map[b.id] = b;
+      }
+    });
+  }
+  return map;
+}
+
+/**
  * Recursively replaces `undefined` with `null` or safe defaults to ensure 100% compliance with Firestore serialization
  */
 export function sanitizeForFirestore<T>(data: T): T {
@@ -126,8 +184,8 @@ export class DatabaseSyncEngine {
         userDocRef,
         sanitizeForFirestore({
           userId,
-          boards,
-          tasks,
+          boards: serializeBoards(boards),
+          tasks: serializeTasks(tasks),
           activeBoardId: activeBoardId || "board-work",
           updatedAt: now,
         }),
@@ -180,10 +238,12 @@ export class DatabaseSyncEngine {
 
           if (snapshot.exists()) {
             const data = snapshot.data();
+            const boards = deserializeBoards(data.boards);
+            const tasks = deserializeTasks(data.tasks);
             return {
-              boards: data.boards || [],
-              tasks: data.tasks || [],
-              activeBoardId: data.activeBoardId || (data.boards && data.boards[0]?.id) || "board-work",
+              boards,
+              tasks,
+              activeBoardId: data.activeBoardId || (boards && boards[0]?.id) || "board-work",
             };
           }
         }
@@ -199,8 +259,8 @@ export class DatabaseSyncEngine {
         if (raw) {
           const parsed = JSON.parse(raw);
           return {
-            boards: parsed.boards || [],
-            tasks: parsed.tasks || [],
+            boards: deserializeBoards(parsed.boards),
+            tasks: deserializeTasks(parsed.tasks),
             activeBoardId: parsed.activeBoardId || "board-work",
           };
         }
@@ -246,8 +306,8 @@ export class DatabaseSyncEngine {
           userDocRef,
           sanitizeForFirestore({
             userId,
-            boards: localBoards,
-            tasks: localTasks,
+            boards: serializeBoards(localBoards),
+            tasks: serializeTasks(localTasks),
             activeBoardId: localActiveBoardId || "board-work",
             updatedAt: new Date().toISOString(),
           })
@@ -260,8 +320,8 @@ export class DatabaseSyncEngine {
       }
 
       const remoteData = snapshot.data();
-      const remoteBoards: Board[] = remoteData.boards || [];
-      const remoteTasks: Task[] = remoteData.tasks || [];
+      const remoteBoards: Board[] = deserializeBoards(remoteData.boards);
+      const remoteTasks: Task[] = deserializeTasks(remoteData.tasks);
 
       // Merge Boards by ID
       const boardMap = new Map<string, Board>();
@@ -298,8 +358,8 @@ export class DatabaseSyncEngine {
         userDocRef,
         sanitizeForFirestore({
           userId,
-          boards: mergedBoards,
-          tasks: mergedTasks,
+          boards: serializeBoards(mergedBoards),
+          tasks: serializeTasks(mergedTasks),
           activeBoardId,
           updatedAt: new Date().toISOString(),
         }),
@@ -348,8 +408,8 @@ export class DatabaseSyncEngine {
         if (docSnap.exists()) {
           const data = docSnap.data();
           onUpdate({
-            boards: data.boards || [],
-            tasks: data.tasks || [],
+            boards: deserializeBoards(data.boards),
+            tasks: deserializeTasks(data.tasks),
             activeBoardId: data.activeBoardId,
           });
         }

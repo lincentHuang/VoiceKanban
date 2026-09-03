@@ -113,8 +113,12 @@ export const BoardCanvasContainer: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className={`flex-1 h-full min-w-0 rounded-2xl bg-gradient-to-br from-indigo-950/95 via-purple-950/90 to-pink-950/85 dark:from-slate-950 dark:to-slate-900 border border-purple-500/20 shadow-2xl flex flex-col overflow-hidden text-slate-100 relative ${
-        isInboxSidebarOpen ? "hidden sm:flex" : "flex"
+      className={`flex-1 h-full min-w-0 rounded-2xl bg-gradient-to-br from-indigo-950/95 via-purple-950/90 to-pink-950/85 dark:from-slate-950 dark:to-slate-900 border border-purple-500/20 shadow-2xl flex flex-col overflow-hidden text-slate-100 transition-all duration-300 ease-out relative ${
+        isCompact
+          ? isInboxSidebarOpen
+            ? "translate-x-12 opacity-0 pointer-events-none scale-95"
+            : "translate-x-0 opacity-100 pointer-events-auto scale-100"
+          : "transform-none opacity-100 pointer-events-auto"
       }`}
     >
       {/* Board Top Sub-Header (Container-Aware Auto-Collapse) */}

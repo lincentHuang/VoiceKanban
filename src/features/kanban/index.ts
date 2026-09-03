@@ -8,3 +8,4 @@ export * from "./components/BatchActionBar";
 export * from "./components/ColumnActionMenu";
 export * from "./components/ColumnManagerModal";
 export * from "./components/SortableChecklistItem";
+export * from "./hooks/useBoardDragScroll";

@@ -131,14 +131,14 @@ export const SettingsModal: React.FC = () => {
   return (
     <div
       onClick={() => setIsSettingsModalOpen(false)}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative"
+        className="w-full max-w-lg max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-7 relative overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600">
               <KeyRound className="w-5 h-5" />
@@ -151,15 +151,16 @@ export const SettingsModal: React.FC = () => {
             </div>
           </div>
           <button
+            type="button"
             onClick={() => setIsSettingsModalOpen(false)}
-            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors"
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 mt-4 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800">
+        <div className="flex items-center gap-2 mt-4 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab("api")}
@@ -200,9 +201,11 @@ export const SettingsModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Tab 1: BYOK Gemini Settings */}
-        {activeTab === "api" && (
-          <form onSubmit={handleTestAndSave} className="mt-4 space-y-4">
+        {/* Tab Content Body */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar mt-4 pr-0.5">
+          {/* Tab 1: BYOK Gemini Settings */}
+          {activeTab === "api" && (
+            <form onSubmit={handleTestAndSave} className="space-y-4">
             <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -441,6 +444,7 @@ export const SettingsModal: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

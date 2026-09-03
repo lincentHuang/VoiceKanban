@@ -101,9 +101,10 @@ src/
 - **多選與批次操作 (Batch Actions & Mobile Responsive Bar)**：
   - 支援多選卡片，一鍵批次搬移欄位、變更優先級、完成與刪除。
   - **響應式兩行佈局 (Mobile Two-Line Layout)**：於手機小螢幕下（`< sm`），底部浮動 `BatchActionBar` 自動切換為雙行卡片佈局（第一行：選取計數與退出多選按鈕；第二行：移動至、優先級、未完成、完成與刪除動作列），徹底杜絕按鈕壓縮換行跑版，桌機寬螢幕（`≥ sm`）則維持俐落單行膠囊列。
-- **手機版看板磁力滑動置中與邊緣懸停磁吸切換 (Mobile Scroll Snap & Edge Magnet Drag Navigation)**：
-  - 手機版（小螢幕）瀏覽時，看板欄位具備 CSS磁力吸附（`snap-x snap-mandatory`），滑動時各狀態欄位自動於螢幕中央吸附置中（`snap-center`），並以 `84vw` 寬度提供鄰近欄位露邊預覽。
-  - 拖曳動線無縫優化：卡片拖曳期間取消連續性左右橫向滾動（防止拖曳過程畫面晃動或微飄），**完全由「拖曳至右側/左側邊緣懸停約 1 秒（800ms）」精準觸發畫面直接平滑磁吸切換至下一個/上一個欄位**，並搭配即時邊緣微光指引。
+- **桌機版看板滑鼠拖曳滑動畫面 (Desktop Canvas Mouse Drag Panning / Drag-to-Scroll)**：
+  - **畫布滑鼠抓取平移**：桌機環境下，使用者可在看板空白畫布、欄位間隙或非互動空白區域按住滑鼠左鍵自由水平拖曳（Drag to Scroll / Pan），畫面流暢 1:1 跟隨滑鼠位移，放開時帶有自然慣性滑行（Momentum Gliding）。
+  - **智慧防衝突隔離**：自動識別互動元素與拖曳目標（卡片拖曳、欄位標頭拖曳、按鈕、輸入框、選單與下拉彈窗），點擊/拖曳卡片或標頭時正常觸發 DnD 排序，絕不干擾既有操作；滑鼠微移（< 3px）精準判定為靜態點擊，超過 3px 啟動平移並自動阻止誤觸點擊。
+  - **動態游標反饋**：常態懸停於畫布空白區域顯示 `cursor-grab`（抓取手勢），拖曳平移期間即時切換為 `cursor-grabbing`（握拳手勢）並啟用 `select-none` 防文字反白。
 
 ---
 
@@ -210,6 +211,18 @@ src/
 - **PWA Service Worker 強健離線快取 (Enhanced PWA Service Worker)**：
   - 加強 `public/sw.js`：預先快取核心外殼資源、應用靜態檔案 (`/_next/static/`) 與離線頁面；對 HTML 導覽實施 Network-First 降級 Cache 策略，靜態檔案 Stale-While-Revalidate，確保在完全斷網環境下重新整理網頁仍可 100% 完整載入應用。
 
+### 3.13 📱 手機端原生手勢體驗 (Mobile Gestures & Navigation)
+- **任務詳細 Bottom Sheet 抽屜 (Task Detail Bottom Sheet Drawer)**：
+  - **手機版抽屜呈現**：在手機螢幕（`< sm`）下點擊任務卡片，任務詳細內容自動切換為由螢幕底部滑出的 **Bottom Sheet Drawer**（佔比 88vh~92vh），頂部配置直觀拖曳握柄（Drag Handle），桌機版（`≥ sm`）維持優雅置中彈窗。
+  - **下拉手勢關閉 (Pull-to-Close Gesture)**：支援手指按住頂部握柄或在內容位於最頂端（`scrollTop === 0`）時向下拉動，抽屜流暢跟隨手指位移；下拉超過閥值（100px）或快速向下滑動放開時，以彈性物理動畫滑出螢幕底部並關閉，未達閥值則平滑回彈。
+- **收件匣 ↔ 看板 雙向滑動切換 (Swipe Navigation)**：
+  - **收件匣 ➔ 看板**：在手機版收件匣介面中，向左滑動（Swipe Left，`ΔX < -60px`）平滑切換進入看板視圖。
+  - **看板 ➔ 收件匣**：在手機版看板位於最左側第一欄（`scrollLeft === 0`）時，向右滑動（Swipe Right，`ΔX > 70px`）平滑切換進入收件匣。
+  - **智慧防衝突保護**：精確判定水平與垂直向量比例（`|ΔX| > |ΔY| * 1.5`），杜絕垂直滑動內容時誤觸頁面切換；拖曳卡片時自動將手勢通道讓渡予拖曳引擎。
+- **拖曳任務磁力滑動與邊界切換 (Magnetic Drag Edge Scroll & View Transition)**：
+  - **靈敏磁力滾動**：拖曳任務卡片至螢幕左或右邊緣（< 50px）時，即時啟動磁力滑動與階梯吸附切換（Step Scroll），搭配邊緣微光指引與震動回饋。
+  - **最左邊界磁吸至收件匣**：在看板第一欄拖曳任務至最左邊緣到底時，磁吸連動切換至收件匣，支援跨視圖拖曳暫存。
+
 ---
 
 ## 4. UI 5 種狀態處理規範 (5 UI States Standard)
@@ -236,12 +249,25 @@ src/
 - [x] **MAC-9 (編譯與型別無誤)**：`npm run build` 與 TypeScript 型別檢查 100% 通過。
 - [x] **MAC-10 (手機版看板磁力置中與拖曳邊緣切換)**：手機版左右滑動具備磁力吸附自動置中（`snap-center`），卡片拖曳期間不卡頓且懸停邊緣約 1 秒自動磁吸平滑切換至下一欄/上一欄。
 - [x] **MAC-11 (看板卡片上下動態像素切入判定與邊界免空白空間)**：拖曳卡片至目標卡片上下邊緣動態像素/百分比閥值時精確判定插入點，頂部卡片上緣必定切入最上方（Index 0），底部卡片下緣必定切入最下方（Index Max），無需預留空白即可流暢插入。
-- [x] **MAC-12 (Header 瘦身與全響應式 Search Modal 搜尋體驗)**：Header 成功移除「建立」與「一鍵語音」按鈕；桌機版點擊搜尋框或按 `⌘K` 開啟 Search Modal；手機版自動轉為右上角按鈕圖示開啟 Modal，輸入框不被擠壓，搜尋支援即時任務過濾與直接開啟編輯。
+- [x] **MAC-12 (Header 瘦身與全響式 Search Modal 搜尋體驗)**：Header 成功移除「建立」與「一鍵語音」按鈕；桌機版點擊搜尋框或按 `⌘K` 開啟 Search Modal；手機版自動轉為右上角按鈕圖示開啟 Modal，輸入框不被擠壓，搜尋支援即時任務過濾與直接開啟編輯。
 - [x] **MAC-13 (Capacitor 跨平台雙平台專案與設定)**：整合 `@capacitor/core`、`@capacitor/cli`、`@capacitor/ios` 與 `@capacitor/android`，完成 `capacitor.config.ts`（App ID: `com.voicekanban.app`，名稱: 聲動看板），生成標準 `ios/` 與 `android/` 專案工程，配置麥克風權限與雙平台建置指令。
 - [x] **MAC-14 (PWA 標準支援與 Service Worker 離線快取)**：具備合法 `manifest.webmanifest`、各尺寸高解析度圖示、全螢幕獨立模式、iOS Safe Area Insets、以及 `public/sw.js` 資源快取與自動註冊。
 - [x] **MAC-15 (頭像選單 PWA 安裝按鈕與雙軌引導體驗)**：在 Navbar 頭像下拉選單中提供「在手機安裝應用」選項；若處於 Standalone/原生 App 模式則自動隱藏；Android/Chrome 觸發系統安裝視窗，iOS Safari 彈出 3 步驟圖文導引視窗（`IosInstallGuideModal`），符合 UI 5 態規範。
 - [x] **MAC-16 (子任務待辦清單極簡長按 500ms 拖曳移動排序)**：任務編輯視窗中的子任務清單維持無多餘符號與箭頭的純淨外觀，長按 500ms 即可啟用平滑垂直拖曳排序，短按快速切換勾選完成，資料即時持久化與雲端同步。
 - [x] **MAC-17 (任務卡片與狀態欄位雙向展開與聚合工作流)**：任務詳細視窗支援一鍵將卡片與其子清單「展開」為獨立看板欄位；欄位 Header 選單支援一鍵將整個欄位「聚合」為單一任務卡片並安全收納至收件匣（Inbox），且完整保留原卡片深層屬性與子任務勾選狀態。
-- [x] **MAC-18 (全功能 Local-First 離線模式與 PWA 斷網快取)**：支援在斷網與手動離線模式下自由進行所有卡片 CRUD、拖曳排序、筆記與子清單編輯；具備頂部 Navbar 離線膠囊徽章與滑入式柔和提示橫幅；變更計入離線佇列，連線後自動重試同步至雲端；PWA Service Worker 支援離線快取與導覽降級，斷網下重新整理應用仍可 100% 完整存取。
+- [x] **MAC-19 (手機版 Modal 彈窗 100dvh 安全視窗與全域溢出滾動防護)**：全域採用 `100dvh` 與 `overflow: hidden; overscroll-behavior: none;`，所有 Modal 彈窗皆限制在 `max-h-[calc(100dvh-2rem)]` 內，內部採用 `flex-col` 與獨立 `flex-1 overflow-y-auto` 容器，徹底消除手機版點擊 Modal 後畫面下方出現的不明滾動區與橡皮筋彈跳。
+- [x] **MAC-20 (手機端 Bottom Sheet 抽屜與手勢滑動切換體驗)**：
+  - 任務詳細內容在手機版以 Bottom Sheet Drawer 開啟，支援頂部握柄與最頂端下拉（Pull Down）關閉手勢，桌機版維持 Center Modal。
+  - 手機版支援收件匣向左滑動進入看板、看板第一欄最左側向右滑動切換回收件匣，且具備向量防誤觸保護。
+  - 拖曳任務卡片時支援邊界靈敏磁力滑動，並支援最左邊界磁吸至收件匣。
+- [x] **MAC-21 (桌機版看板滑鼠拖曳滑動畫布)**：
+  - 桌機端支援在看板空白區域、欄位間隙按住滑鼠左鍵自由拖曳平移（Pan/Scroll），即時 1:1 滾動並具備平滑慣性滑行。
+  - 與卡片/欄位 DnD 拖曳、點擊事件完美隔離互不衝突，懸停與拖曳時游標自動切換為 `cursor-grab` 與 `cursor-grabbing`。
+- [x] **MAC-22 (Cloudflare R2 雲端物件儲存與 S3 相容上傳)**：
+  - 後端整合 AWS S3 SDK (`@aws-sdk/client-s3`) 實現 `/api/upload` 路由，支援安全上傳大檔至 Cloudflare R2 Bucket。
+  - 前端整合通用上傳工具 (`uploadFile`)，具備 R2 雲端直傳與本地壓縮 Base64 雙軌容錯降級機制。
+  - 任務附件、封面圖片與 Markdown 編輯器貼圖全面接入 R2 上傳與即時 Loading 旋轉動畫反饋。
+
+
 
 
