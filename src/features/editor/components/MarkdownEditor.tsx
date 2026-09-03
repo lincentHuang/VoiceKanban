@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import {
   Bold,
   Italic,
@@ -9,41 +9,60 @@ import {
   Image as ImageIcon,
   Check,
   Edit3,
-  X,
   Code,
   Heading,
   Strikethrough,
   ExternalLink,
-  Upload,
+  AlignLeft,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
 } from "lucide-react";
+import { compressImage } from "@/core/utils/imageUtils";
 
 interface MarkdownEditorProps {
   value: string;
   onChange: (val: string) => void;
-  onSave?: () => void;
+  onSave?: (val: string) => void;
+  title?: string;
   placeholder?: string;
   className?: string;
+  maxPreviewHeight?: number; // default 500px
 }
 
 export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   value,
   onChange,
   onSave,
+  title = "說明 (Markdown & 圖片)",
   placeholder = "輸入詳細說明，支援 Markdown 粗體、連結、清單，並可點擊 🖼️ 插入圖片或直接貼上截圖...",
   className = "",
+  maxPreviewHeight = 500,
 }) => {
-  // Starts in Browse mode (false) by default
   const [isEditing, setIsEditing] = useState(false);
   const [draftValue, setDraftValue] = useState(value);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewContentRef = useRef<HTMLDivElement>(null);
 
-  // Sync draftValue when prop value changes
+  // Sync draftValue when prop value changes from outside
   useEffect(() => {
     setDraftValue(value);
   }, [value]);
 
-  // Focus textarea when entering edit mode
+  // Measure preview content height to determine if gradient collapse is needed
+  useLayoutEffect(() => {
+    if (!isEditing && previewContentRef.current) {
+      const height = previewContentRef.current.scrollHeight;
+      setIsOverflowing(height > maxPreviewHeight);
+    }
+  }, [value, isEditing, maxPreviewHeight]);
+
+  // Auto focus when entering edit mode
   useEffect(() => {
     if (isEditing) {
       setTimeout(() => {
@@ -58,8 +77,11 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   };
 
   const handleSaveEdit = () => {
-    onChange(draftValue);
-    if (onSave) onSave();
+    const finalVal = draftValue;
+    onChange(finalVal);
+    if (onSave) {
+      onSave(finalVal);
+    }
     setIsEditing(false);
   };
 
@@ -98,53 +120,60 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, 0);
   };
 
-  // Handle local image file upload
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle local image file upload with safe compression
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size limit (10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert("圖片檔案過大，請上傳小於 10MB 的圖片！");
-        return;
+      try {
+        setIsCompressing(true);
+        const compressedUrl = await compressImage(file, 1400, 1400, 0.82);
+        insertText(`\n![${file.name.replace(/[\[\]]/g, "")}](${compressedUrl})\n`);
+      } catch (err) {
+        console.error("Image processing error:", err);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64Url = event.target?.result as string;
+          insertText(`\n![${file.name}](${base64Url})\n`);
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsCompressing(false);
+        e.target.value = "";
       }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Url = event.target?.result as string;
-        insertText(`\n![${file.name}](${base64Url})\n`);
-      };
-      reader.readAsDataURL(file);
-      // Reset input value so same file can be re-uploaded
-      e.target.value = "";
     }
   };
 
-  // Handle paste image from clipboard into textarea
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  // Handle paste image from clipboard into textarea with compression
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf("image") !== -1) {
         const file = items[i].getAsFile();
         if (file) {
           e.preventDefault();
-          if (file.size > 10 * 1024 * 1024) {
-            alert("貼上的圖片過大，最大不能超過 10MB！");
-            return;
+          try {
+            setIsCompressing(true);
+            const compressedUrl = await compressImage(file, 1400, 1400, 0.82);
+            insertText(`\n![貼上的截圖](${compressedUrl})\n`);
+          } catch (err) {
+            console.error("Paste image error:", err);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const base64Url = event.target?.result as string;
+              insertText(`\n![貼上的截圖](${base64Url})\n`);
+            };
+            reader.readAsDataURL(file);
+          } finally {
+            setIsCompressing(false);
           }
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const base64Url = event.target?.result as string;
-            insertText(`\n![貼上的截圖](${base64Url})\n`);
-          };
-          reader.readAsDataURL(file);
+          break;
         }
       }
     }
   };
 
-  // Safe inline text markdown formatter (links, bold, italic, code, del)
+  // Safe inline text markdown formatter
   const formatInlineMarkdown = (text: string): React.ReactNode => {
-    // Regex for markdown links [text](url)
     const linkRegex = /\[(.*?)\]\((https?:\/\/[^\s)]+|[^\s)]+)\)/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -181,7 +210,6 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   };
 
   const renderTextDecorations = (str: string): React.ReactNode => {
-    // Process bold (**text**) -> italic (*text*) -> code (`text`) -> strikethrough (~~text~~)
     let formatted = str
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -202,7 +230,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       return (
         <div
           onClick={handleStartEdit}
-          className="py-4 px-3 text-slate-400 dark:text-slate-500 text-xs italic rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700 cursor-pointer hover:border-orange-400 dark:hover:border-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 group"
+          className="py-4 px-3 text-slate-400 dark:text-slate-500 text-xs italic rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 cursor-pointer hover:border-orange-400 dark:hover:border-orange-500/50 hover:bg-orange-50/20 dark:hover:bg-orange-950/10 transition-all flex items-center justify-center gap-2 group"
         >
           <Edit3 className="w-3.5 h-3.5 text-slate-400 group-hover:text-orange-500 transition-colors" />
           <span>點擊此處新增說明內容或上傳圖片...</span>
@@ -224,7 +252,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 <img
                   src={imgMatch[2]}
                   alt={imgMatch[1]}
-                  className="max-h-72 max-w-full rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm object-contain bg-slate-900/5 dark:bg-slate-900/40"
+                  loading="lazy"
+                  className="max-h-80 max-w-full rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs object-contain bg-slate-900/5 dark:bg-slate-900/40"
                 />
                 {imgMatch[1] && (
                   <span className="text-[11px] text-slate-400 block mt-1">
@@ -302,7 +331,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             return <div key={idx} className="h-1.5" />;
           }
 
-          // 7. Regular paragraph with inline markdown formatting
+          // 7. Regular paragraph
           return (
             <p key={idx} className="my-0.5">
               {formatInlineMarkdown(line)}
@@ -314,12 +343,53 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   };
 
   return (
-    <div className={`rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-800/90 shadow-xs overflow-hidden transition-all ${className}`}>
+    <div className={`space-y-2 ${className}`}>
+      {/* Title Row: Title & Action Button directly on the right */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlignLeft className="w-4 h-4 text-slate-400 shrink-0" />
+          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+            {title}
+          </h4>
+        </div>
+
+        {/* Header Right Buttons */}
+        {isEditing ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="px-2.5 py-1 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
+            >
+              取消
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveEdit}
+              className="px-3.5 py-1 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 hover:scale-102 active:scale-98"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>完成</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleStartEdit}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 text-xs font-bold hover:bg-orange-100 dark:hover:bg-orange-900/60 transition-all shadow-2xs hover:scale-102 active:scale-98 shrink-0"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>編輯說明</span>
+          </button>
+        )}
+      </div>
+
       {/* --- 1. EDIT MODE --- */}
       {isEditing ? (
-        <div className="animate-in fade-in duration-150">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 shadow-xs overflow-hidden animate-in fade-in duration-150">
           {/* Markdown Toolbar */}
-          <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 gap-2">
+          <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 gap-2 flex-wrap">
             <div className="flex items-center gap-1 flex-wrap">
               {/* Bold */}
               <button
@@ -394,12 +464,19 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               {/* Image Upload */}
               <button
                 type="button"
+                disabled={isCompressing}
                 onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-bold transition-colors flex items-center gap-1"
-                title="上傳圖片或貼上截圖 (最大 10MB)"
+                className="p-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-bold transition-colors flex items-center gap-1 disabled:opacity-50"
+                title="上傳圖片或貼上截圖 (自動智慧壓縮)"
               >
-                <ImageIcon className="w-3.5 h-3.5" />
-                <span className="text-[11px] hidden sm:inline">插入圖片</span>
+                {isCompressing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ImageIcon className="w-3.5 h-3.5" />
+                )}
+                <span className="text-[11px] hidden sm:inline">
+                  {isCompressing ? "處理中..." : "插入圖片"}
+                </span>
               </button>
 
               <input
@@ -409,26 +486,6 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 accept="image/*"
                 className="hidden"
               />
-            </div>
-
-            {/* Action Buttons: Save & Cancel */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                className="px-2.5 py-1 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
-              >
-                取消
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSaveEdit}
-                className="px-3.5 py-1 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>完成</span>
-              </button>
             </div>
           </div>
 
@@ -440,7 +497,6 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             onChange={(e) => setDraftValue(e.target.value)}
             onPaste={handlePaste}
             onKeyDown={(e) => {
-              // Ctrl+Enter or Cmd+Enter to quickly save
               if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                 e.preventDefault();
                 handleSaveEdit();
@@ -460,30 +516,48 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           </div>
         </div>
       ) : (
-        /* --- 2. BROWSE / VIEW MODE --- */
-        <div className="p-3.5 sm:p-4 relative group/view">
-          {/* Top Right Edit Trigger Button */}
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800/80">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              說明內容預覽
-            </span>
-            <button
-              type="button"
-              onClick={handleStartEdit}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 text-xs font-bold hover:bg-orange-100 dark:hover:bg-orange-900/60 transition-all shadow-2xs hover:scale-102 active:scale-98"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>編輯說明</span>
-            </button>
+        /* --- 2. BROWSE / VIEW MODE (No white container, no redundant header) --- */
+        <div className="relative">
+          <div
+            ref={previewContentRef}
+            className={`transition-all duration-300 ${
+              isOverflowing && !isExpanded
+                ? "max-h-[500px] overflow-hidden relative"
+                : ""
+            }`}
+          >
+            {renderMarkdown(value)}
+
+            {/* Gradient fade to transparent when overflowing and collapsed */}
+            {isOverflowing && !isExpanded && (
+              <div className="pointer-events-none absolute bottom-0 inset-x-0 h-36 bg-gradient-to-t from-white dark:from-slate-900 via-white/90 dark:via-slate-900/90 to-transparent" />
+            )}
           </div>
 
-          {/* Rendered Markdown Body */}
-          <div className="min-h-[60px] max-h-96 overflow-y-auto custom-scrollbar">
-            {renderMarkdown(value)}
-          </div>
+          {/* Expand / Collapse Button if content exceeds 500px */}
+          {isOverflowing && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full py-2 px-3 rounded-xl bg-slate-100/90 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-700/90 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs hover:scale-101 active:scale-99 border border-slate-200/60 dark:border-slate-700/60"
+              >
+                {isExpanded ? (
+                  <>
+                    <span>收合說明內容</span>
+                    <ChevronUp className="w-3.5 h-3.5 text-orange-500" />
+                  </>
+                ) : (
+                  <>
+                    <span>展開完整說明內容</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-orange-500" />
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
-

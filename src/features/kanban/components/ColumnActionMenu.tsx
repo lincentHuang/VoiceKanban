@@ -25,7 +25,9 @@ import {
   Layers,
   FileText,
   ChevronDown,
+  Boxes,
 } from "lucide-react";
+import confetti from "canvas-confetti";
 
 interface ColumnActionMenuProps {
   column: Column;
@@ -41,6 +43,7 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
     sortColumnTasks,
     moveAllColumnTasks,
     archiveColumn,
+    aggregateColumnToTask,
     getActiveBoardColumns,
   } = useKanbanStore();
 
@@ -220,9 +223,29 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
           </DropdownMenuSub>
         )}
 
+        {/* 5. Aggregate Column to Task in Inbox */}
+        <DropdownMenuItem
+          onClick={() => {
+            try {
+              confetti({
+                particleCount: 40,
+                spread: 60,
+                origin: { y: 0.5 },
+                colors: ["#6366f1", "#f97316", "#10b981"],
+              });
+            } catch {}
+            aggregateColumnToTask(column.id);
+            setIsOpen(false);
+          }}
+          className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-medium cursor-pointer"
+        >
+          <Boxes className="w-3.5 h-3.5 text-indigo-500" />
+          <span>📦 聚合為單一任務卡 (移至收件匣)</span>
+        </DropdownMenuItem>
+
         <DropdownMenuSeparator />
 
-        {/* 5. Archive Column */}
+        {/* 6. Archive Column */}
         <DropdownMenuItem
           variant="destructive"
           onClick={() => {

@@ -7,6 +7,7 @@ import { getDueDateStatus, isoToDateTimeLocal, dateTimeLocalToIso } from "@/core
 import { MarkdownEditor } from "@/features/editor";
 import { DateTimePicker } from "@/components/common/DateTimePicker";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
+import { compressImage } from "@/core/utils/imageUtils";
 import {
   X,
   Calendar,
@@ -34,7 +35,24 @@ import {
   FileText,
   Download,
   ExternalLink,
+  Columns3,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { SortableChecklistItem } from "./SortableChecklistItem";
 import confetti from "canvas-confetti";
 
 const GRADIENT_COVERS = [
@@ -61,15 +79,34 @@ export const EditTaskModal: React.FC = () => {
     getActiveBoardColumns,
     updateTask,
     deleteTask,
+    expandTaskToColumn,
     toggleTaskComplete,
     addChecklistItem,
     updateChecklistItem,
     toggleChecklistItem,
     removeChecklistItem,
+    reorderChecklistItems,
+    moveChecklistItem,
     addAttachment,
     removeAttachment,
     userSession,
   } = useKanbanStore();
+
+  const checklistSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 500,
+        tolerance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 500,
+        tolerance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   const task = tasks.find((t) => t.id === editingTaskId);
   const columns = getActiveBoardColumns();
@@ -98,6 +135,7 @@ export const EditTaskModal: React.FC = () => {
   const [isMovePopoverOpen, setIsMovePopoverOpen] = useState(false);
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
   const [isDeleteConfirm, setIsDeleteConfirm] = useState(false);
+  const [isExpandConfirm, setIsExpandConfirm] = useState(false);
   const [saveToast, setSaveToast] = useState(false);
 
   const coverFileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +163,7 @@ export const EditTaskModal: React.FC = () => {
       setCoverColor(task.coverColor || "");
       setCoverAspectRatio(task.coverAspectRatio || (task.coverColor?.startsWith("data:image") || task.coverColor?.startsWith("http") ? "banner" : "bar"));
       setIsDeleteConfirm(false);
+      setIsExpandConfirm(false);
       setSaveToast(false);
       setIsMovePopoverOpen(false);
       setIsCoverModalOpen(false);
@@ -137,6 +176,8 @@ export const EditTaskModal: React.FC = () => {
       setIsCoverModalOpen(false);
     } else if (isMovePopoverOpen) {
       setIsMovePopoverOpen(false);
+    } else if (isExpandConfirm) {
+      setIsExpandConfirm(false);
     } else if (editingTaskId) {
       setEditingTaskId(null);
     }
@@ -222,6 +263,19 @@ export const EditTaskModal: React.FC = () => {
     setEditingChecklistText("");
   };
 
+  const handleChecklistDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !task || !task.checklist) return;
+
+    const oldIndex = task.checklist.findIndex((item) => item.id === active.id);
+    const newIndex = task.checklist.findIndex((item) => item.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newChecklist = arrayMove(task.checklist, oldIndex, newIndex);
+      reorderChecklistItems(task.id, newChecklist);
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (!bytes) return "0 B";
     if (bytes < 1024) return `${bytes} B`;
@@ -229,7 +283,7 @@ export const EditTaskModal: React.FC = () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -241,21 +295,45 @@ export const EditTaskModal: React.FC = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result as string;
-      const newAttachment: TaskAttachment = {
-        id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        name: file.name,
-        size: file.size,
-        type: file.type || "application/octet-stream",
-        url: base64Url,
-        createdAt: new Date().toISOString(),
-      };
-      addAttachment(task.id, newAttachment);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
+    try {
+      let finalUrl = "";
+      if (file.type.startsWith("image/")) {
+        try {
+          finalUrl = await compressImage(file, 1600, 1600, 0.85);
+        } catch {
+          // fallback
+        }
+      }
+
+      if (!finalUrl) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64Url = event.target?.result as string;
+          const newAttachment: TaskAttachment = {
+            id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: file.name,
+            size: file.size,
+            type: file.type || "application/octet-stream",
+            url: base64Url,
+            createdAt: new Date().toISOString(),
+          };
+          addAttachment(task.id, newAttachment);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const newAttachment: TaskAttachment = {
+          id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: file.name,
+          size: file.size,
+          type: file.type || "application/octet-stream",
+          url: finalUrl,
+          createdAt: new Date().toISOString(),
+        };
+        addAttachment(task.id, newAttachment);
+      }
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const handleInsertAttachmentToDescription = (att: TaskAttachment) => {
@@ -265,13 +343,17 @@ export const EditTaskModal: React.FC = () => {
     updateTask(task.id, { description: updated });
   };
 
-  const handleSave = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSave = (customDescOrEvent?: string | React.FormEvent) => {
+    if (typeof customDescOrEvent === "object" && customDescOrEvent !== null && "preventDefault" in customDescOrEvent) {
+      customDescOrEvent.preventDefault();
+    }
     if (!title.trim()) return;
+
+    const finalDescription = typeof customDescOrEvent === "string" ? customDescOrEvent : description;
 
     updateTask(task.id, {
       title: title.trim(),
-      description: description.trim(),
+      description: finalDescription.trim(),
       boardId,
       columnId,
       isStarred,
@@ -302,6 +384,19 @@ export const EditTaskModal: React.FC = () => {
       } catch { }
     }
     toggleTaskComplete(task.id);
+  };
+
+  const handleExpandToColumn = () => {
+    if (!task) return;
+    try {
+      confetti({
+        particleCount: 55,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#6366F1", "#3B82F6", "#F97316", "#10B981"],
+      });
+    } catch { }
+    expandTaskToColumn(task.id);
   };
 
   const handleRemoveDueDate = () => {
@@ -645,6 +740,21 @@ export const EditTaskModal: React.FC = () => {
 
 
 
+                {/* Expand to Column Button (Direct Large Icon) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsExpandConfirm(true);
+                    setIsCoverModalOpen(false);
+                    setIsMovePopoverOpen(false);
+                  }}
+                  className="p-1 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none"
+                  title="展開為狀態欄位"
+                  aria-label="展開為狀態欄位"
+                >
+                  <Columns3 className="w-6 h-6" />
+                </button>
+
                 {/* Close Button */}
                 <button
                   type="button"
@@ -733,105 +843,37 @@ export const EditTaskModal: React.FC = () => {
                   </div>
                 )}
 
-                {/* Checklist Items */}
-                <div className="space-y-1.5 mb-3">
-                  {task.checklist &&
-                    task.checklist.map((item) => (
-                      <div
-                        key={item.id}
-                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent hover:border-slate-200/60 transition-colors"
-                      >
-                        {editingChecklistId === item.id ? (
-                          /* Inline Edit Mode */
-                          <div className="flex items-center gap-2 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="text"
-                              autoFocus
-                              value={editingChecklistText}
-                              onChange={(e) => setEditingChecklistText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.nativeEvent.isComposing || e.key === "Process") return;
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  handleSaveEditChecklist(item.id);
-                                }
-                                if (e.key === "Escape") {
-                                  e.preventDefault();
-                                  handleCancelEditChecklist();
-                                }
-                              }}
-                              className="flex-1 px-2.5 py-1 text-xs sm:text-sm bg-white dark:bg-slate-800 border border-orange-500 rounded-lg focus:outline-none shadow-xs text-slate-800 dark:text-slate-100"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleSaveEditChecklist(item.id)}
-                              className="p-1 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-xs"
-                              title="儲存修改"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleCancelEditChecklist}
-                              className="p-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 transition-colors"
-                              title="取消"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          /* Normal Display Mode */
-                          <>
-                            <div
-                              onClick={() => toggleChecklistItem(task.id, item.id)}
-                              className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer select-none"
-                            >
-                              {item.completed ? (
-                                <CheckSquare className="w-4 h-4 text-emerald-500 shrink-0" />
-                              ) : (
-                                <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
-                              )}
-                              <span
-                                className={`text-xs sm:text-sm break-words flex-1 ${item.completed
-                                  ? "line-through text-slate-400 dark:text-slate-500"
-                                  : "text-slate-700 dark:text-slate-200"
-                                  }`}
-                              >
-                                {item.title}
-                              </span>
-                            </div>
-
-                            {/* Hover Actions: Edit Pencil & Delete Trash */}
-                            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity shrink-0 ml-2">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStartEditChecklist(item.id, item.title);
-                                }}
-                                className="p-1 rounded-lg text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors"
-                                title="編輯項目名稱"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeChecklistItem(task.id, item.id);
-                                }}
-                                className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-700 transition-colors"
-                                title="刪除項目"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </>
-                        )}
+                {/* Checklist Items (支援 500ms 長按拖曳與 ▲ / ▼ 上下快速移動) */}
+                {task.checklist && task.checklist.length > 0 && (
+                  <DndContext
+                    sensors={checklistSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleChecklistDragEnd}
+                  >
+                    <SortableContext
+                      items={task.checklist.map((item) => item.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-1.5 mb-3">
+                        {task.checklist.map((item) => (
+                          <SortableChecklistItem
+                            key={item.id}
+                            item={item}
+                            taskId={task.id}
+                            isEditing={editingChecklistId === item.id}
+                            editingText={editingChecklistText}
+                            onStartEdit={handleStartEditChecklist}
+                            onSaveEdit={handleSaveEditChecklist}
+                            onCancelEdit={handleCancelEditChecklist}
+                            onEditTextChange={setEditingChecklistText}
+                            onToggle={toggleChecklistItem}
+                            onRemove={removeChecklistItem}
+                          />
+                        ))}
                       </div>
-                    ))}
-                </div>
+                    </SortableContext>
+                  </DndContext>
+                )}
 
                 {/* Add Checklist Item Form */}
                 <form onSubmit={handleAddChecklist} className="flex gap-2">
@@ -852,20 +894,19 @@ export const EditTaskModal: React.FC = () => {
                 </form>
               </div>
 
-              {/* 2. Description (說明 - Markdown Editor 移至待辦清單後) */}
+              {/* 2. Description (說明 - Markdown Editor) */}
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <AlignLeft className="w-4 h-4 text-slate-400" />
-                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">說明 (Markdown & 圖片)</h4>
-                </div>
-
                 <MarkdownEditor
                   value={description}
                   onChange={(val) => {
                     setDescription(val);
                     updateTask(task.id, { description: val });
                   }}
-                  onSave={() => handleSave()}
+                  onSave={(val) => {
+                    setDescription(val);
+                    handleSave(val);
+                  }}
+                  title="說明 (Markdown & 圖片)"
                   placeholder="輸入詳細說明，支援 Markdown 粗體、連結、清單，並可點擊 🖼️ 插入圖片或直接貼上截圖..."
                 />
               </div>
@@ -1086,11 +1127,57 @@ export const EditTaskModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Delete / Archive */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+              {/* Actions: Expand to Column & Delete */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                {/* 1. Expand to Column */}
+                {isExpandConfirm ? (
+                  <div className="p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 space-y-2 animate-in fade-in">
+                    <div className="flex items-start gap-2">
+                      <Columns3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs text-indigo-900 dark:text-indigo-200 font-bold block">
+                          確定將此任務展開為獨立狀態欄位？
+                        </span>
+                        <p className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80 mt-0.5 leading-relaxed">
+                          {totalItems > 0
+                            ? `將以「${title || task.title}」建立全新狀態欄，並將 ${totalItems} 個子待辦轉為獨立任務卡片。`
+                            : `將以「${title || task.title}」在看板中建立全新獨立狀態欄位。`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleExpandToColumn}
+                        className="flex-1 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-xs"
+                      >
+                        🚀 確認展開
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsExpandConfirm(false)}
+                        className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsExpandConfirm(true)}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 hover:bg-indigo-100/90 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/50 border border-indigo-200/70 dark:border-indigo-800/60 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    title="將卡片升級為狀態欄位，子待辦化為獨立卡片"
+                  >
+                    <Columns3 className="w-3.5 h-3.5" />
+                    <span>🚀 展開為狀態欄位</span>
+                  </button>
+                )}
+
+                {/* 2. Delete Card */}
                 {isDeleteConfirm ? (
-                  <div className="space-y-1.5">
-                    <span className="text-xs text-rose-600 font-bold block">確定刪除此卡片？</span>
+                  <div className="space-y-1.5 p-2 rounded-xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+                    <span className="text-xs text-rose-600 dark:text-rose-400 font-bold block">確定刪除此卡片？</span>
                     <div className="flex gap-1.5">
                       <button
                         onClick={() => {
@@ -1103,7 +1190,7 @@ export const EditTaskModal: React.FC = () => {
                       </button>
                       <button
                         onClick={() => setIsDeleteConfirm(false)}
-                        className="px-2 py-1.5 rounded-lg bg-slate-100 text-xs"
+                        className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs"
                       >
                         取消
                       </button>

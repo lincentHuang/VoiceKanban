@@ -66,6 +66,8 @@ interface KanbanStoreState {
   moveAllColumnTasks: (sourceColumnId: string, targetColumnId: string) => void;
   reorderBoardColumns: (boardId: string, orderedColumns: Column[]) => void;
   archiveColumn: (columnId: string) => void;
+  expandTaskToColumn: (taskId: string) => void;
+  aggregateColumnToTask: (columnId: string) => void;
 
   // Column Manager Modal
   isColumnManagerOpen: boolean;
@@ -87,6 +89,8 @@ interface KanbanStoreState {
   updateChecklistItem: (taskId: string, itemId: string, newTitle: string) => void;
   toggleChecklistItem: (taskId: string, itemId: string) => void;
   removeChecklistItem: (taskId: string, itemId: string) => void;
+  reorderChecklistItems: (taskId: string, newChecklist: ChecklistItem[]) => void;
+  moveChecklistItem: (taskId: string, itemId: string, direction: "up" | "down") => void;
 
   // Attachment Actions
   addAttachment: (taskId: string, attachment: TaskAttachment) => void;
@@ -618,6 +622,129 @@ export const useKanbanStore = create<KanbanStoreState>()(
         get().triggerSync();
       },
 
+      expandTaskToColumn: (taskId: string) => {
+        const { tasks, activeBoardId, boards } = get();
+        const task = tasks.find((t) => t.id === taskId);
+        if (!task) return;
+
+        const currentColumns = get().getActiveBoardColumns();
+        const newColumnId = `col-${Date.now()}`;
+        const newColumn: Column = {
+          id: newColumnId,
+          title: task.title.trim() || "未命名狀態欄",
+          icon: "🚀",
+          color: task.coverColor || "#fef3c7",
+          isCustom: true,
+        };
+
+        const createdTasks: Task[] = (task.checklist || []).map((item, index) => ({
+          id: `task-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+          title: item.title,
+          description: "",
+          boardId: activeBoardId,
+          columnId: newColumnId,
+          orderKey: initialOrderKey(index),
+          priority: task.priority || "medium",
+          isStarred: false,
+          tags: [...(task.tags || [])],
+          startDate: null,
+          dueDate: null,
+          isAllDay: true,
+          completed: !!item.completed,
+          checklist: [],
+          coverColor: null,
+          coverAspectRatio: null,
+          attachments: [],
+          attachmentsCount: 0,
+          activities: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }));
+
+        const remainingTasks = tasks.filter((t) => t.id !== taskId);
+
+        const updatedBoards = boards.map((b) =>
+          b.id === activeBoardId ? { ...b, columns: [...currentColumns, newColumn] } : b
+        );
+
+        set({
+          boards: updatedBoards,
+          tasks: [...remainingTasks, ...createdTasks],
+          editingTaskId: null,
+        });
+        get().triggerSync();
+      },
+
+      aggregateColumnToTask: (columnId: string) => {
+        const { tasks, activeBoardId, boards } = get();
+        const currentColumns = get().getActiveBoardColumns();
+        const column = currentColumns.find((c) => c.id === columnId);
+        if (!column) return;
+
+        const colTasks = tasks.filter((t) => t.boardId === activeBoardId && t.columnId === columnId);
+
+        const checklist: ChecklistItem[] = colTasks.map((t, idx) => ({
+          id: `chk-${Date.now()}-${idx}`,
+          title: t.title,
+          completed: !!t.completed,
+        }));
+
+        const nowStr = new Date().toLocaleString("zh-TW", { hour12: false });
+        const metaSections: string[] = [];
+
+        colTasks.forEach((t, i) => {
+          const details: string[] = [];
+          if (t.priority) details.push(`- **優先等級**：${t.priority}`);
+          if (t.dueDate) details.push(`- **截止日期**：${t.dueDate}`);
+          if (t.tags && t.tags.length > 0) details.push(`- **標籤**：${t.tags.map((tag) => `#${tag}`).join(" ")}`);
+          if (t.description && t.description.trim()) details.push(`- **原始備註**：\n${t.description.trim()}`);
+          if (t.checklist && t.checklist.length > 0) {
+            const subItems = t.checklist.map((c) => `  - [${c.completed ? "x" : " "}] ${c.title}`).join("\n");
+            details.push(`- **子待辦清單**：\n${subItems}`);
+          }
+
+          if (details.length > 0) {
+            metaSections.push(`#### ${i + 1}. ${t.title}\n${details.join("\n")}`);
+          }
+        });
+
+        let aggregatedDescription = `> 📦 本任務聚合自狀態欄位 **「${column.title}」**（聚合時間：${nowStr}，共 ${colTasks.length} 項任務）\n\n`;
+        if (metaSections.length > 0) {
+          aggregatedDescription += `### 📋 原任務詳細備註與屬性彙整\n\n` + metaSections.join("\n\n");
+        }
+
+        const aggregatedTask: Task = {
+          id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          title: column.title,
+          description: aggregatedDescription,
+          boardId: "global",
+          columnId: "inbox",
+          orderKey: initialOrderKey(0),
+          priority: "medium",
+          isStarred: false,
+          tags: [],
+          dueDate: null,
+          completed: colTasks.length > 0 && colTasks.every((t) => t.completed),
+          checklist,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        const remainingTasks = tasks.filter((t) => !(t.boardId === activeBoardId && t.columnId === columnId));
+        const remainingColumns = currentColumns.filter((c) => c.id !== columnId);
+
+        const updatedBoards = boards.map((b) =>
+          b.id === activeBoardId ? { ...b, columns: remainingColumns } : b
+        );
+
+        set({
+          boards: updatedBoards,
+          tasks: [aggregatedTask, ...remainingTasks],
+          isInboxSidebarOpen: true,
+        });
+        get().triggerSync();
+      },
+
       // Column Manager Modal
       isColumnManagerOpen: false,
       setIsColumnManagerOpen: (isColumnManagerOpen) => set({ isColumnManagerOpen }),
@@ -846,6 +973,47 @@ export const useKanbanStore = create<KanbanStoreState>()(
               ? {
                   ...t,
                   checklist: (t.checklist || []).filter((item) => item.id !== itemId),
+                  updatedAt: new Date().toISOString(),
+                }
+              : t
+          ),
+        }));
+        get().triggerSync();
+      },
+
+      reorderChecklistItems: (taskId, newChecklist) => {
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  checklist: newChecklist,
+                  updatedAt: new Date().toISOString(),
+                }
+              : t
+          ),
+        }));
+        get().triggerSync();
+      },
+
+      moveChecklistItem: (taskId, itemId, direction) => {
+        const task = get().tasks.find((t) => t.id === taskId);
+        if (!task || !task.checklist) return;
+        const list = [...task.checklist];
+        const index = list.findIndex((item) => item.id === itemId);
+        if (index === -1) return;
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= list.length) return;
+
+        const [movedItem] = list.splice(index, 1);
+        list.splice(targetIndex, 0, movedItem);
+
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  checklist: list,
                   updatedAt: new Date().toISOString(),
                 }
               : t

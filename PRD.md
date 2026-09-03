@@ -134,10 +134,22 @@ src/
 - **AI 模型切換**：可選擇 Gemini 2.5 Flash / Pro 及預設辨識語系。
 - **外觀偏好**：深色模式 (Dark)、淺色模式 (Light)、系統自動跟隨。
 
-### 3.8 📝 Markdown 任務筆記與清單 (Markdown Notes & Checklists)
-- **雙模切換**：支援即時編輯（Write）與渲染預覽（Preview）。
-- **工具列支援**：粗體、斜體、清單、程式碼區塊、標題一鍵插入。
-- **子任務清單 (Checklists)**：支援進度條（Progress Bar）即時連動完成率。
+### 3.8 📝 Markdown 任務筆記與子任務待辦清單 (Markdown Notes & Checklists)
+- **極簡內嵌式說明排版 (Clean Inline Layout)**：
+  - 移除冗餘的多層卡片白底容器與「說明內容預覽」次標題列，視覺自然融入任務詳情彈窗中。
+  - 將「編輯說明」功能按鈕整合置於「說明 (Markdown & 圖片)」標題列的最右端，編輯模式下切換為「取消」與「完成」按鈕。
+- **超長內容漸層收合與展開 (Gradient Fade Collapse & Expand)**：
+  - 當渲染後的說明 Markdown 內容高度超過 500px 時，自動啟用漸層漸隱到底部透明遮罩，並提供寬版「展開完整說明內容 / 收合說明內容」按鈕切換。
+- **雙模切換與即時儲存防護 (Edit/Preview & Safe Persistence)**：
+  - 支援即時編輯（Write）與渲染預覽（Preview），修正狀態閉包覆蓋問題，確保點擊「完成」或使用快捷鍵時即時持久化更新至 Store 與資料庫。
+  - **智慧圖片壓縮與超額防護**：上傳或貼上圖片時自動調用 Canvas 進行高畫質 WebP/JPEG 壓縮，解決瀏覽器 localStorage 容量上限（5MB QuotaExceededError）與 Firestore 單檔大小限制問題。
+- **工具列支援**：粗體、斜體、刪除線、清單、代碼、標題、圖片上傳一鍵插入。
+- **子任務待辦清單 (Checklists)**：
+  - **長按 500ms 拖曳上下移動與排序 (500ms Long Press Reorder)**：極簡純淨視覺，無需多餘上下箭頭或把手符號，手指或滑鼠直接長按子任務 500ms 即可啟用平滑垂直拖曳排序，放開即更新位置並持久化。
+  - **常態短按防誤觸**：小於 500ms 的短按即時切換完成狀態勾選或雙擊編輯，互不干擾。
+  - **進度百分比條 (Progress Bar)**：即時連動已完成子任務數量與完成率百分比。
+  - **行內快速編輯與刪除**：支援點擊鉛筆或雙擊修改項目名稱，Enter 儲存、Escape 取消。
+
 
 ### 3.9 🔍 響應式搜尋與 Search Modal (Search Feature)
 - **Header 瘦身與空間專注**：全面移除頂部 Header 上的「建立（+）」與「一鍵語音（Mic）」按鈕，使 Header 回歸純粹的導覽與搜尋功能。
@@ -164,6 +176,23 @@ src/
   - **雙軌平台安裝體驗 (Dual-Platform Flow)**：
     - **Android / 桌面 Chrome / Edge**：攔截並保存 `beforeinstallprompt` 事件，點擊按鈕直接觸發系統原生「安裝應用程式」視窗。
     - **iOS Safari**：針對 Safari 無法自動觸發安裝之系統限制，點擊後彈出精緻 3 步驟圖文導引彈窗（`IosInstallGuideModal`），圖示化指引使用者點擊底部「分享 ⎋」➔ 滑動點擊「加入主畫面 ➕」➔ 右上角「新增」。
+
+### 3.11 🚀 展開與聚合工作流 (Expand & Aggregate Feature)
+- **任務卡片展開為獨立狀態欄位 (Expand Task to Column)**：
+  - **觸發入口**：任務詳細編輯視窗 (`EditTaskModal`) 頂部動作列，提供「🚀 展開為狀態欄位」專屬按鈕。
+  - **轉換機制**：
+    - 主任務標題無縫升級為當前看板之全新狀態欄位（Column）。
+    - 任務內含之 Checklist 子任務逐條提取並轉化為該欄位底下的獨立任務卡片，並保留各自已完成/未完成（`completed`）勾選狀態與順序。
+    - 若無子任務，則自動生成該名稱的空欄位，供使用者後續填充。
+    - 原主任務自看板中安全升級除役，並關閉編輯視窗，即時觸發雲端與本地同步。
+- **狀態欄位聚合為單一任務卡片 (Aggregate Column to Task)**：
+  - **觸發入口**：看板各狀態欄位 Header 之「更多選單 `···`」(`ColumnActionMenu`)，提供「📦 聚合為單一任務卡片（移至收件匣）」選項。
+  - **轉換機制**：
+    - 該狀態欄位名稱轉化為新任務卡片標題。
+    - 欄位內的所有任務卡片依序轉化為新卡片內之 Checklist 子任務清單（保留其完成狀態）。
+    - **深層資料零遺失 (Deep Data Preservation)**：若原欄位內之各卡片含有標籤、到期日、內文描述或多層資訊，系統自動彙整為 Markdown 結構化備註附加至新任務描述中。
+    - 聚合生成之任務卡片自動移入 **收件匣 (Inbox)**，並即時自動滑開收件匣側邊欄以供檢視。
+    - 原看板欄位及其內部所有卡片安全清除除役，順暢釋放看板空間。
 
 ---
 
@@ -195,5 +224,7 @@ src/
 - [x] **MAC-13 (Capacitor 跨平台雙平台專案與設定)**：整合 `@capacitor/core`、`@capacitor/cli`、`@capacitor/ios` 與 `@capacitor/android`，完成 `capacitor.config.ts`（App ID: `com.voicekanban.app`，名稱: 聲動看板），生成標準 `ios/` 與 `android/` 專案工程，配置麥克風權限與雙平台建置指令。
 - [x] **MAC-14 (PWA 標準支援與 Service Worker 離線快取)**：具備合法 `manifest.webmanifest`、各尺寸高解析度圖示、全螢幕獨立模式、iOS Safe Area Insets、以及 `public/sw.js` 資源快取與自動註冊。
 - [x] **MAC-15 (頭像選單 PWA 安裝按鈕與雙軌引導體驗)**：在 Navbar 頭像下拉選單中提供「在手機安裝應用」選項；若處於 Standalone/原生 App 模式則自動隱藏；Android/Chrome 觸發系統安裝視窗，iOS Safari 彈出 3 步驟圖文導引視窗（`IosInstallGuideModal`），符合 UI 5 態規範。
+- [x] **MAC-16 (子任務待辦清單極簡長按 500ms 拖曳移動排序)**：任務編輯視窗中的子任務清單維持無多餘符號與箭頭的純淨外觀，長按 500ms 即可啟用平滑垂直拖曳排序，短按快速切換勾選完成，資料即時持久化與雲端同步。
+- [x] **MAC-17 (任務卡片與狀態欄位雙向展開與聚合工作流)**：任務詳細視窗支援一鍵將卡片與其子清單「展開」為獨立看板欄位；欄位 Header 選單支援一鍵將整個欄位「聚合」為單一任務卡片並安全收納至收件匣（Inbox），且完整保留原卡片深層屬性與子任務勾選狀態。
 
 

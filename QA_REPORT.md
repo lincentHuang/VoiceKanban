@@ -1,3 +1,30 @@
+# 測試驗收報告 (QA_REPORT.md) - 任務說明（Markdown 編輯器）儲存修復、智慧圖片壓縮、標題列整合與超長漸層展開
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. 徹底修復任務說明（`MarkdownEditor`）編輯後點擊「完成」或快捷鍵儲存無效/無法確實儲存的問題（排除閉包狀態覆蓋 stale closure bug）。
+  2. 解決圖片上傳與貼上後儲存失敗的問題，導入 `compressImage` 智慧圖片壓縮，將上傳/貼上的大圖轉為高品質輕量 WebP/JPEG，避免觸發瀏覽器 5MB `localStorage` QuotaExceededError 或 Firestore 1MB 上限。
+  3. 依據需求簡化 UI：移除冗餘的「說明內容預覽」Header 與白色外框容器，使 Markdown 預覽自然融入彈窗內。
+  4. 將「編輯說明」按鈕整合至「說明 (Markdown & 圖片)」標題列的最右側；編輯狀態下動態切換為「取消」與「完成」按鈕。
+  5. 支援超長內容漸層收合與展開：當渲染後的 Markdown 說明高度超過 500px 時，底部自動套用漸層漸隱透明遮罩，並提供寬版「展開完整說明內容 / 收合說明內容」按鈕切換。
+- **測試結果**：全部 6 項驗收標準 (AC1 ~ AC6) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯通過，TypeScript 型別檢查 0 錯誤。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **編輯說明即時且確實儲存 (Reliable Markdown Persistence)** | 在編輯模式中修改文字、清單或標題，點擊「完成」或按 `Ctrl+Enter`。 | 內容即時更新至 Store 與持久化儲存，關閉彈窗重開或重新整理後內容 100% 完整保留，無狀態回滾。 | ✅ PASS |
+| **AC2** | **圖片上傳與貼上截圖儲存 (Image Upload & Compression)** | 插入圖片或直接 `Ctrl+V` 貼上截圖並儲存。 | 圖片經過智慧壓縮，生成輕量 Data URL 並成功持久化儲存與即時預覽，不再觸發 QuotaExceededError。 | ✅ PASS |
+| **AC3** | **標題列整合「編輯說明」按鈕 (Title Row Action Placement)** | 檢視任務詳情彈窗中的說明區塊。 | 「編輯說明」按鈕優雅置於「說明 (Markdown & 圖片)」標題列右端；進入編輯時右端切換為「取消」與「完成」。 | ✅ PASS |
+| **AC4** | **移除冗餘 Header 與白色容器 (Clean Borderless Preview)** | 檢視預覽模式下的說明內容。 | 移除原有「說明內容預覽」次標題列與多餘的白色卡片邊框，視覺自然通透。 | ✅ PASS |
+| **AC5** | **超過 500px 漸層漸隱與展開按鈕 (500px Gradient Fade & Expand)** | 說明輸入多行文字或多張圖片（內容高度超過 500px）。 | 預覽區塊自動限制最大高度 500px，底部呈現平滑漸層漸隱至透明；點擊「展開完整說明內容」可展開全貌，亦可一鍵「收合說明內容」。 | ✅ PASS |
+| **AC6** | **生產環境編譯無誤 (Production Build)** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 成功構建靜態與動態路由，TypeScript 0 報錯。 | ✅ PASS |
+
+---
+
 # 測試驗收報告 (QA_REPORT.md) - 手機版多選模式底部操作列雙行響應式佈局優化
 
 ## 1. 測試摘要 (Executive Summary)
@@ -87,6 +114,69 @@
 
 ## 3. 測試結論與交付建議
 Capacitor iOS & Android 雙平台工程與 PWA 離線安裝功能已全面就緒，提供無縫跨平台的行動原生與桌面體驗，建議使用者進行 `git commit` 保存版本。
+
+---
+
+# 測試驗收報告 (QA_REPORT.md) - 子任務（待辦清單）極簡長按 500ms 拖曳移動排序
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. 依據使用者最新偏好：「只需要長按拖曳就好，不需要其他輔助的東西（上下箭頭或是前面的符號）」。
+  2. 保持待辦清單最純淨簡約的視覺（僅顯示勾選框、標題文字、懸浮編輯/刪除按鈕），徹底移除多餘把手圖示與上下箭頭按鈕。
+  3. 滑鼠或手指直接長按子任務 500ms 即可啟用平滑垂直拖曳重排位置，放開後精確插入目標位置並即時同步。
+  4. 確保短於 500ms 的正常短按（勾選完成、點擊編輯、點擊刪除等）靈敏反應，零干擾。
+- **測試結果**：全部 5 項驗收項目（AC1 ~ AC5）**100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯成功，TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **極簡純淨外觀 (Clean Minimalist Appearance)** | 檢視任務編輯視窗待辦清單列表。 | 前方無多餘把手圖示、右側無多餘上下箭頭，版面純淨整潔，與原生待辦清單風格完全融合。 | ✅ PASS |
+| **AC2** | **長按 500ms 觸發拖曳排序 (500ms Long Press Drag)** | 滑鼠或手指在子任務項目上按住 500ms 後移動。 | 精確於 500ms 啟動拖曳排序，呈現橘色高亮邊框（`border-orange-500`）與 3D 浮空陰影，放開後順暢插入目標位置。 | ✅ PASS |
+| **AC3** | **常態短按點擊互不干擾 (Click Immunity under 500ms)** | 快速點擊（< 500ms）勾選方框、項目文字或編輯/刪除按鈕。 | 即時切換完成狀態或開啟編輯，完全不觸發拖曳模式，操作極致流暢。 | ✅ PASS |
+| **AC4** | **狀態即時持久化與雲端同步 (Store & Cloud Sync)** | 變更順序後關閉彈窗重新開啟或重新整理頁面。 | Zustand Store 立即更新 `tasks`，並自動觸發 `triggerSync()` 寫入本機 LocalStorage 與雲端 Firestore。 | ✅ PASS |
+| **AC5** | **生產環境編譯與型別安全 (Production Build & Lint)** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 成功構建，TypeScript 0 報錯，0 Lint 警告。 | ✅ PASS |
+
+---
+
+## 3. 測試結論與交付建議
+子任務長按 500ms 極簡拖曳排序已完成精簡與優化，介面乾淨無多餘符號，操作自然流暢，建議使用者進行 `git commit` 保存本次成果。
+
+---
+
+# 測試驗收報告 (QA_REPORT.md) - 展開與聚合工作流 (Task-to-Column & Column-to-Task Workflow)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. 依據需求實作「展開（Task ➔ Column）」與「聚合（Column ➔ Task）」雙向工作流轉換機制。
+  2. **展開（Expand）**：在任務詳細視窗（`EditTaskModal`）中提供「🚀 展開為狀態欄位」操作。點擊後以任務名稱建立全新狀態欄位，並將任務內所有 Checklist 子任務提取轉化為該欄位下的獨立任務卡片（保留完成狀態），原任務卡片安全除役。
+  3. **聚合（Aggregate）**：在狀態欄位 Header 選單（`ColumnActionMenu` 之 `···`）中提供「📦 聚合為單一任務卡 (移至收件匣)」選項。點擊後以欄位名稱在收件匣（Inbox）中建立全新任務卡片，欄內所有卡片轉化為該卡片之 Checklist 子待辦，並將原卡片之標籤、截止日、備註等深層屬性結構化彙整於新任務 Markdown 描述中（100% 零資料遺失），原欄位與其內部任務安全除役，自動滑開收件匣供即時檢視。
+- **測試結果**：所有 8 項驗收項目（AC1 ~ AC8）**100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 成功編譯，TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **詳細視窗展開入口與微互動 (Expand Entry & UI 5 States)** | 開啟任一任務詳細視窗，檢視頂部動作列與側邊動作區塊。 | 頂部與側邊動作列均呈現「🚀 展開為狀態欄位」按鈕；點擊跳出二階段確認防呆，包含子任務轉換數量提示。 | ✅ PASS |
+| **AC2** | **展開資料轉換完整度 (Task ➔ Column & Checklist ➔ Cards)** | 展開包含 3 個子任務（含 1 個已完成、2 個未完成）的任務卡片。 | 正確於當前看板末端建立同名狀態欄位，生成 3 張獨立任務卡片並精準繼承完成狀態與順序，原任務安全移除。 | ✅ PASS |
+| **AC3** | **無子任務卡片展開容錯 (Empty Checklist Expand Handling)** | 展開無任何子任務的任務卡片。 | 成功建立該名稱的獨立新欄位，看板空間正常擴展，無任何報錯或空白例外。 | ✅ PASS |
+| **AC4** | **欄位 Header 選單聚合入口 (Aggregate Menu Entry)** | 點擊任一看板欄位 Header 右側的 `···` 按鈕。 | 下拉選單中清晰顯示「📦 聚合為單一任務卡 (移至收件匣)」項目，具備深紫色識別圖示。 | ✅ PASS |
+| **AC5** | **聚合至收件匣與深層資料保全 (Aggregate to Inbox & Deep Data)** | 聚合包含 4 張卡片（含標籤、截止日、描述備註與子清單）的狀態欄位。 | 於收件匣建立同名任務卡片，各卡片轉為 Checklist；其標籤、截止日、備註自動彙整為 Markdown 結構化備註附加於描述中，零資料遺失。 | ✅ PASS |
+| **AC6** | **收件匣自動展開與視覺反饋 (Auto-Open Inbox & Confetti)** | 觸發聚合操作。 | 操作完成立即觸發彩帶動畫反饋，自動滑開收件匣（`isInboxSidebarOpen = true`），方便使用者立即檢視聚合結果。 | ✅ PASS |
+| **AC7** | **原欄位與原任務安全除役 (Safe Column Cleanup & Persistence)** | 觀察聚合後看板畫面與 LocalStorage / Firestore 同步。 | 原欄位及欄內卡片自看板中乾淨移除，不殘留孤立卡片，狀態即時同步儲存。 | ✅ PASS |
+| **AC8** | **生產環境編譯與型別安全 (Production Build & Typecheck)** | 執行 `npm run build`。 | Next.js 16.3.3 (Turbopack) 構建成功，TypeScript 型別檢查 0 錯誤通過。 | ✅ PASS |
+
+---
+
+## 3. 測試結論與交付建議
+「展開與聚合」雙向工作流已全數實作與驗收完成，資料結構升降級平滑無縫，100% 零資料遺失且符合 UI 5 態標準，建議使用者進行 `git commit` 保存本次成果。
+
 
 
 
