@@ -26,6 +26,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { ManualOfflineToggle } from "@/features/offline";
+import { WifiOff, Cloud } from "lucide-react";
 
 export const SettingsModal: React.FC = () => {
   const {
@@ -44,7 +46,7 @@ export const SettingsModal: React.FC = () => {
     }
   }, isSettingsModalOpen);
 
-  const [activeTab, setActiveTab] = useState<"api" | "learning">("api");
+  const [activeTab, setActiveTab] = useState<"api" | "offline" | "learning">("api");
   const [inputKey, setInputKey] = useState(byokConfig.apiKey || "");
   const [selectedModel, setSelectedModel] = useState(byokConfig.model || "gemini-2.0-flash");
   const [defaultBoard, setDefaultBoard] = useState(byokConfig.defaultBoardId || "board-work");
@@ -143,9 +145,9 @@ export const SettingsModal: React.FC = () => {
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                系統設定 &amp; AI / 離線學習引擎
+                系統設定 &amp; AI / 離線模式
               </h3>
-              <p className="text-xs text-slate-500">管理 Gemini API Key 與本地半自動學習詞庫</p>
+              <p className="text-xs text-slate-500">管理 Gemini API Key、離線模式與本地半自動學習詞庫</p>
             </div>
           </div>
           <button
@@ -168,7 +170,20 @@ export const SettingsModal: React.FC = () => {
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-            <span>Gemini BYOK 設定</span>
+            <span>Gemini BYOK</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("offline")}
+            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === "offline"
+                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <WifiOff className="w-3.5 h-3.5 text-amber-500" />
+            <span>離線與同步</span>
           </button>
 
           <button
@@ -181,7 +196,7 @@ export const SettingsModal: React.FC = () => {
             }`}
           >
             <BrainCircuit className="w-3.5 h-3.5 text-lime-600" />
-            <span>半自動學習模型</span>
+            <span>半自動學習</span>
           </button>
         </div>
 
@@ -311,7 +326,47 @@ export const SettingsModal: React.FC = () => {
           </form>
         )}
 
-        {/* Tab 2: Semi-Automatic Learning Model Stats & Controls */}
+        {/* Tab 2: Offline & Resilient Sync Settings */}
+        {activeTab === "offline" && (
+          <div className="mt-4 space-y-4">
+            <ManualOfflineToggle variant="settings" />
+
+            <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/60 space-y-2">
+              <div className="flex items-center gap-2">
+                <WifiOff className="w-4 h-4 text-amber-600" />
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Local-First 本機優先架構
+                </h4>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                即使處於完全無網路（飛航模式、地下室）或手動離線狀態下，您仍可自由建立、拖曳排序、編輯與刪除任何看板任務。所有操作均會即時儲存至本地快取，並在網路恢復時自動無縫同步至雲端。
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Cloud className="w-4 h-4 text-slate-400" />
+                <span className="text-slate-600 dark:text-slate-300 font-medium">PWA Service Worker 快取</span>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
+                <Check className="w-3 h-3" />
+                <span>已就緒 (v2)</span>
+              </span>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                完成
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Semi-Automatic Learning Model Stats & Controls */}
         {activeTab === "learning" && (
           <div className="mt-4 space-y-4">
             <div className="p-4 rounded-2xl bg-lime-50/60 dark:bg-lime-950/20 border border-lime-200/60 dark:border-lime-900/60 space-y-2">

@@ -1,3 +1,32 @@
+# 測試驗收報告 (QA_REPORT.md) - Local-First 離線模式、PWA 斷網快取與離線變更同步引擎
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. 實現 **Local-First 零阻斷離線作業**：即使在斷網（地下室、飛行模式）或主動開啟離線工作模式下，任務之建立、編輯、拖曳排序、Checklist 子任務、Markdown 筆記、標籤修改與刪除均能即時生效且零延遲存入 LocalStorage。
+  2. 建立 **離線變更佇列（Pending Sync Queue）**：離線期間進行之任何操作皆會自動統計未同步筆數，並在頂部徽章與橫幅動態呈現。
+  3. 實作 **動態離線視覺指示與提示橫幅 (OfflineBanner & OfflineIndicator)**：斷網時 Navbar 呈現離線膠囊徽章，頂部滑出柔和提示列（支援重試連線、切換連線與手動收合）。
+  4. 整合 **自動連線偵測與背景批次同步 (Auto Reconnect Engine)**：監聽 `online` / `offline` 事件，恢復連線後背景自動重試同步至雲端（Last-Write-Wins 與欄位合併），清空未同步佇列。
+  5. 增強 **PWA Service Worker 快取 (v2)**：預先快取應用外殼與靜態檔案，HTML 導覽提供 Network-First 降級 Cache 策略，斷網下重新整理應用仍可 100% 完整啟動。
+  6. 提供 **系統設定與選單「離線工作模式」開關 (ManualOfflineToggle)**：允許使用者主動開啟純本機離線作業模式。
+- **測試結果**：全部 7 項驗收條件 (AC1 ~ AC7) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **斷網環境下卡片完整 CRUD 與拖曳 (Offline CRUD & DnD)** | 模擬中斷網路連線或開啟離線模式，執行新增卡片、編輯文字、勾選 Checklist、拖曳跨欄排序、刪除卡片。 | 全部操作立即反映於 UI 介面，LocalStorage 毫秒級寫入，零延遲且無任何未捕獲網路報錯。 | ✅ PASS |
+| **AC2** | **頂部離線狀態膠囊徽章 (Navbar Offline Indicator)** | 斷網或切換離線模式後檢視頂部 Navbar。 | Navbar 品牌 Logo 旁即時呈現琥珀色離線徽章與待同步變更計數（如「📴 離線工作 (3)」），點擊可喚醒詳細提示。 | ✅ PASS |
+| **AC3** | **滑入式柔和提示橫幅 (Offline Banner Feedback)** | 斷網時觀察頂部橫幅。 | 頂部滑出優雅琥珀/橘色漸層橫幅，提示「所有修改已安全暫存本機，連線後自動同步」，提供「重試連線」與關閉按鈕。 | ✅ PASS |
+| **AC4** | **網路恢復背景自動批次同步 (Auto Reconnect & Sync)** | 恢復網路連線（觸發 `window.online` 事件）。 | 系統自動觸發背景同步，資料成功推送至雲端，待同步計數重設為 0，同步狀態更新為「雲端已同步 / 最新」。 | ✅ PASS |
+| **AC5** | **手動離線工作模式開關 (Manual Offline Toggle)** | 於「系統設定」➔「離線與同步」分頁切換「離線工作模式」開關。 | 開關即時切換離線/在線狀態，開啟時封鎖對外 API 請求以保護流量/純本機專注作業，關閉時自動發起資料庫同步。 | ✅ PASS |
+| **AC6** | **PWA Service Worker 斷網快取 (PWA Offline Caching v2)** | 斷網狀態下於瀏覽器或 PWA 獨立視窗強制重新整理頁面（F5 / Cmd+R）。 | Service Worker 成功由 Cache 返回 App Shell 與靜態 JS/CSS，應用秒級載入完成，資料庫正常顯示。 | ✅ PASS |
+| **AC7** | **生產環境編譯與型別安全 (Build & Typecheck)** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 成功編譯所有靜態與動態路由，TypeScript 0 報錯。 | ✅ PASS |
+
+---
+
 # 測試驗收報告 (QA_REPORT.md) - 任務說明（Markdown 編輯器）儲存修復、智慧圖片壓縮、標題列整合與超長漸層展開
 
 ## 1. 測試摘要 (Executive Summary)

@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { InstallPwaMenuItem } from "@/features/pwa-mobile";
+import { OfflineIndicator } from "@/features/offline";
 
 
 export const Navbar: React.FC = () => {
@@ -71,9 +72,10 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="w-full h-12 bg-transparent sm:pt-3 px-3 sm:px-5 flex items-center justify-between gap-3 shrink-0 z-30">
-      {/* Left: Logo & Brand */}
+      {/* Left: Logo & Brand & Offline Indicator */}
       <div className="flex items-center gap-2 shrink-0">
         <BrandLogo bgVariant="white" size="sm" showBadge={false} />
+        <OfflineIndicator />
         {isGuest && (
           <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-[10px] font-bold text-amber-800 dark:text-amber-300">
             <Sparkles className="w-2.5 h-2.5 text-amber-600" />

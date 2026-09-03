@@ -35,9 +35,18 @@ interface KanbanStoreState {
   logout: () => Promise<void>;
   initAuthAndSync: () => () => void;
 
-  // Cloud Sync State
+  // Cloud Sync & Offline Mode
   syncState: SyncState;
   triggerSync: () => Promise<void>;
+  isOnline: boolean;
+  setIsOnline: (online: boolean) => void;
+  isManualOffline: boolean;
+  setIsManualOffline: (offline: boolean) => void;
+  pendingOfflineChanges: number;
+  incrementPendingOfflineChanges: () => void;
+  clearPendingOfflineChanges: () => void;
+  isOfflineBannerDismissed: boolean;
+  setIsOfflineBannerDismissed: (dismissed: boolean) => void;
 
   // View Mode (Kanban / Table / List / Calendar)
   viewMode: ViewMode;
@@ -333,18 +342,24 @@ export const useKanbanStore = create<KanbanStoreState>()(
         // Dynamic Online / Offline Network Listeners
         const handleOnline = () => {
           set((state) => ({
+            isOnline: true,
+            isOfflineBannerDismissed: false,
             syncState: {
               ...state.syncState,
               status: "synced",
               lastSyncedAt: new Date().toISOString(),
-              isCloudConnected: true,
+              isCloudConnected: !state.isManualOffline,
             },
           }));
-          get().triggerSync();
+          if (!get().isManualOffline) {
+            get().triggerSync();
+          }
         };
 
         const handleOffline = () => {
           set((state) => ({
+            isOnline: false,
+            isOfflineBannerDismissed: false,
             syncState: {
               ...state.syncState,
               status: "offline",
@@ -363,24 +378,34 @@ export const useKanbanStore = create<KanbanStoreState>()(
           if (session) {
             set({ userSession: session });
 
-            // 資料庫為主：初次載入或重新整理時先拉取雲端最新資料
-            const cloudData = await syncEngine.fetchUserDataFromCloud(session.id);
-            if (cloudData) {
-              set({
-                boards: cloudData.boards && cloudData.boards.length > 0 ? cloudData.boards : INITIAL_BOARDS,
-                tasks: cloudData.tasks || [],
-                activeBoardId: cloudData.activeBoardId || (cloudData.boards && cloudData.boards[0]?.id) || get().activeBoardId,
+            // 資料庫為主：初次載入或重新整理時先拉取雲端最新資料（若在線）
+            if (typeof navigator === "undefined" || (navigator.onLine && !get().isManualOffline)) {
+              const cloudData = await syncEngine.fetchUserDataFromCloud(session.id);
+              if (cloudData) {
+                set({
+                  boards: cloudData.boards && cloudData.boards.length > 0 ? cloudData.boards : INITIAL_BOARDS,
+                  tasks: cloudData.tasks || [],
+                  activeBoardId: cloudData.activeBoardId || (cloudData.boards && cloudData.boards[0]?.id) || get().activeBoardId,
+                  syncState: {
+                    status: "synced",
+                    lastSyncedAt: new Date().toISOString(),
+                    isCloudConnected: true,
+                  },
+                });
+              }
+            } else {
+              set((s) => ({
                 syncState: {
-                  status: typeof navigator !== "undefined" && !navigator.onLine ? "offline" : "synced",
-                  lastSyncedAt: new Date().toISOString(),
-                  isCloudConnected: true,
+                  ...s.syncState,
+                  status: "offline",
+                  isCloudConnected: false,
                 },
-              });
+              }));
             }
 
             // Attach real-time cloud listener
             syncEngine.subscribeToUserData(session.id, (remoteData) => {
-              if (remoteData) {
+              if (remoteData && !get().isManualOffline) {
                 set((state) => ({
                   boards: remoteData.boards && remoteData.boards.length > 0 ? remoteData.boards : state.boards,
                   tasks: remoteData.tasks || [],
@@ -406,14 +431,59 @@ export const useKanbanStore = create<KanbanStoreState>()(
         };
       },
 
-      // Sync
+      // Cloud Sync & Offline State
       syncState: {
-        status: "synced",
+        status: typeof navigator !== "undefined" && !navigator.onLine ? "offline" : "synced",
         lastSyncedAt: new Date().toISOString(),
-        isCloudConnected: true,
+        isCloudConnected: typeof navigator !== "undefined" ? navigator.onLine : true,
       },
+      isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
+      setIsOnline: (isOnline) => {
+        set({ isOnline });
+        if (isOnline && !get().isManualOffline) {
+          get().triggerSync();
+        }
+      },
+      isManualOffline: false,
+      setIsManualOffline: (isManualOffline) => {
+        syncEngine.setManualOffline(isManualOffline);
+        set({ isManualOffline, isOfflineBannerDismissed: false });
+        if (!isManualOffline && (typeof navigator === "undefined" || navigator.onLine)) {
+          get().triggerSync();
+        } else {
+          set((s) => ({
+            syncState: {
+              ...s.syncState,
+              status: "offline",
+              isCloudConnected: false,
+            },
+          }));
+        }
+      },
+      pendingOfflineChanges: 0,
+      incrementPendingOfflineChanges: () =>
+        set((s) => ({ pendingOfflineChanges: s.pendingOfflineChanges + 1 })),
+      clearPendingOfflineChanges: () => set({ pendingOfflineChanges: 0 }),
+      isOfflineBannerDismissed: false,
+      setIsOfflineBannerDismissed: (isOfflineBannerDismissed) => set({ isOfflineBannerDismissed }),
+
       triggerSync: async () => {
         const user = get().userSession;
+        const isOffline =
+          get().isManualOffline || (typeof navigator !== "undefined" && !navigator.onLine);
+
+        if (isOffline) {
+          set((s) => ({
+            pendingOfflineChanges: s.pendingOfflineChanges + 1,
+            syncState: {
+              ...s.syncState,
+              status: "offline",
+              isCloudConnected: false,
+            },
+          }));
+          return;
+        }
+
         set((s) => ({ syncState: { ...s.syncState, status: "syncing" } }));
         const result = await syncEngine.syncTasksToCloud(
           user.id,
@@ -422,6 +492,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           get().activeBoardId
         );
         set({
+          pendingOfflineChanges: result.status === "synced" ? 0 : get().pendingOfflineChanges,
           syncState: {
             status: result.status,
             lastSyncedAt: result.syncedAt,

@@ -18,6 +18,7 @@ import {
   BindAccountModal,
 } from "@/features/auth";
 import { SearchModal } from "@/features/search";
+import { OfflineBanner } from "@/features/offline";
 
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
@@ -53,6 +54,9 @@ export default function Home() {
 
   return (
     <main className="h-screen max-h-screen w-full overflow-hidden flex flex-col justify-between relative select-none">
+      {/* 0. Top Dynamic Offline Banner */}
+      <OfflineBanner />
+
       {/* 1. Top Transparent Centered Header */}
       <Navbar />
 

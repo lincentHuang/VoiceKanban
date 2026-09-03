@@ -66,7 +66,7 @@ src/
 ```text
 [使用者提出需求] 
        ↓
-[@PM 啟動 Grill Me 質詢 ➔ 使用者回覆 ➔ 增量更新 Master PRD.md & feature.md]
+[@PM 啟動 Grill Me 質詢 (若為新功能) ➔ 使用者回覆 ➔ 增量更新 Master PRD.md & feature.md]
        ↓ (以下全自動執行)
 [@Architect 規劃 Feature 模組架構 ＋ 產出 types.ts 與 Schema]
        ↓
@@ -78,5 +78,20 @@ src/
        ↓
 [@Runner 自動啟動 / 確保 Dev Server (npm run dev) 運行中]
        ↓
-[全員聯合匯報 ➔ 附上預覽連結 http://localhost:3000 ➔ 提醒使用者 git commit]
+[全員聯合匯報 ➔ 附上預覽連結 http://localhost:3011 ➔ 提醒使用者 git commit]
 ```
+
+---
+
+## 🚀 已確立慣例與自動部署規範 (Established Conventions & Auto-Deploy)
+
+1. **自動化部署規範（免問原則）**：
+   - 當使用者指示「**部署 / 上線 / deploy / 幫我部署**」時，**無需重複詢問平台或確認步驟**，一律全自動連續執行：
+     1. 執行 `npm run build` 確認生產構建與 TypeScript 檢查 100% 通過。
+     2. 自動 `git add .`。
+     3. 依據本次變更內容產生語義化 commit message 並執行 `git commit`。
+     4. 自動 `git push origin main` 推送至遠端 GitHub 儲存庫（自動觸發已綁定之 CI/CD 雲端部署）。
+     5. 回報 GitHub Commit 雜湊值與遠端推送成功狀態。
+2. **已確立決策不重複質詢**：
+   - 凡已於專案 Markdown 文檔（`PROJECT_RULES.md`、`PRD.md`、`teamwork-protocol.md`）中明確規範的慣例，系統一律自動套用，不進行冗餘問答，專注極致流暢的交付體驗。
+

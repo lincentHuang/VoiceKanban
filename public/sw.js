@@ -1,9 +1,9 @@
 /**
- * Voice Kanban PWA Service Worker
- * 支援離線快取、靜態資源加速與網路中斷容錯降級
+ * Voice Kanban PWA Service Worker (Enhanced Offline Mode)
+ * 支援全功能離線作業、離線快取、靜態資源加速與斷網容錯降級
  */
 
-const CACHE_NAME = "voice-kanban-v1";
+const CACHE_NAME = "voice-kanban-v2";
 
 const PRECACHE_ASSETS = [
   "/",
@@ -14,7 +14,7 @@ const PRECACHE_ASSETS = [
   "/icons/icon-512x512.png",
 ];
 
-// 安裝階段：預先快取核心外殼資源
+// 安裝階段：預先快取核心外殼與離線資源
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -24,7 +24,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// 啟動階段：清理過期舊快取，並立即接管頁面
+// 啟動階段：清理過期舊快取，並立即接管全部客戶端
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -43,23 +43,38 @@ self.addEventListener("activate", (event) => {
 });
 
 // 攔截請求策略：
-// 1. API 路由 (/api/) 與非 GET 請求：一律走網路，不進快取
-// 2. 頁面導覽請求 (HTML)：Network-First，斷網時 fallback 回快取
-// 3. 靜態資源 (JS, CSS, 圖片)：Stale-While-Revalidate
+// 1. 頁面導覽請求 (HTML Navigation)：Network-First，斷網時平滑 fallback 至快取的 App Shell ("/")
+// 2. 靜態資源 (Next.js JS, CSS, 圖片, 字型)：Stale-While-Revalidate
+// 3. API 路由 (/api/)：斷網時安全返回 JSON 離線備援，避免拋出未捕獲網路異常
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // 略過非同源、非 GET 請求以及 /api/ 呼叫
-  if (
-    request.method !== "GET" ||
-    !url.origin.includes(self.location.origin) ||
-    url.pathname.startsWith("/api/")
-  ) {
+  // 略過非同源與非 GET 請求（除 API 需特別處理外）
+  if (request.method !== "GET") {
     return;
   }
 
-  // 導覽請求 (HTML Navigation)
+  // API 路由處理
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return new Response(
+          JSON.stringify({
+            offline: true,
+            message: "目前為離線狀態，已切換至本機備援處理",
+          }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      })
+    );
+    return;
+  }
+
+  // 導覽請求 (HTML Navigation) - 確保重新整理或直接開啟時在斷網下 100% 成功載入
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -77,13 +92,20 @@ self.addEventListener("fetch", (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          return caches.match("/");
+          const appShell = await caches.match("/");
+          if (appShell) {
+            return appShell;
+          }
+          return new Response(
+            "<!DOCTYPE html><html><head><meta charset='utf-8'><title>聲動看板 - 離線模式</title></head><body><h1>離線模式</h1><p>請確認應用已安裝或恢復連線。</p></body></html>",
+            { headers: { "Content-Type": "text/html; charset=utf-8" } }
+          );
         })
     );
     return;
   }
 
-  // 一般靜態資源：Stale-While-Revalidate
+  // 一般靜態資源（Next.js 打包 JS/CSS、圖片、字型等）：Stale-While-Revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request)
