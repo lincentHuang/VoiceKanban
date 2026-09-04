@@ -86,10 +86,12 @@ src/features/kanban/
 - [x] **AC-KANBAN-13**：任務詳細編輯彈窗之子任務待辦清單維持極簡純淨外觀（無多餘把手與箭頭），支援長按 500ms 進行垂直上下拖曳排序，短按快速勾選完成，資料即時持久化與雲端同步。
 - [x] **AC-KANBAN-14**：任務詳細視窗支援「展開為狀態欄位（Expand）」將卡片及子任務升級為新欄位與獨立卡片；欄位選單支援「聚合為單一任務卡（Aggregate）」將欄位收斂為收件匣內之單一任務卡片並安全保全深層屬性。
 - [x] **AC-KANBAN-15**：桌機版支援在看板畫布空白處、欄位間隙按住滑鼠左鍵自由拖曳滑動（Pan/Scroll），即時 1:1 移動並帶有釋放慣性滑行，與卡片及欄位拖曳、按鈕互動完全隔離防衝突。
-- [x] **AC-KANBAN-16**：**多入口任務即時刪除與雲端徹底抹除 (Multi-Entry Task Deletion & True Cloud Removal)**：
-  - 任務卡片本體（`TaskCard` 卡片與橫列模式）支援懸停/觸控一鍵快速刪除按鈕。
-  - 任務編輯視窗（`EditTaskModal`）頂部操作列常設刪除垃圾桶圖示與彈出式防呆確認窗，視窗底部同時保留確認刪除區塊。
-  - 表格視圖（`TableView`）與清單視圖（`ListView`）支援行內一鍵刪除。
-  - 多選批次操作（`BatchActionBar`）支援批次刪除多筆任務。
+- [x] **AC-KANBAN-16**：**安全任務刪除防呆與全平台確認 Modal 一致性 (Safe Task Deletion & Unified Confirmation Modal)**：
+  - 卡片本體與各檢視（`TaskCard` 直式卡片、橫列模式、`TableView`、`ListView`）全面移除直接裸露的未確認刪除按鈕，杜絕滑鼠/觸控誤點造成任務誤刪。
+  - 任務刪除收斂為兩大安全入口：
+    1. 進入卡片詳情頁（`EditTaskModal`）點擊頂部工具列刪除圖示。
+    2. 透過批次選取列（`BatchActionBar`）點擊批次刪除圖示。
+  - 刪除防呆確認 Modal 於桌機端（Desktop）與手機端（Mobile）維持完全一致的中央彈出視窗（含暗色半透明遮罩、不可復原警告文案、紅色確認與取消按鈕），修復桌機版先前因 `fixed` 座標與 `overflow-hidden` 裁切導致確認視窗無法顯示之問題。
+  - 支援 ESC 鍵與點擊遮罩即時取消關閉確認視窗。
   - 雲端同步層（`syncService`）徹底抹除已刪除任務鍵值，杜絕 Firestore `merge: true` 導致已刪除任務被雲端重疊復活之異常。
 

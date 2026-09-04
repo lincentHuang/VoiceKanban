@@ -4,7 +4,7 @@ import React from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { Task, Priority } from "@/core/types/task";
 import { isoToDateTimeLocal, getDueDateStatus } from "@/core/utils/dateUtils";
-import { Check, Calendar, Trash2, Edit3, Flag, CheckCircle2 } from "lucide-react";
+import { Check, Calendar, Edit3, Flag, CheckCircle2 } from "lucide-react";
 import confetti from "canvas-confetti";
 
 export const ListView: React.FC = () => {
@@ -13,7 +13,6 @@ export const ListView: React.FC = () => {
     activeBoardId,
     getActiveBoardColumns,
     toggleTaskComplete,
-    deleteTask,
     setEditingTaskId,
     searchQuery,
     priorityFilter,
@@ -152,16 +151,7 @@ export const ListView: React.FC = () => {
                       {task.priority === "high" ? "高" : task.priority === "medium" ? "中" : "低"}
                     </span>
 
-                    {/* Action buttons */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteTask(task.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-400 hover:text-rose-600 transition-opacity"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+
                   </div>
                 </div>
               ))}

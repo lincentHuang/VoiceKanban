@@ -212,8 +212,14 @@ export const SidebarInbox: React.FC = () => {
           : ""
       }`}
     >
-      {/* Inner Fixed Width Content Wrapper to Prevent Reflow During Width Animation */}
-      <div className="w-[294px] min-w-[294px] h-full flex flex-col">
+      {/* Inner Content Wrapper: w-full on mobile to eliminate mysterious blank whitespace, fixed on desktop to prevent reflow during sidebar collapse */}
+      <div
+        className={`h-full flex flex-col ${
+          isMobile
+            ? "w-full min-w-0"
+            : "w-full sm:w-[294px] sm:min-w-[294px]"
+        }`}
+      >
         {/* Inbox Header */}
         <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
           <div className="flex items-center gap-2">

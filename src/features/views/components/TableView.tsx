@@ -4,7 +4,7 @@ import React from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { Task, ColumnId } from "@/core/types/task";
 import { isoToDateTimeLocal, getDueDateStatus } from "@/core/utils/dateUtils";
-import { Check, Calendar, Trash2, Edit3, CheckSquare2, Plus, Star } from "lucide-react";
+import { Check, Calendar, Edit3, CheckSquare2, Plus, Star } from "lucide-react";
 import confetti from "canvas-confetti";
 import {
   Select,
@@ -21,7 +21,6 @@ export const TableView: React.FC = () => {
     getActiveBoardColumns,
     toggleTaskComplete,
     toggleTaskStarred,
-    deleteTask,
     updateTask,
     setEditingTaskId,
     openAddTaskModal,
@@ -233,13 +232,6 @@ export const TableView: React.FC = () => {
                           title="詳細資訊"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => deleteTask(task.id)}
-                          className="p-1 rounded text-slate-400 hover:text-rose-600"
-                          title="刪除"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>

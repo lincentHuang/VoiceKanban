@@ -263,7 +263,9 @@ export const EditTaskModal: React.FC = () => {
   };
 
   useEscapeKey(() => {
-    if (isCoverModalOpen) {
+    if (isDeleteConfirm) {
+      setIsDeleteConfirm(false);
+    } else if (isCoverModalOpen) {
       setIsCoverModalOpen(false);
     } else if (isMovePopoverOpen) {
       setIsMovePopoverOpen(false);
@@ -658,7 +660,7 @@ export const EditTaskModal: React.FC = () => {
                         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs sm:bg-transparent"
                         onClick={() => setIsMovePopoverOpen(false)}
                       />
-                      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-56 max-h-[80vh] sm:max-h-none overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in space-y-1">
+                      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:absolute sm:translate-y-0 sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-56 max-h-[80vh] sm:max-h-none overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in space-y-1">
                         <div className="flex items-center justify-between pb-1 px-1 border-b border-slate-100 dark:border-slate-800 sm:border-0 sm:pb-0">
                           <span className="text-xs font-bold text-slate-800 dark:text-slate-100 sm:text-[10px] sm:text-slate-400">選取目標欄位</span>
                           <button
@@ -712,7 +714,7 @@ export const EditTaskModal: React.FC = () => {
                         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs sm:bg-transparent"
                         onClick={() => setIsCoverModalOpen(false)}
                       />
-                      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-80 max-w-[calc(100vw-2rem)] max-h-[85vh] sm:max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
+                      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:absolute sm:translate-y-0 sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-80 max-w-[calc(100vw-2rem)] max-h-[85vh] sm:max-h-[380px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in space-y-3.5">
                         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                           <span className="text-xs font-bold text-slate-800 dark:text-slate-100">設定卡片封面與比例</span>
                           <button
@@ -880,60 +882,21 @@ export const EditTaskModal: React.FC = () => {
                   <Columns3 className="w-6 h-6" />
                 </button>
 
-                {/* Delete Task Popover Button (Direct Large Icon in Top Toolbar) */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDeleteConfirm(!isDeleteConfirm);
-                      setIsCoverModalOpen(false);
-                      setIsMovePopoverOpen(false);
-                      setIsExpandConfirm(false);
-                    }}
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none"
-                    title="刪除卡片"
-                    aria-label="刪除卡片"
-                  >
-                    <Trash2 className="w-6 h-6" />
-                  </button>
-
-                  {isDeleteConfirm && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs sm:bg-transparent"
-                        onClick={() => setIsDeleteConfirm(false)}
-                      />
-                      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:inset-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-64 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 rounded-2xl shadow-2xl p-3.5 z-50 animate-in fade-in space-y-2.5">
-                        <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-xs">
-                          <Trash2 className="w-4 h-4" />
-                          <span>確定刪除此任務？</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                          刪除後將無法復原「{title || task.title}」及其所有待辦紀錄。
-                        </p>
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              deleteTask(task.id);
-                              setEditingTaskId(null);
-                            }}
-                            className="flex-1 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors shadow-xs"
-                          >
-                            確認刪除
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setIsDeleteConfirm(false)}
-                            className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium hover:bg-slate-200 transition-colors"
-                          >
-                            取消
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                {/* Delete Task Button (Direct Large Icon in Top Toolbar) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDeleteConfirm(true);
+                    setIsCoverModalOpen(false);
+                    setIsMovePopoverOpen(false);
+                    setIsExpandConfirm(false);
+                  }}
+                  className="p-1 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-transform duration-150 hover:scale-115 active:scale-90 focus:outline-none cursor-pointer"
+                  title="刪除卡片"
+                  aria-label="刪除卡片"
+                >
+                  <Trash2 className="w-6 h-6" />
+                </button>
 
                 {/* Close Button */}
                 <button
@@ -1368,6 +1331,51 @@ export const EditTaskModal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal (Uniform Centered Dialog for Desktop & Mobile) */}
+      {isDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsDeleteConfirm(false);
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 rounded-2xl shadow-2xl p-5 space-y-3 animate-in zoom-in-95 duration-150 text-slate-800 dark:text-slate-100"
+          >
+            <div className="flex items-center gap-2.5 text-rose-600 dark:text-rose-400 font-bold text-base">
+              <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <span>確定刪除此任務？</span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              刪除後將無法復原「<span className="font-semibold text-slate-800 dark:text-slate-200">{title || task.title}</span>」及其所有待辦紀錄。
+            </p>
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  deleteTask(task.id);
+                  setEditingTaskId(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer"
+              >
+                確認刪除
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirm(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-98 transition-all cursor-pointer"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
