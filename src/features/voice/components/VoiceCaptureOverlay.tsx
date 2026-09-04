@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   BrainCircuit,
   Volume2,
+  Trash2,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import {
@@ -326,8 +327,35 @@ export const VoiceCaptureOverlay: React.FC = () => {
   const applyExtractResult = (result: VoiceExtractResult, notice?: string) => {
     setExtractedTask(result);
     setEditTitle(result.title);
-    setEditBoardId(boards.some((b) => b.id === result.targetBoardId) ? result.targetBoardId : activeBoardId);
-    setEditColumnId(voiceTargetColumnId || result.targetColumnId || "inbox");
+
+    const targetBoardId = boards.some((b) => b.id === result.targetBoardId)
+      ? result.targetBoardId
+      : activeBoardId || (boards[0]?.id ?? "board-work");
+    setEditBoardId(targetBoardId);
+
+    const matchedBoard = boards.find((b) => b.id === targetBoardId) || boards[0];
+    const boardCols = matchedBoard?.columns && matchedBoard.columns.length > 0 ? matchedBoard.columns : DEFAULT_COLUMNS;
+    const validColIds = ["inbox", ...boardCols.map((c) => c.id)];
+
+    const transcriptLower = (result.transcript || "").toLowerCase();
+    const isExplicitInbox =
+      transcriptLower.includes("收件") ||
+      transcriptLower.includes("inbox") ||
+      transcriptLower.includes("靈感") ||
+      transcriptLower.includes("隨手記");
+
+    let chosenColId: ColumnId = "inbox";
+    if (result.targetColumnId && result.targetColumnId !== "inbox" && validColIds.includes(result.targetColumnId)) {
+      chosenColId = result.targetColumnId;
+    } else if (voiceTargetColumnId && validColIds.includes(voiceTargetColumnId)) {
+      chosenColId = voiceTargetColumnId;
+    } else if (isExplicitInbox) {
+      chosenColId = "inbox";
+    } else if (boardCols.length > 0) {
+      chosenColId = boardCols[0].id as ColumnId;
+    }
+
+    setEditColumnId(chosenColId);
     setPriority(result.priority || "medium");
     setEditDueDate(result.dueDate || "");
     setEditTags(result.tags && result.tags.length > 0 ? result.tags : []);
@@ -420,62 +448,28 @@ export const VoiceCaptureOverlay: React.FC = () => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-7 relative overflow-hidden"
+        className="w-full max-w-xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-4 sm:p-6 relative overflow-hidden"
       >
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={handleClose}
-          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Mode Selector & Status Header */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800 pr-8 shrink-0">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-lime-100 dark:bg-lime-950/60 text-lime-800 dark:text-lime-300 border border-lime-300/60">
-              <BrainCircuit className="w-3.5 h-3.5 text-lime-600" />
-              <span>離線半自動學習 (零 API 依賴)</span>
-            </span>
+            <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-orange-600">
+              <Mic className="w-4 h-4" />
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+              語音輸入
+            </h2>
           </div>
 
-          {/* Language Switcher */}
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl text-[11px] font-semibold">
-            <button
-              type="button"
-              onClick={() => setVoiceLanguage("auto")}
-              className={`px-2 py-0.5 rounded-lg transition-all ${
-                voiceLanguage === "auto"
-                  ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              🌐 自動
-            </button>
-            <button
-              type="button"
-              onClick={() => setVoiceLanguage("zh-TW")}
-              className={`px-2 py-0.5 rounded-lg transition-all ${
-                voiceLanguage === "zh-TW"
-                  ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              🇹🇼 中文
-            </button>
-            <button
-              type="button"
-              onClick={() => setVoiceLanguage("en-US")}
-              className={`px-2 py-0.5 rounded-lg transition-all ${
-                voiceLanguage === "en-US"
-                  ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              🇺🇸 EN
-            </button>
-          </div>
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={handleClose}
+            className="p-1.5 sm:p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="關閉"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* State 1: Recording / Active Listening */}
@@ -488,16 +482,8 @@ export const VoiceCaptureOverlay: React.FC = () => {
               </div>
             </div>
 
-            <div className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono mb-1">
+            <div className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono mb-3">
               {formatTimer(recordingDuration)}
-            </div>
-
-            {/* Live Detected Language Indicator */}
-            <div className="mb-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                <Globe className="w-3 h-3 text-slate-400" />
-                <span>即時語系：{liveLanguage === "zh-TW" ? "🇹🇼 繁體中文" : "🇺🇸 English"}</span>
-              </span>
             </div>
 
             {/* 3-Second Silence Detection Guidance Banner (AC-5.2) */}
@@ -554,10 +540,10 @@ export const VoiceCaptureOverlay: React.FC = () => {
           <div className="flex flex-col items-center text-center py-10">
             <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
-              本地半自動學習引擎推論中...
+              語音辨識與分析中...
             </h3>
             <p className="text-xs text-slate-500 max-w-xs">
-              正在自動辨識中英語系、提取到期時間、比對看板權重並掛載特徵標籤...
+              正在提取任務標題、到期時間與目標欄位...
             </p>
           </div>
         )}
@@ -597,148 +583,131 @@ export const VoiceCaptureOverlay: React.FC = () => {
         {/* State 4 & 5: Preview & Active Confirmation (The Grill-me Consensus Card) */}
         {voiceState === "preview" && (
           <div className="flex-1 flex flex-col min-h-0 text-left animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-orange-600">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    語音萃取與半自動學習預覽
-                  </h3>
-                  <p className="text-xs text-slate-500">可於下方微調欄位，確認後系統將自動學習強化特徵記憶</p>
-                </div>
-              </div>
-
-              {/* Language Tag */}
-              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 shrink-0">
-                {extractedTask?.detectedLanguage === "en-US" ? "🇺🇸 English" : "🇹🇼 繁體中文"}
-              </span>
-            </div>
-
             {/* Scrollable Preview Body */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3">
-
-            {noticeMessage && (
-              <div className="mb-3 p-2.5 rounded-xl bg-lime-50 dark:bg-lime-950/30 border border-lime-200/80 dark:border-lime-800 text-[11px] text-lime-800 dark:text-lime-300 flex items-center gap-1.5">
-                <BrainCircuit className="w-3.5 h-3.5 shrink-0 text-lime-600" />
-                <span>{noticeMessage}</span>
-              </div>
-            )}
-
-            {/* Transcript Quote */}
-            {extractedTask?.transcript && (
-              <div className="mb-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                    <Volume2 className="w-3 h-3" />
+              {/* Transcript Quote */}
+              {extractedTask?.transcript && (
+                <div className="mb-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                  <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mb-1">
+                    <Volume2 className="w-3.5 h-3.5" />
                     口述逐字稿：
                   </span>
-                  {extractedTask.isOfflineLearned && (
-                    <span className="text-[10px] font-bold text-lime-600 bg-lime-100 dark:bg-lime-950/40 px-2 py-0.5 rounded-full">
-                      ✨ 本地半自動模型已套用
-                    </span>
-                  )}
+                  <p className="text-xs text-slate-700 dark:text-slate-200 italic leading-relaxed">
+                    &ldquo;{extractedTask.transcript}&rdquo;
+                  </p>
                 </div>
-                <p className="text-xs text-slate-700 dark:text-slate-200 italic leading-relaxed">
-                  &ldquo;{extractedTask.transcript}&rdquo;
-                </p>
-              </div>
-            )}
+              )}
 
-            {/* Editable Title */}
-            <div className="mb-3">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                任務標題
-              </label>
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-orange-500"
-              />
-            </div>
-
-            {/* Dropdown Pickers: Board & Column */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <Layers className="w-3.5 h-3.5 text-slate-400" />
-                  目標看板
+              {/* Editable Title */}
+              <div className="mb-3">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  任務標題
                 </label>
-                <Select
-                  value={editBoardId}
-                  onValueChange={(val) => setEditBoardId(val)}
-                >
-                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {boards.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.icon} {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  目標欄位
-                </label>
-                <Select
-                  value={editColumnId}
-                  onValueChange={(val) => setEditColumnId(val as ColumnId)}
-                >
-                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DEFAULT_COLUMNS.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.icon} {c.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Priority & Due Date */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <Flag className="w-3.5 h-3.5 text-slate-400" />
-                  優先等級
-                </label>
-                <Select
-                  value={editPriority}
-                  onValueChange={(val) => setPriority(val as Priority)}
-                >
-                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high">🔴 高優先級 (High)</SelectItem>
-                    <SelectItem value="medium">🟡 中優先級 (Medium)</SelectItem>
-                    <SelectItem value="low">🟢 低優先級 (Low)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 mb-1">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <span>到期時間</span>
-                </label>
-                <DateTimePicker
-                  value={editDueDate}
-                  onChange={(dates) => setEditDueDate(dates.dueDate || "")}
-                  placeholder="點擊選擇日期與時間..."
-                  align="right"
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-orange-500"
                 />
               </div>
+
+            {/* Dropdown Pickers: Board & Column */}
+            {(() => {
+              const currentSelectedBoard = boards.find((b) => b.id === editBoardId) || boards.find((b) => b.id === activeBoardId) || boards[0];
+              const currentBoardColumns = currentSelectedBoard?.columns && currentSelectedBoard.columns.length > 0 ? currentSelectedBoard.columns : DEFAULT_COLUMNS;
+              const availableColumns = [
+                { id: "inbox" as ColumnId, title: "靈感收件匣", icon: "📥" },
+                ...currentBoardColumns,
+              ];
+
+              return (
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <Layers className="w-3.5 h-3.5 text-slate-400" />
+                      目標看板
+                    </label>
+                    <Select
+                      value={editBoardId}
+                      onValueChange={(val) => {
+                        setEditBoardId(val);
+                        const newBoard = boards.find((b) => b.id === val);
+                        if (newBoard && newBoard.columns && newBoard.columns.length > 0) {
+                          if (!newBoard.columns.some((c) => c.id === editColumnId) && editColumnId !== "inbox") {
+                            setEditColumnId(newBoard.columns[0].id);
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {boards.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.icon} {b.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      目標欄位
+                    </label>
+                    <Select
+                      value={editColumnId}
+                      onValueChange={(val) => setEditColumnId(val as ColumnId)}
+                    >
+                      <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableColumns.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.icon || "📋"} {c.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Priority & Due Date (Stacked on Separate Rows) */}
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                <Flag className="w-3.5 h-3.5 text-slate-400" />
+                優先等級
+              </label>
+              <Select
+                value={editPriority}
+                onValueChange={(val) => setPriority(val as Priority)}
+              >
+                <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high">🔴 高優先級 (High)</SelectItem>
+                  <SelectItem value="medium">🟡 中優先級 (Medium)</SelectItem>
+                  <SelectItem value="low">🟢 低優先級 (Low)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 mb-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>到期時間</span>
+              </label>
+              <DateTimePicker
+                value={editDueDate}
+                onChange={(dates) => setEditDueDate(dates.dueDate || "")}
+                placeholder="點擊選擇日期與時間..."
+                align="left"
+              />
             </div>
 
             {/* Tags Pills & Adding */}
@@ -778,35 +747,40 @@ export const VoiceCaptureOverlay: React.FC = () => {
             </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+            {/* Action Buttons: Responsive for Mobile Icons & Simplified Confirm Button */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0 gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setVoiceState("recording");
                   startRecording();
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                className="flex items-center justify-center gap-1.5 p-2 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+                title="重新錄音"
+                aria-label="重新錄音"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>重新錄音</span>
+                <RotateCcw className="w-4 h-4 text-slate-500 shrink-0" />
+                <span className="hidden sm:inline">重新錄音</span>
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
+                  className="flex items-center justify-center gap-1.5 p-2 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors shrink-0"
+                  title="捨棄"
+                  aria-label="捨棄"
                 >
-                  捨棄
+                  <Trash2 className="w-4 h-4 text-slate-500 hover:text-rose-500 shrink-0" />
+                  <span className="hidden sm:inline">捨棄</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmAdd}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-base44-lime hover:bg-base44-limeDark text-slate-900 font-bold text-xs sm:text-sm shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  className="flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-full bg-base44-lime hover:bg-base44-limeDark text-slate-900 font-bold text-xs sm:text-sm shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0"
                 >
                   <Check className="w-4 h-4 text-slate-900 stroke-[3]" />
-                  <span>確認加入看板 (自動強化學習)</span>
+                  <span>確認</span>
                 </button>
               </div>
             </div>

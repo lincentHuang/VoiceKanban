@@ -1,0 +1,223 @@
+<svg viewBox="0 0 1120 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="系統全景架構圖">
+        <defs>
+          <pattern id="grid-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1" fill="#E2E8F0"/>
+          </pattern>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#64748B"/>
+          </marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#EA580C"/>
+          </marker>
+          <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#2563EB"/>
+          </marker>
+          <marker id="arrow-emerald" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#059669"/>
+          </marker>
+          <filter id="card-shadow" x="-5%" y="-5%" width="110%" height="115%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.04"/>
+          </filter>
+        </defs>
+
+        <!-- 背景網格 -->
+        <rect width="100%" height="100%" fill="#FAFAFC"/>
+        <rect width="100%" height="100%" fill="url(#grid-dots)" opacity="0.6"/>
+
+        <!-- ==================== 架構分層區域 (Zone Backgrounds) ==================== -->
+        <!-- 第 1 層：前端 UI 與功能模組層 -->
+        <rect x="30" y="30" width="1060" height="150" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2"/>
+        <rect x="45" y="22" width="250" height="18" rx="4" fill="#F1F5F9"/>
+        <text x="170" y="35" fill="#475569" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700" text-anchor="middle" letter-spacing="0.05em">1. 前端 UI 與功能模組層 (Presentation Layer)</text>
+
+        <!-- 第 2 層：狀態引擎與客戶端核心服務 -->
+        <rect x="30" y="205" width="1060" height="175" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2"/>
+        <rect x="45" y="197" width="280" height="18" rx="4" fill="#F1F5F9"/>
+        <text x="185" y="210" fill="#475569" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700" text-anchor="middle" letter-spacing="0.05em">2. 狀態引擎與客戶端服務層 (State & Core Services)</text>
+
+        <!-- 第 3 層：Next.js 伺服端 API 路由 -->
+        <rect x="30" y="405" width="480" height="280" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2"/>
+        <rect x="45" y="397" width="240" height="18" rx="4" fill="#F1F5F9"/>
+        <text x="165" y="410" fill="#475569" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700" text-anchor="middle" letter-spacing="0.05em">3. Next.js 伺服端路由 (API Route Handlers)</text>
+
+        <!-- 第 4 層：雲端平台與外部 AI 服務 -->
+        <rect x="540" y="405" width="550" height="280" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2"/>
+        <rect x="555" y="397" width="250" height="18" rx="4" fill="#F1F5F9"/>
+        <text x="680" y="410" fill="#475569" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700" text-anchor="middle" letter-spacing="0.05em">4. 雲端平台與外部服務 (Cloud & AI Services)</text>
+
+        <!-- ==================== 正交圓角導線 (Orthogonal Connectors) ==================== -->
+        <!-- UI -> State Store (垂直調用) -->
+        <path d="M 230,145 V 235" fill="none" stroke="#2563EB" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+        <path d="M 560,145 V 235" fill="none" stroke="#EA580C" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+        <path d="M 890,145 V 235" fill="none" stroke="#64748B" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- 狀態中心 -> LocalStorage 本地存儲 -->
+        <path d="M 170,345 V 360 H 130 V 445" fill="none" stroke="#64748B" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+        <!-- 語音模組 -> Next.js 語音解析 API (/api/voice/extract) -->
+        <path d="M 430,345 V 445" fill="none" stroke="#EA580C" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+
+        <!-- 同步服務 -> Firestore 雲端資料庫 -->
+        <path d="M 850,345 V 445" fill="none" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+
+        <!-- 伺服端 API -> Google Gemini AI 雲端模型 -->
+        <path d="M 440,500 H 560" fill="none" stroke="#EA580C" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+
+        <!-- 認證服務 -> Firebase Auth -->
+        <path d="M 970,345 V 565" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- 瀏覽器 Web Speech -> 語音擷取服務 -->
+        <path d="M 700,565 V 535 H 390 V 345" fill="none" stroke="#64748B" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+        <!-- 導線標籤 (遮罩背景) -->
+        <rect x="195" y="180" width="70" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+        <text x="230" y="191" fill="#2563EB" font-size="8.5" font-family="'Noto Sans TC', sans-serif" font-weight="700" text-anchor="middle">狀態操作</text>
+
+        <rect x="520" y="180" width="80" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+        <text x="560" y="191" fill="#EA580C" font-size="8.5" font-family="'Noto Sans TC', sans-serif" font-weight="700" text-anchor="middle">語音意圖傳遞</text>
+
+        <rect x="850" y="180" width="80" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+        <text x="890" y="191" fill="#64748B" font-size="8.5" font-family="'Noto Sans TC', sans-serif" font-weight="700" text-anchor="middle">狀態訂閱/同步</text>
+
+        <rect x="465" y="492" width="85" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+        <text x="507" y="503" fill="#EA580C" font-size="8.5" font-family="'Noto Sans TC', sans-serif" font-weight="700" text-anchor="middle">NLP 結構化解析</text>
+
+        <!-- ==================== 架構模組節點 (Components & Nodes) ==================== -->
+        
+        <!-- [第 1 層：前端功能模組] -->
+        <!-- 看板與雙重視圖 (Feature 2 & 6) -->
+        <g filter="url(#card-shadow)">
+          <rect x="50" y="55" width="220" height="90" rx="8" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.5"/>
+          <text x="65" y="77" fill="#2563EB" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">功能模組 · 看板與日曆</text>
+          <text x="65" y="96" fill="#0F172A" font-size="13" font-family="'Noto Sans TC', sans-serif" font-weight="700">看板與行事曆雙重視圖</text>
+          <text x="65" y="113" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">看板主容器 · 行事曆排程視圖</text>
+          <text x="65" y="128" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif">Base36 排序 · 幽靈佔位與簡約插槽</text>
+        </g>
+
+        <!-- AI 語音與速記 (Feature 4 & 5) - 橘色焦點 -->
+        <g filter="url(#card-shadow)">
+          <rect x="290" y="55" width="240" height="90" rx="8" fill="#FFF7ED" stroke="#EA580C" stroke-width="1.8"/>
+          <text x="305" y="77" fill="#EA580C" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">核心亮點 · AI 智慧輸入</text>
+          <text x="305" y="96" fill="#0F172A" font-size="13" font-family="'Noto Sans TC', sans-serif" font-weight="700">語音擷取與自然語言速記</text>
+          <text x="305" y="113" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">語音浮層 · 頂部 Hero 自然語言輸入</text>
+          <text x="305" y="128" fill="#EA580C" font-size="9" font-family="'Noto Sans TC', sans-serif">Web 語音辨識 · 聲波頻譜視覺化</text>
+        </g>
+
+        <!-- 收件匣與筆記 (Feature 3 & 8) -->
+        <g filter="url(#card-shadow)">
+          <rect x="550" y="55" width="240" height="90" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+          <text x="565" y="77" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">功能模組 · 收件匣與筆記</text>
+          <text x="565" y="96" fill="#0F172A" font-size="13" font-family="'Noto Sans TC', sans-serif" font-weight="700">側邊收件匣與 Markdown 筆記</text>
+          <text x="565" y="113" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">平滑動畫側邊欄 · 內嵌筆記編輯器</text>
+          <text x="565" y="128" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif">子任務待辦清單 · 超長漸層折疊展開</text>
+        </g>
+
+        <!-- 會話認證與設定 (Feature 1 & 7) -->
+        <g filter="url(#card-shadow)">
+          <rect x="810" y="55" width="260" height="90" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+          <text x="825" y="77" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">安全模組 · 認證與安全設定</text>
+          <text x="825" y="96" fill="#0F172A" font-size="13" font-family="'Noto Sans TC', sans-serif" font-weight="700">使用者認證與 BYOK 金鑰設定</text>
+          <text x="825" y="113" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">訪客登陸導引 · 設定彈窗 · 帳號綁定</text>
+          <text x="825" y="128" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif">訪客零摩擦體驗 · 客戶端 AES 金鑰加密</text>
+        </g>
+
+        <!-- [第 2 層：狀態引擎與核心服務] -->
+        <!-- Zustand 全域狀態中心 (核心藍色) -->
+        <g filter="url(#card-shadow)">
+          <rect x="50" y="235" width="310" height="110" rx="8" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+          <text x="65" y="258" fill="#2563EB" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">全域核心 · 狀態管理引擎</text>
+          <text x="65" y="280" fill="#0F172A" font-size="14" font-family="'Noto Sans TC', sans-serif" font-weight="700">useKanbanStore (Zustand 狀態中心)</text>
+          <text x="65" y="299" fill="#334155" font-size="10" font-family="'Noto Sans TC', sans-serif">看板 / 欄位 / 任務增刪改查 · 多選批次操作狀態</text>
+          <text x="65" y="315" fill="#334155" font-size="10" font-family="'Noto Sans TC', sans-serif">Lexorank Base36 毫秒級重排 · 全域標籤與關鍵字搜尋</text>
+          <text x="65" y="332" fill="#2563EB" font-size="9" font-family="'Noto Sans TC', sans-serif">樂觀 UI 更新 · 本地與雲端雙軌水合機制</text>
+        </g>
+
+        <!-- 語音與自主學習引擎 -->
+        <g filter="url(#card-shadow)">
+          <rect x="380" y="235" width="280" height="110" rx="8" fill="#FFFFFF" stroke="#EA580C" stroke-width="1.5"/>
+          <text x="395" y="258" fill="#EA580C" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">客戶端服務 · 語音與學習引擎</text>
+          <text x="395" y="280" fill="#0F172A" font-size="14" font-family="'Noto Sans TC', sans-serif" font-weight="700">VoiceService 與學習引擎</text>
+          <text x="395" y="299" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">Web Audio 音訊視覺化 · 離線正規 NLP 備援</text>
+          <text x="395" y="315" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">回饋學習機制：依使用者習慣自動調整欄位分流</text>
+          <text x="395" y="332" fill="#EA580C" font-size="9" font-family="'Noto Sans TC', sans-serif">客戶端金鑰解密與請求管線處理</text>
+        </g>
+
+        <!-- 雙向同步與認證服務 -->
+        <g filter="url(#card-shadow)">
+          <rect x="680" y="235" width="390" height="110" rx="8" fill="#FFFFFF" stroke="#059669" stroke-width="1.5"/>
+          <text x="695" y="258" fill="#059669" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">客戶端服務 · 同步與認證服務</text>
+          <text x="695" y="280" fill="#0F172A" font-size="14" font-family="'Noto Sans TC', sans-serif" font-weight="700">syncService 與 FirebaseAuth 服務</text>
+          <text x="695" y="299" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">訪客本機 LocalStorage 持久化 · 雲端 Firestore 即時監聽</text>
+          <text x="695" y="315" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">資料衝突自動裁決 · 訪客資料一鍵升級無縫綁定至雲端</text>
+          <text x="695" y="332" fill="#059669" font-size="9" font-family="'Noto Sans TC', sans-serif">離線安全佇列 · 跨裝置雙向即時串流同步</text>
+        </g>
+
+        <!-- [第 3 層：Next.js 伺服端 API 路由] -->
+        <!-- 本地存儲節點 -->
+        <g filter="url(#card-shadow)">
+          <rect x="50" y="445" width="180" height="90" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+          <text x="65" y="468" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">本機持久化存儲</text>
+          <text x="65" y="488" fill="#0F172A" font-size="13" font-family="'Geist Mono', monospace" font-weight="600">LocalStorage</text>
+          <text x="65" y="506" fill="#64748B" font-size="9.5" font-family="'Noto Sans TC', sans-serif">訪客離線任務資料、</text>
+          <text x="65" y="520" fill="#64748B" font-size="9.5" font-family="'Noto Sans TC', sans-serif">AES 加密之 BYOK 金鑰</text>
+        </g>
+
+        <!-- 語音結構化解析 API -->
+        <g filter="url(#card-shadow)">
+          <rect x="250" y="445" width="240" height="100" rx="8" fill="#FFF7ED" stroke="#EA580C" stroke-width="1.5"/>
+          <text x="265" y="468" fill="#EA580C" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">API 路由 · 語音結構化解析</text>
+          <text x="265" y="488" fill="#0F172A" font-size="13" font-family="'Noto Sans TC', sans-serif" font-weight="700">/api/voice/extract</text>
+          <text x="265" y="506" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">提煉純淨任務標題 · 智慧匹配目標欄位</text>
+          <text x="265" y="522" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">提取到期日與優先級 · 自動過濾動作贅詞</text>
+          <text x="265" y="538" fill="#EA580C" font-size="9" font-family="'Noto Sans TC', sans-serif">支援自帶金鑰 (BYOK) 標頭透傳</text>
+        </g>
+
+        <!-- BYOK 金鑰驗證 API -->
+        <g filter="url(#card-shadow)">
+          <rect x="250" y="565" width="240" height="90" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+          <text x="265" y="588" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">API 路由 · 金鑰驗證</text>
+          <text x="265" y="608" fill="#0F172A" font-size="13" font-family="'Noto Sans TC', sans-serif" font-weight="700">/api/user/key</text>
+          <text x="265" y="626" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">自帶金鑰 (BYOK) 完整性與有效性驗證</text>
+          <text x="265" y="642" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif">AES 簽章校驗 · Gemini 模型配額測試</text>
+        </g>
+
+        <!-- [第 4 層：雲端平台與外部 AI 服務] -->
+        <!-- Google Gemini AI 雲端模型 -->
+        <g filter="url(#card-shadow)">
+          <rect x="560" y="445" width="240" height="100" rx="8" fill="#FFF7ED" stroke="#EA580C" stroke-width="1.8"/>
+          <text x="575" y="468" fill="#EA580C" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">外部服務 · 生成式 AI 模型</text>
+          <text x="575" y="488" fill="#0F172A" font-size="14" font-family="'Noto Sans TC', sans-serif" font-weight="700">Google Gemini AI</text>
+          <text x="575" y="506" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">Gemini 2.5 Flash / Pro 頂級模型</text>
+          <text x="575" y="522" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">零樣本 JSON 結構化意圖解析</text>
+          <text x="575" y="538" fill="#EA580C" font-size="9" font-family="'Noto Sans TC', sans-serif">多語系自然語言辨識與上下文理解</text>
+        </g>
+
+        <!-- Firebase Firestore 雲端資料庫 -->
+        <g filter="url(#card-shadow)">
+          <rect x="820" y="445" width="250" height="100" rx="8" fill="#ECFDF5" stroke="#059669" stroke-width="1.5"/>
+          <text x="835" y="468" fill="#059669" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">雲端資料庫 · NoSQL</text>
+          <text x="835" y="488" fill="#0F172A" font-size="14" font-family="'Noto Sans TC', sans-serif" font-weight="700">Cloud Firestore</text>
+          <text x="835" y="506" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">即時快照監聽 (Snapshot Listeners)</text>
+          <text x="835" y="522" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">使用者看板、狀態欄位與任務集合</text>
+          <text x="835" y="538" fill="#059669" font-size="9" font-family="'Noto Sans TC', sans-serif">多裝置毫秒級無縫漫遊與同步</text>
+        </g>
+
+        <!-- 瀏覽器原生 Web 音訊 API -->
+        <g filter="url(#card-shadow)">
+          <rect x="560" y="565" width="240" height="90" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+          <text x="575" y="588" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">瀏覽器原生執行環境</text>
+          <text x="575" y="608" fill="#0F172A" font-size="13" font-family="'Noto Sans TC', sans-serif" font-weight="700">Web 語音與音訊 API</text>
+          <text x="575" y="626" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">SpeechRecognition 語音即時辨識串流</text>
+          <text x="575" y="642" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif">AudioContext 動態頻譜波形分析</text>
+        </g>
+
+        <!-- Firebase 身分認證 -->
+        <g filter="url(#card-shadow)">
+          <rect x="820" y="565" width="250" height="90" rx="8" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+          <text x="835" y="588" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif" font-weight="700">雲端身分認證服務</text>
+          <text x="835" y="608" fill="#0F172A" font-size="13" font-family="'Noto Sans TC', sans-serif" font-weight="700">Firebase 認證 (Auth)</text>
+          <text x="835" y="626" fill="#64748B" font-size="10" font-family="'Noto Sans TC', sans-serif">Google OAuth 快速登入與 Email 驗證</text>
+          <text x="835" y="642" fill="#64748B" font-size="9" font-family="'Noto Sans TC', sans-serif">JWT 會話管理 · 訪客無縫升級帳號綁定</text>
+        </g>
+
+      </svg>

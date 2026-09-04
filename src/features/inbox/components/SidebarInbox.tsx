@@ -187,10 +187,6 @@ export const SidebarInbox: React.FC = () => {
     setIsVoiceOverlayOpen(true);
   };
 
-  if (!isMobile && !isInboxSidebarOpen) {
-    return null;
-  }
-
   const selectedInboxCount = inboxTasks.filter((t) => selectedTaskIds.includes(t.id)).length;
 
   return (
@@ -198,117 +194,131 @@ export const SidebarInbox: React.FC = () => {
       ref={setNodeRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      style={{ width: isMobile ? undefined : `${inboxWidth}px` }}
-      className={`h-full sm:w-auto shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xl p-3 sm:p-3.5 overflow-hidden transition-all duration-300 ease-out ${
+      className={`h-full shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden transition-all duration-300 ease-in-out ${
         isMobile
-          ? `absolute inset-2.5 z-20 ${
+          ? `absolute inset-2.5 z-20 p-3 sm:p-3.5 border border-slate-200/80 dark:border-slate-800 ${
               isInboxSidebarOpen
                 ? "translate-x-0 opacity-100 pointer-events-auto shadow-2xl"
-                : "-translate-x-[calc(100%+1rem)] opacity-0 pointer-events-none"
+                : "-translate-x-[calc(100%+1.5rem)] opacity-0 pointer-events-none shadow-none"
             }`
-          : "relative opacity-100 pointer-events-auto w-auto"
-      } ${isDraggingSplitter ? "transition-none select-none" : ""} ${
-        isOver
+          : `${
+              isInboxSidebarOpen
+                ? "relative w-80 opacity-100 pointer-events-auto p-3 sm:p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xl"
+                : "relative w-0 opacity-0 pointer-events-none p-0 border-0 shadow-none -ml-3"
+            }`
+      } ${
+        isOver && isInboxSidebarOpen
           ? "border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-950/40"
           : ""
       }`}
     >
-      {/* Inbox Header */}
-      <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shadow-2xs">
-            <Inbox className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h2 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">
-                收件匣
-              </h2>
-              <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-black text-[10px]">
-                {inboxTasks.length}
-              </span>
+      {/* Inner Fixed Width Content Wrapper to Prevent Reflow During Width Animation */}
+      <div className="w-[294px] min-w-[294px] h-full flex flex-col">
+        {/* Inbox Header */}
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shadow-2xs">
+              <Inbox className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">
+                  收件匣
+                </h2>
+                <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-black text-[10px]">
+                  {inboxTasks.length}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-1">
-          {/* Multi-Select Toggle Button */}
-          <button
-            onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-            className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${isMultiSelectMode
-              ? "bg-orange-500 text-white shadow-xs"
-              : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700"
-              }`}
-            title="多選模式"
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span className="text-[11px] hidden sm:inline-block">多選</span>
-            {selectedInboxCount > 0 && (
-              <span className="w-3.5 h-3.5 rounded-full bg-white text-orange-600 text-[9px] font-black flex items-center justify-center">
-                {selectedInboxCount}
-              </span>
-            )}
-          </button>
-
-          {/* Menu Dropdown */}
-          <div className="relative">
+          <div className="flex items-center gap-1">
+            {/* Multi-Select Toggle Button */}
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 transition-colors"
-              title="收件匣選項"
+              onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${isMultiSelectMode
+                ? "bg-orange-500 text-white shadow-xs"
+                : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700"
+                }`}
+              title="多選模式"
             >
-              <MoreHorizontal className="w-4 h-4" />
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span className="text-[11px] hidden sm:inline-block">多選</span>
+              {selectedInboxCount > 0 && (
+                <span className="w-3.5 h-3.5 rounded-full bg-white text-orange-600 text-[9px] font-black flex items-center justify-center">
+                  {selectedInboxCount}
+                </span>
+              )}
             </button>
 
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-44 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in">
-                <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  排序方式
-                </div>
-                <button
-                  onClick={() => {
-                    setInboxSort("date");
-                    setIsMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 ${inboxSort === "date"
-                    ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold"
-                    : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}
-                >
-                  <ArrowUpDown className="w-3.5 h-3.5" />
-                  <span>依建立時間</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setInboxSort("priority");
-                    setIsMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 ${inboxSort === "priority"
-                    ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold"
-                    : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}
-                >
-                  <ArrowUpDown className="w-3.5 h-3.5" />
-                  <span>依重要程度</span>
-                </button>
+            {/* Menu Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                title="收件匣選項"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
 
-                <div className="border-t border-slate-100 dark:border-slate-800 my-1 pt-1">
+              {isMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-44 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in">
+                  <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    排序方式
+                  </div>
                   <button
                     onClick={() => {
-                      setIsSettingsModalOpen(true);
+                      setInboxSort("date");
                       setIsMenuOpen(false);
                     }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 cursor-pointer ${inboxSort === "date"
+                      ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold"
+                      : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                      }`}
                   >
-                    <Settings className="w-3.5 h-3.5" />
-                    <span>語音與 API 設定</span>
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <span>依建立時間</span>
                   </button>
+                  <button
+                    onClick={() => {
+                      setInboxSort("priority");
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 cursor-pointer ${inboxSort === "priority"
+                      ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold"
+                      : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                      }`}
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <span>依重要程度</span>
+                  </button>
+
+                  <div className="border-t border-slate-100 dark:border-slate-800 my-1 pt-1">
+                    <button
+                      onClick={() => {
+                        setIsSettingsModalOpen(true);
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      <span>語音與 API 設定</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Quick Collapse Sidebar Button */}
+            <button
+              onClick={() => setIsInboxSidebarOpen(false)}
+              className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+              title="收合收件匣"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </div>
 
       {/* Multi-Select Sub-Bar when active */}
       {isMultiSelectMode && (
@@ -370,8 +380,8 @@ export const SidebarInbox: React.FC = () => {
         </form>
       </div>
 
-      {/* Cards List in Inbox (Droppable & Sortable with Adaptive Row Layout & Drop Insertion Slot) */}
-      <div className={`flex-1 overflow-y-auto overflow-x-hidden my-2.5 pr-1 pb-13 sm:pb-14 custom-scrollbar min-h-0 ${!isMobile && inboxWidth >= 420 ? "space-y-2" : "space-y-2.5"}`}>
+      {/* Cards List in Inbox (Droppable & Sortable with Drop Insertion Slot) */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden my-2.5 pr-1 pb-13 sm:pb-14 custom-scrollbar min-h-0 space-y-2.5">
         <SortableContext items={inboxTaskIds} strategy={isCrossColumnDrag ? () => null : verticalListSortingStrategy}>
           {visibleInboxTasks.map((task, idx) => (
             <React.Fragment key={task.id}>
@@ -388,8 +398,8 @@ export const SidebarInbox: React.FC = () => {
               )}
               <TaskCard
                 task={task}
-                variant={!isMobile && inboxWidth >= 420 ? "row" : "card"}
-                inboxWidth={isMobile ? 360 : inboxWidth}
+                variant="card"
+                inboxWidth={320}
               />
             </React.Fragment>
           ))}
@@ -427,6 +437,7 @@ export const SidebarInbox: React.FC = () => {
             )}
           </div>
         )}
+      </div>
       </div>
     </aside>
   );

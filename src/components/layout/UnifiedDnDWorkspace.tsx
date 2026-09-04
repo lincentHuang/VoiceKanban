@@ -20,7 +20,6 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { Column, ColumnId, Task } from "@/core/types/task";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { SidebarInbox } from "@/features/inbox";
-import { WorkspaceSplitter } from "./WorkspaceSplitter";
 import { BoardCanvasContainer, KanbanColumn, TaskCard } from "@/features/kanban";
 
 export const UnifiedDnDWorkspace: React.FC = () => {
@@ -31,7 +30,6 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     reorderColumnTasks,
     reorderBoardColumns,
     getActiveBoardColumns,
-    inboxWidth,
     setActiveDragTaskId,
     dragOverLocation,
     setDragOverLocation,
@@ -39,7 +37,6 @@ export const UnifiedDnDWorkspace: React.FC = () => {
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
-  const [activeDragVariant, setActiveDragVariant] = useState<"card" | "row">("card");
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -147,7 +144,6 @@ export const UnifiedDnDWorkspace: React.FC = () => {
 
       setActiveTask(task);
       setActiveDragTaskId(task.id);
-      setActiveDragVariant(task.columnId === "inbox" && inboxWidth >= 420 ? "row" : "card");
       setDragOverLocation(null);
     }
   };
@@ -350,9 +346,8 @@ export const UnifiedDnDWorkspace: React.FC = () => {
 
   if (!isMounted) {
     return (
-      <div className="flex-1 min-h-0 w-full flex p-2.5 sm:p-3 items-start overflow-hidden gap-0">
+      <div className="flex-1 min-h-0 w-full flex p-2.5 sm:p-3 items-start overflow-hidden gap-3">
         <SidebarInbox />
-        <WorkspaceSplitter />
         <BoardCanvasContainer />
       </div>
     );
@@ -375,12 +370,9 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex-1 min-h-0 w-full flex p-2.5 sm:p-3 items-start overflow-hidden gap-0 relative">
-        {/* Left Container: Global Inbox Panel */}
+      <div className="flex-1 min-h-0 w-full flex p-2.5 sm:p-3 items-start overflow-hidden gap-3 relative">
+        {/* Left Container: Global Inbox Fixed Sidebar */}
         <SidebarInbox />
-
-        {/* Middle Draggable Splitter Divider */}
-        <WorkspaceSplitter />
 
         {/* Right Container: Trello Board Canvas Container */}
         <BoardCanvasContainer />
@@ -402,18 +394,15 @@ export const UnifiedDnDWorkspace: React.FC = () => {
         ) : activeTask ? (
           <div
             style={{
-              width:
-                activeDragVariant === "row"
-                  ? `${Math.min(inboxWidth - 28, 480)}px`
-                  : "246px",
+              width: activeTask.columnId === "inbox" ? "294px" : "246px",
               transformOrigin: "center center",
             }}
             className="scale-105 rotate-2 shadow-2xl rounded-2xl border-2 border-orange-500 pointer-events-none transition-transform duration-75 select-none cursor-grabbing opacity-100"
           >
             <TaskCard
               task={activeTask}
-              variant={activeDragVariant}
-              inboxWidth={inboxWidth}
+              variant="card"
+              inboxWidth={320}
               isOverlay={true}
             />
           </div>

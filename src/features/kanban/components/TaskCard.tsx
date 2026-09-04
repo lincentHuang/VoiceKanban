@@ -18,6 +18,7 @@ import {
   Star,
   ChevronDown,
   ChevronUp,
+  Trash2,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -37,6 +38,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const {
     toggleTaskComplete,
     toggleTaskStarred,
+    deleteTask,
     setEditingTaskId,
     isMultiSelectMode,
     selectedTaskIds,
@@ -254,8 +256,22 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </span>
           )}
 
-          {/* Action buttons: Quick Complete (Always visible) + Edit Pencil (Medium/Large) */}
+          {/* Action buttons: Quick Complete + Delete */}
           <div className="flex items-center gap-0.5">
+            {/* Quick Delete Button */}
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteTask(task.id);
+              }}
+              className="p-1 rounded-lg opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
+              title="刪除任務"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
             {/* Quick Complete Button - Always Available */}
             <button
               type="button"
@@ -358,6 +374,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
           {/* Top-Right Action Controls (Aligned with Title Y-axis center) */}
           <div className="flex items-start gap-1 shrink-0 self-start">
+            {/* Quick Delete Button: Visible on card hover or active */}
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteTask(task.id);
+              }}
+              className="p-1 rounded-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover:opacity-100"
+              title="刪除任務"
+              aria-label="刪除任務"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+
             {/* Quick Complete Button: ALWAYS directly visible & clickable on mobile & desktop without hover */}
             <button
               type="button"

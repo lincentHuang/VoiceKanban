@@ -1,3 +1,78 @@
+# 測試驗收報告 (QA_REPORT.md) - 語音輸入彈窗極簡化與手機端版面優化 (Clean & Minimalist Voice Modal Optimization)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **彈窗統一標題「語音輸入」**：將彈窗頂部統一配置為簡潔的「語音輸入」標題列與關閉按鈕（X），徹底移除次級大標題與冗長贅字。
+  2. **移除冗贅技術敘述與標籤**：移除頂部「離線半自動學習 (零 API 依賴)」標籤以及「🌐 自動 / 🇹🇼 中文 / 🇺🇸 EN」語系切換按鈕組；移除預覽區塊「語音萃取與半自動學習預覽」副標與右側語系標籤；移除綠色提示框（`noticeMessage`）與「✨ 本地半自動模型已套用」徽章。
+  3. **極致清爽任務預覽與口述逐字稿**：預覽卡片保留純淨的「口述逐字稿」引用盒以及各項任務編輯欄位（標題、目標看板、目標欄位、優先等級、到期時間、標籤），大幅降低手機螢幕垂直佔用空間。
+  4. **全狀態文案精簡化**：錄音中與處理中（Processing）狀態文案同步輕量化，消除多餘技術詞彙。
+- **測試結果**：全部 5 項驗收標準 (AC1 ~ AC5) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **Modal 頂部統一標題「語音輸入」** | 點擊懸浮語音按鈕開啟彈窗。 | 頂部呈現精緻俐落的 `<Mic />` 圖示與「語音輸入」大標題，右側為關閉按鈕。 | ✅ PASS |
+| **AC2** | **移除半自動學習與語系標籤** | 檢查彈窗 Header 與各階段狀態。 | 不再出現「離線半自動學習 (零 API 依賴)」與「🌐 自動 / 🇹🇼 中文 / 🇺🇸 EN」切換列，界面乾淨純粹。 | ✅ PASS |
+| **AC3** | **預覽區塊贅述清理** | 錄音完成進入預覽（Preview）模式。 | 移除冗贅次標題、副標說明、右側語系標籤、綠色提示框與本地半自動徽章，直接聚焦口述逐字稿與任務欄位。 | ✅ PASS |
+| **AC4** | **手機端空間大幅釋放防遮擋** | 於手機小螢幕（`< sm`）檢視預覽彈窗。 | 垂直高度大幅節省，無需繁複滾動即可完整微調目標看板、欄位與點擊「✓ 確認」。 | ✅ PASS |
+| **AC5** | **生產環境編譯無誤 (Production Build & Typecheck)** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 成功編譯所有頁面，TypeScript 0 報錯。 | ✅ PASS |
+
+---
+
+# 測試驗收報告 (QA_REPORT.md) - 收件匣展開/收合滑順動畫 (Animated Sidebar Inbox Expand & Collapse)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **桌機端收件匣平滑寬度與透明度動畫 (Desktop Smooth Transition)**：桌機版點擊收件匣切換按鈕時，以 300ms `ease-in-out` 進行寬度（320px ↔ 0px）、透明度（`opacity-100` ↔ `opacity-0`）與間距（`gap-3` 抵消 `-ml-3`）的連續過渡動畫。
+  2. **防排版變形內層容器 (Anti-Reflow Inner Wrapper)**：收件匣內部配置 `w-[294px] min-w-[294px]` 固定寬度容器，動畫寬度縮放過程中內容物不產生文字折行或抖動，裁切乾淨俐落。
+  3. **看板畫布同步伸縮 (Synchronized Board Canvas Transition)**：右側看板容器配置 `transition-all duration-300 ease-in-out`，與收件匣展開/收合同步平滑調整寬度。
+  4. **頂部專屬收合按鈕 (Header Collapse Button)**：收件匣頂部 Header 右側新增 `<ChevronLeft>` 按鈕，支援一鍵點擊快速收合。
+  5. **手機端抽屜平滑滑入/滑出 (Mobile Slide Animation)**：手機版以 300ms `ease-in-out` 沿 X 軸平滑 slide-in / slide-out。
+- **測試結果**：全部 5 項驗收標準 (AC1 ~ AC5) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **桌機版收件匣展開動畫 (Desktop Expand Animation)** | 於收合狀態下點擊底部 BottomDock「收件匣」按鈕。 | 收件匣以 300ms `ease-in-out` 自左側平滑展開至 320px，透明度淡入，看板平滑右移。 | ✅ PASS |
+| **AC2** | **桌機版收件匣收合動畫 (Desktop Collapse Animation)** | 點擊收件匣右上角 `<ChevronLeft>` 或 BottomDock「收件匣」按鈕。 | 收件匣平滑收縮至 0px 並淡出，看板平滑擴展至左側滿版，動畫無任何突兀跳變。 | ✅ PASS |
+| **AC3** | **動畫過程內部排版穩定性 (Inner Layout Stability)** | 觀察展開與收合過程中的收件匣內容。 | 內部標題、搜尋框、按鈕與卡片維持原樣排版，不產生臨時折行或壓縮變形。 | ✅ PASS |
+| **AC4** | **手機版滑入/滑出動畫 (Mobile Slide-in/out)** | 於手機小螢幕（`< sm`）切換收件匣。 | 收件匣自左側平滑 Slide-in / Slide-out，手勢與按鈕皆能正常觸發。 | ✅ PASS |
+| **AC5** | **生產環境編譯無誤 (Production Build & Typecheck)** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 成功編譯所有頁面，TypeScript 0 報錯。 | ✅ PASS |
+
+---
+
+# 測試驗收報告 (QA_REPORT.md) - 桌機版收件匣固定 Sidebar 與看板並排佈局修復 (Fixed Sidebar Inbox & Desktop Board Layout Fix)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **收件匣固定寬度側邊欄 (Fixed Sidebar Inbox)**：在電腦版（桌機環境，`≥ sm`），收件匣呈現為固定寬度（320px）的專屬側邊欄，移除手動拖曳調整把手（WorkspaceSplitter），保持整潔一致的側邊欄寬度與版面比例。
+  2. **修復電腦版看板容器隱藏問題 (Board Visibility Fix)**：徹底移除 `BoardCanvasContainer` 在 `containerWidth < 720` 時將看板誤判定隱藏（`opacity-0`、`pointer-events-none`）的錯誤邏輯，確保在電腦版視窗下，收件匣側邊欄與看板畫布永遠 100% 完整並排渲染。
+  3. **簡約佈局間距 (Clean Layout Spacing)**：工作區採用現代簡潔的 `gap-3`（12px）分隔收件匣與看板，整體視覺協調、無雜訊。
+  4. **拖曳與 DragOverlay 寬度適配**：收件匣內卡片維持標準 card 樣式，拖曳時的 Ghost Overlay 準確依所屬欄位（收件匣 294px / 看板 246px）自動適配。
+- **測試結果**：全部 4 項驗收標準 (AC1 ~ AC4) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **收件匣固定寬度側邊欄 (Fixed Sidebar Width)** | 在桌機版視窗中檢視收件匣。 | 收件匣固定呈現為 320px（`w-80`）專屬側邊欄，無調整大小把手，卡片呈現標準卡片排版。 | ✅ PASS |
+| **AC2** | **收件匣與看板並存時看板完整渲染 (Board Visible with Inbox)** | 同時開啟收件匣與看板，並縮放瀏覽器視窗（例如 1024px、1200px、1440px）。 | 看板畫布、狀態欄位與卡片永遠完整渲染呈現，絕不再發生空白或 opacity-0 消失問題。 | ✅ PASS |
+| **AC3** | **雙向 DnD 拖曳正常 (DnD Drag & Drop)** | 從固定收件匣拖曳卡片至看板任意欄位，或從看板拖回至收件匣。 | 拖曳平滑順暢，DragOverlay 寬度準確，跨欄落點插槽正常置頂。 | ✅ PASS |
+| **AC4** | **生產環境編譯無誤 (Production Build & Typecheck)** | 執行 `npm run build`。 | Next.js 16 (Turbopack) 成功編譯所有頁面，TypeScript 0 報錯。 | ✅ PASS |
+
+---
+
 # 測試驗收報告 (QA_REPORT.md) - Cloudflare R2 雲端儲存空間串接與 S3 協定直傳 (Cloudflare R2 Object Storage Integration)
 
 ## 1. 測試摘要 (Executive Summary)

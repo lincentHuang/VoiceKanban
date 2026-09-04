@@ -188,8 +188,7 @@ export class DatabaseSyncEngine {
           tasks: serializeTasks(tasks),
           activeBoardId: activeBoardId || "board-work",
           updatedAt: now,
-        }),
-        { merge: true }
+        })
       );
 
       // Also update local cloud cache
@@ -362,8 +361,7 @@ export class DatabaseSyncEngine {
           tasks: serializeTasks(mergedTasks),
           activeBoardId,
           updatedAt: new Date().toISOString(),
-        }),
-        { merge: true }
+        })
       );
 
       return {
