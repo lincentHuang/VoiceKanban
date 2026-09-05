@@ -18,7 +18,9 @@ import {
   SlidersHorizontal,
   Filter,
   MoreHorizontal,
+  UserPlus,
 } from "lucide-react";
+import { CollaboratorAvatars, ReadOnlyBanner } from "@/features/collaboration";
 
 const VIEW_CONFIG: Record<ViewMode, { label: string; icon: React.ReactNode }> = {
   kanban: { label: "看板", icon: <Columns className="w-3.5 h-3.5" /> },
@@ -43,6 +45,7 @@ export const BoardCanvasContainer: React.FC = () => {
     tasks,
     setIsColumnManagerOpen,
     isInboxSidebarOpen,
+    setIsJoinBoardModalOpen,
   } = useKanbanStore();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,15 +155,20 @@ export const BoardCanvasContainer: React.FC = () => {
                       board.id === activeBoardId ? "text-orange-600 font-bold bg-orange-50/50" : ""
                     }`}
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2 min-w-0">
                       <span>{board.icon}</span>
-                      <span>{board.name}</span>
+                      <span className="truncate max-w-[120px]">{board.name}</span>
+                      {board.isShared && (
+                        <span className="px-1.5 py-0.2 rounded text-[10px] bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 font-bold shrink-0">
+                          👥 協作
+                        </span>
+                      )}
                     </span>
-                    {board.id === activeBoardId && <Check className="w-3.5 h-3.5 text-orange-600" />}
+                    {board.id === activeBoardId && <Check className="w-3.5 h-3.5 text-orange-600 shrink-0" />}
                   </button>
                 ))}
 
-                <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1 px-2">
+                <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1 px-2 space-y-0.5">
                   {isNewBoardPrompt ? (
                     <form onSubmit={handleCreateNewBoard} className="p-1">
                       <input
@@ -188,13 +196,25 @@ export const BoardCanvasContainer: React.FC = () => {
                       </div>
                     </form>
                   ) : (
-                    <button
-                      onClick={() => setIsNewBoardPrompt(true)}
-                      className="w-full text-left px-2 py-1 text-xs text-orange-600 font-medium hover:bg-orange-50 rounded-lg flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>新增看板...</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setIsNewBoardPrompt(true)}
+                        className="w-full text-left px-2 py-1 text-xs text-orange-600 font-medium hover:bg-orange-50 dark:hover:bg-orange-950/40 rounded-lg flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>新增看板...</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsBoardMenuOpen(false);
+                          setIsJoinBoardModalOpen(true);
+                        }}
+                        className="w-full text-left px-2 py-1 text-xs text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg flex items-center gap-1 cursor-pointer"
+                      >
+                        <UserPlus className="w-3 h-3" />
+                        <span>加入協作看板...</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -210,15 +230,15 @@ export const BoardCanvasContainer: React.FC = () => {
                   closeAllMenus();
                   setIsViewMenuOpen(!state);
                 }}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 text-xs font-semibold transition-colors cursor-pointer"
               >
                 {VIEW_CONFIG[viewMode].icon}
                 <span>{VIEW_CONFIG[viewMode].label}</span>
-                <ChevronDown className="w-3 h-3 text-white/70" />
+                <ChevronDown className="w-3 h-3 text-white/60" />
               </button>
 
               {isViewMenuOpen && (
-                <div className="absolute top-full left-0 mt-1.5 w-44 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-1.5 z-50">
+                <div className="absolute top-full left-0 mt-1.5 w-40 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
                   {(["kanban", "calendar"] as const).map((mode) => (
                     <button
                       key={mode}
@@ -242,6 +262,9 @@ export const BoardCanvasContainer: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Collaborator Avatars & Quick Share */}
+        <CollaboratorAvatars compact={isCompact} />
 
         {/* Right Section: Compact (≡ & ···) vs Full Inline Controls */}
         <div className="flex items-center gap-1.5">
@@ -530,6 +553,9 @@ export const BoardCanvasContainer: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* ReadOnlyBanner when user is viewer */}
+      <ReadOnlyBanner />
 
       {/* Main View Area Inside Container - pb-[calc(54px+env(safe-area-inset-bottom,0px))] lifts the columns and horizontal scrollbar cleanly above the floating BottomDock & VoiceFAB on mobile */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden relative pb-[calc(54px+env(safe-area-inset-bottom,0px))] sm:pb-16">

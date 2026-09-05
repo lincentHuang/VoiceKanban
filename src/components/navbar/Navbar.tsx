@@ -15,6 +15,7 @@ import {
   Link2,
   Sparkles,
   AlertCircle,
+  UserPlus,
 } from "lucide-react";
 import { formatSyncTime } from "@/core/utils/dateUtils";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -43,6 +44,7 @@ export const Navbar: React.FC = () => {
     syncState,
     triggerSync,
     setIsColumnManagerOpen,
+    setIsJoinBoardModalOpen,
   } = useKanbanStore();
 
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -267,6 +269,14 @@ export const Navbar: React.FC = () => {
             <DropdownMenuSeparator />
 
             {/* Menu Items */}
+            <DropdownMenuItem
+              onClick={() => setIsJoinBoardModalOpen(true)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-blue-500" />
+              <span>加入協作看板 (輸入代碼)</span>
+            </DropdownMenuItem>
+
             <DropdownMenuItem
               onClick={() => setIsColumnManagerOpen(true)}
               className="flex items-center gap-2"

@@ -26,7 +26,10 @@ export const SubHeaderToolbar: React.FC = () => {
     openAddTaskModal,
     isInboxSidebarOpen,
     setIsInboxSidebarOpen,
+    canCurrentUserEdit,
   } = useKanbanStore();
+
+  const canEdit = canCurrentUserEdit();
 
   const boardTasks = tasks.filter((t) => t.boardId === activeBoardId);
 
@@ -84,24 +87,27 @@ export const SubHeaderToolbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Workflow Status Management */}
-          <button
-            onClick={() => setIsColumnManagerOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-white text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 font-semibold shadow-xs transition-colors"
-            title="自訂與增減看板狀態欄位"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
-            <span>自訂流程</span>
-          </button>
+          {/* Workflow & Quick Add Task (Hidden in Viewer Mode) */}
+          {canEdit && (
+            <>
+              <button
+                onClick={() => setIsColumnManagerOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-white text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 font-semibold shadow-xs transition-colors cursor-pointer"
+                title="自訂與增減看板狀態欄位"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+                <span>自訂流程</span>
+              </button>
 
-          {/* Quick Add Task */}
-          <button
-            onClick={() => openAddTaskModal()}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-xs transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>新增卡片</span>
-          </button>
+              <button
+                onClick={() => openAddTaskModal()}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-xs transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>新增卡片</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Right: Tag Quick Filter Pills */}

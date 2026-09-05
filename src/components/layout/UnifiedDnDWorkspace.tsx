@@ -33,6 +33,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     setActiveDragTaskId,
     dragOverLocation,
     setDragOverLocation,
+    canCurrentUserEdit,
   } = useKanbanStore();
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -112,6 +113,9 @@ export const UnifiedDnDWorkspace: React.FC = () => {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (!canCurrentUserEdit()) {
+      return;
+    }
     const { active } = event;
 
     // 1. Column Drag Start

@@ -57,10 +57,16 @@ src/
 │   │   ├── components/         # SettingsModal
 │   │   ├── index.ts            # 模組統一出口
 │   │   └── feature.md          # 設定功能全貌規格與 AC
-│   └── editor/                 # [Feature 8] Markdown 任務筆記編輯器
-│       ├── components/         # MarkdownEditor
+│   ├── editor/                 # [Feature 8] Markdown 任務筆記編輯器
+│   │   ├── components/         # MarkdownEditor
+│   │   ├── index.ts            # 模組統一出口
+│   │   └── feature.md          # 編輯器功能全貌規格與 AC
+│   └── collaboration/          # [Feature 9] 多人即時協同編輯與邀請機制
+│       ├── components/         # ShareBoardModal, JoinBoardModal, CollaboratorAvatars, ReadOnlyBanner
+│       ├── services/           # collaborationService
+│       ├── types/              # collaboration types
 │       ├── index.ts            # 模組統一出口
-│       └── feature.md          # 編輯器功能全貌規格與 AC
+│       └── feature.md          # 多人協同功能全貌規格與 AC
 ├── components/                 # 全域共用 UI 元件
 │   ├── ui/                     # 基礎原子元件 (Dialog, Dropdown, Select, Popover...)
 │   ├── layout/                 # 全域版面 (UnifiedDnDWorkspace, WorkspaceSplitter)
@@ -242,6 +248,21 @@ src/
   - **靈敏磁力滾動**：拖曳任務卡片至螢幕左或右邊緣（< 50px）時，即時啟動磁力滑動與階梯吸附切換（Step Scroll），搭配邊緣微光指引與震動回饋。
   - **最左邊界磁吸至收件匣**：在看板第一欄拖曳任務至最左邊緣到底時，磁吸連動切換至收件匣，支援跨視圖拖曳暫存。
 
+### 3.14 👥 多人即時協同編輯與邀請機制 (Multiplayer Collaborative Kanban)
+- **看板專屬 6 碼短代碼與一鍵邀請連結 (Invite Code & Share Link)**：
+  - **邀請生成**：看板建立者（Owner）於頂部工具列點擊「邀請協作」按鈕，立即展開 `ShareBoardModal`，系統自動為該看板生成專屬 6 碼短代碼（如 `VK-8X4B`）與對應邀請連結（`https://.../?invite=VK-8X4B`）。
+  - **極速加入 (Join Board)**：使用者可透過頂部導覽或看板切換選單點擊「加入協作看板...」開啟 `JoinBoardModal` 輸入 6 碼代碼加入；亦可直接點擊分享連結，應用啟動時自動解析 URL 查詢參數 `?invite=CODE` 並自動帶入加入視窗。
+- **免強制登入極速協作 (Guest Collaboration with Nickname)**：
+  - 未登入或訪客（Guest）使用者點擊邀請連結或輸入代碼時，無需經歷繁瑣註冊流程，僅需填寫「協作者暱稱」（系統自動分配隨機頭像與訪客協作者 ID）即可秒級加入看板。日後登入 Google 或 Email 帳號時自動保留並無縫綁定所有協作看板歷史。
+- **三級角色權限模型 (Three-Tier Role & Permission Architecture)**：
+  - **擁有者 (Owner)**：看板建立者，具備最高權限，可管理成員名單、升降級角色（Editor ↔ Viewer）、移出成員以及刪除/更名看板。
+  - **編輯者 (Editor，受邀預設)**：可即時新增、修改、刪除、拖曳任務卡片，以及增減與排序狀態欄位。
+  - **檢視者 (Viewer / 唯讀)**：僅具備看板瀏覽、篩選與查看任務詳情之權限；系統自動隱藏新增按鈕並停用卡片與欄位拖曳，頂部常設「👁️ 唯讀模式」溫和提示徽章。
+- **即時跨裝置雙向同步與成員狀態頭像 (Real-Time Sync & Active Avatars)**：
+  - **雙軌即時同步引擎**：在線時即時監聽 Firestore `shared_boards` 集合，並在同瀏覽器跨分頁環境下藉由 `BroadcastChannel` 達成 0 延遲同步；一人拖曳或編輯，所有成員畫面秒級無縫更新。
+  - **協作者頭像堆疊 (Collaborator Avatars)**：看板頂部直觀展示所有參與成員頭像堆疊與身份徽章（👑 擁有者、✏️ 編輯者、👁️ 檢視者），點擊可展開檢視成員清單或由 Owner 管理。
+  - **最後寫入生效 (Last-Write-Wins)**：卡片變更採樂觀更新配合最後寫入時間戳記（`updatedAt`）自動裁決，確保多人同時編輯時資料一致性。
+
 ---
 
 ## 4. UI 5 種狀態處理規範 (5 UI States Standard)
@@ -307,6 +328,11 @@ src/
   - 看板主視圖容器底部設置精準 `pb-[calc(54px+env(safe-area-inset-bottom,0px))]`（桌機端 `sm:pb-16`），確保看板欄位底端停止於浮動 Dock 上方。
   - 側邊收件匣（`SidebarInbox`）於手機端將卡片容器底部邊界設定為 `bottom-[calc(0.625rem+54px+env(safe-area-inset-bottom,0px))]`，與看板欄位底部 **100% 精準水平對齊**，徹底修復先前外層容器延伸過長導致內部卡片被底部 Dock 遮擋卡住的缺陷。
   - 欄位與收件匣內部之所有任務卡片、折疊條與按鈕 100% 完整露出於浮動 Dock 及語音 FAB 之上，零重疊、易點擊，全系統各視圖具備高度一致性。
+- [x] **MAC-28 (多人即時協同編輯、邀請代碼與權限管理)**：
+  - 支援看板專屬 6 碼邀請代碼（如 `VK-8X4B`）與一鍵複製分享連結，網址帶有 `?invite=...` 時應用自動開啟加入彈窗。
+  - 支援未登入訪客（Guest）免註冊輸入暱稱極速加入協同，自動產生協作者身分，登入時無縫綁定。
+  - 支援三級角色權限（Owner 擁有者、Editor 編輯者、Viewer 檢視者），Owner 可動態切換成員角色與移出成員；Viewer 模式自動限制卡片新增、編輯與拖曳，並顯示專屬唯讀提示。
+  - 支援 Firestore 與跨分頁 BroadcastChannel 雙軌即時同步，頂部即時呈現協作者頭像堆疊（Collaborator Avatars）與在線狀態。
 
 
 

@@ -19,6 +19,7 @@ import {
 } from "@/features/auth";
 import { SearchModal } from "@/features/search";
 import { OfflineBanner } from "@/features/offline";
+import { ShareBoardModal, JoinBoardModal } from "@/features/collaboration";
 
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
@@ -26,14 +27,31 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
   const initAuthAndSync = useKanbanStore((state) => state.initAuthAndSync);
   const userSession = useKanbanStore((state) => state.userSession);
+  const loginAsGuest = useKanbanStore((state) => state.loginAsGuest);
+  const setJoinBoardInitialCode = useKanbanStore((state) => state.setJoinBoardInitialCode);
+  const setIsJoinBoardModalOpen = useKanbanStore((state) => state.setIsJoinBoardModalOpen);
 
   useEffect(() => {
     setIsMounted(true);
     const cleanup = initAuthAndSync();
+
+    // Check for invite code in URL
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const inviteCode = params.get("invite");
+      if (inviteCode) {
+        if (!userSession.isAuthenticated) {
+          loginAsGuest();
+        }
+        setJoinBoardInitialCode(inviteCode.toUpperCase());
+        setIsJoinBoardModalOpen(true);
+      }
+    }
+
     return () => {
       if (cleanup) cleanup();
     };
-  }, [initAuthAndSync]);
+  }, [initAuthAndSync, setJoinBoardInitialCode, setIsJoinBoardModalOpen, userSession.isAuthenticated, loginAsGuest]);
 
   if (!isMounted) {
     return (
@@ -81,6 +99,8 @@ export default function Home() {
       <AuthModal />
       <BindAccountModal />
       <ColumnManagerModal />
+      <ShareBoardModal />
+      <JoinBoardModal />
     </main>
   );
 }

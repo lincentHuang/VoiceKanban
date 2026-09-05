@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
-import { Board, Column, ColumnId, Priority, Task, ViewMode, DEFAULT_COLUMNS, ChecklistItem, TaskAttachment } from "../types/task";
+import { Board, Column, ColumnId, Priority, Task, ViewMode, DEFAULT_COLUMNS, ChecklistItem, TaskAttachment, BoardMember, CollaboratorRole } from "../types/task";
 import { VoiceExtractResult, VoiceState, VoiceLanguage, VoiceMode, CorrectionFeedbackPayload, LearningStats } from "../types/voice";
 import { BYOKConfig } from "../types/user";
 import { UserSession, SyncState, AuthProvider } from "../types/auth";
@@ -9,6 +9,7 @@ import { generateOrderKeyBetween, initialOrderKey } from "../utils/lexorank";
 import { GUEST_USER, createGuestSession, loginWithProvider, logoutUser, subscribeToAuthState } from "../services/authService";
 import { syncEngine } from "../services/syncService";
 import { learningEngine } from "../services/learningEngine";
+import { collaborationService } from "@/features/collaboration/services/collaborationService";
 
 interface KanbanStoreState {
   // Authentication & Profile
@@ -81,6 +82,20 @@ interface KanbanStoreState {
   // Column Manager Modal
   isColumnManagerOpen: boolean;
   setIsColumnManagerOpen: (open: boolean) => void;
+
+  // Collaboration
+  isShareBoardModalOpen: boolean;
+  setIsShareBoardModalOpen: (open: boolean) => void;
+  isJoinBoardModalOpen: boolean;
+  setIsJoinBoardModalOpen: (open: boolean) => void;
+  joinBoardInitialCode: string;
+  setJoinBoardInitialCode: (code: string) => void;
+  enableActiveBoardSharing: () => Promise<string>;
+  joinBoardByInviteCode: (code: string, nickname?: string) => Promise<{ success: boolean; message?: string; board?: Board }>;
+  updateMemberRole: (memberUid: string, role: CollaboratorRole) => Promise<void>;
+  removeMemberFromBoard: (memberUid: string) => Promise<void>;
+  getCurrentUserRole: (boardId?: string) => CollaboratorRole;
+  canCurrentUserEdit: (boardId?: string) => boolean;
 
   // Tasks
   tasks: Task[];
@@ -421,6 +436,32 @@ export const useKanbanStore = create<KanbanStoreState>()(
           }
         });
 
+        // Cross-tab real-time sync for shared boards via BroadcastChannel
+        const unsubCollab = collaborationService.onCrossTabUpdate(({ type, boardId, data }) => {
+          if (type === "BOARD_UPDATED" && data) {
+            set((state) => {
+              let updatedBoards = state.boards;
+              if (data.board) {
+                const exists = updatedBoards.some((b) => b.id === boardId);
+                if (exists) {
+                  updatedBoards = updatedBoards.map((b) => (b.id === boardId ? { ...b, ...data.board } : b));
+                } else {
+                  updatedBoards = [...updatedBoards, data.board];
+                }
+              }
+              let updatedTasks = state.tasks;
+              if (data.tasks && Array.isArray(data.tasks)) {
+                const otherTasks = state.tasks.filter((t) => t.boardId !== boardId);
+                updatedTasks = [...otherTasks, ...data.tasks];
+              }
+              return {
+                boards: updatedBoards,
+                tasks: updatedTasks,
+              };
+            });
+          }
+        });
+
         return () => {
           if (typeof window !== "undefined") {
             window.removeEventListener("online", handleOnline);
@@ -428,6 +469,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           }
           unsubscribeAuth();
           syncEngine.unsubscribe();
+          unsubCollab();
         };
       },
 
@@ -485,6 +527,11 @@ export const useKanbanStore = create<KanbanStoreState>()(
         }
 
         set((s) => ({ syncState: { ...s.syncState, status: "syncing" } }));
+        const currentActiveBoard = get().boards.find((b) => b.id === get().activeBoardId);
+        if (currentActiveBoard?.isShared) {
+          collaborationService.syncSharedBoardData(currentActiveBoard, get().tasks);
+        }
+
         const result = await syncEngine.syncTasksToCloud(
           user.id,
           get().tasks,
@@ -528,7 +575,21 @@ export const useKanbanStore = create<KanbanStoreState>()(
       // Boards & Dynamic Columns
       boards: INITIAL_BOARDS,
       activeBoardId: "board-work",
-      setActiveBoardId: (id) => set({ activeBoardId: id, selectedTaskIds: [] }),
+      setActiveBoardId: (id) => {
+        set({ activeBoardId: id, selectedTaskIds: [] });
+        const targetBoard = get().boards.find((b) => b.id === id);
+        if (targetBoard?.isShared) {
+          collaborationService.subscribeToSharedBoard(id, ({ board, tasks: remoteTasks }) => {
+            set((state) => ({
+              boards: state.boards.map((b) => (b.id === id ? { ...b, ...board } : b)),
+              tasks: [
+                ...state.tasks.filter((t) => t.boardId !== id),
+                ...remoteTasks,
+              ],
+            }));
+          });
+        }
+      },
       createBoard: (name, icon = "📌", description = "") => {
         const newBoard: Board = {
           id: `board-${Date.now()}`,
@@ -825,6 +886,131 @@ export const useKanbanStore = create<KanbanStoreState>()(
       // Column Manager Modal
       isColumnManagerOpen: false,
       setIsColumnManagerOpen: (isColumnManagerOpen) => set({ isColumnManagerOpen }),
+
+      // Collaboration
+      isShareBoardModalOpen: false,
+      setIsShareBoardModalOpen: (isShareBoardModalOpen) => set({ isShareBoardModalOpen }),
+      isJoinBoardModalOpen: false,
+      setIsJoinBoardModalOpen: (isJoinBoardModalOpen) => set({ isJoinBoardModalOpen }),
+      joinBoardInitialCode: "",
+      setJoinBoardInitialCode: (joinBoardInitialCode) => set({ joinBoardInitialCode }),
+      enableActiveBoardSharing: async () => {
+        const { boards, activeBoardId, userSession, tasks } = get();
+        const activeBoard = boards.find((b) => b.id === activeBoardId);
+        if (!activeBoard) return "";
+
+        const { inviteCode, board: updatedBoard } = await collaborationService.enableBoardSharing(
+          activeBoard,
+          userSession,
+          tasks
+        );
+
+        set((state) => ({
+          boards: state.boards.map((b) => (b.id === activeBoardId ? updatedBoard : b)),
+        }));
+
+        collaborationService.subscribeToSharedBoard(updatedBoard.id, ({ board, tasks: remoteTasks }) => {
+          set((state) => ({
+            boards: state.boards.map((b) => (b.id === updatedBoard.id ? { ...b, ...board } : b)),
+            tasks: [
+              ...state.tasks.filter((t) => t.boardId !== updatedBoard.id),
+              ...remoteTasks,
+            ],
+          }));
+        });
+
+        return inviteCode;
+      },
+      joinBoardByInviteCode: async (code, nickname) => {
+        const { userSession } = get();
+        const result = await collaborationService.joinBoardByInviteCode(
+          code,
+          userSession,
+          nickname
+        );
+
+        if (result.success && result.board) {
+          const joinedBoard = result.board;
+          if (nickname && nickname.trim() && userSession.isGuest) {
+            set((state) => ({
+              userSession: {
+                ...state.userSession,
+                name: nickname.trim(),
+                avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(nickname.trim())}`,
+              },
+            }));
+          }
+
+          set((state) => {
+            const exists = state.boards.some((b) => b.id === joinedBoard.id);
+            const newBoards = exists
+              ? state.boards.map((b) => (b.id === joinedBoard.id ? joinedBoard : b))
+              : [...state.boards, joinedBoard];
+            return {
+              boards: newBoards,
+              activeBoardId: joinedBoard.id,
+              isJoinBoardModalOpen: false,
+            };
+          });
+
+          collaborationService.subscribeToSharedBoard(joinedBoard.id, ({ board, tasks: remoteTasks }) => {
+            set((state) => ({
+              boards: state.boards.map((b) => (b.id === joinedBoard.id ? { ...b, ...board } : b)),
+              tasks: [
+                ...state.tasks.filter((t) => t.boardId !== joinedBoard.id),
+                ...remoteTasks,
+              ],
+            }));
+          });
+
+          return { success: true, message: result.message, board: joinedBoard };
+        }
+
+        return { success: false, message: result.message || "加入失敗" };
+      },
+      updateMemberRole: async (memberUid, role) => {
+        const { boards, activeBoardId } = get();
+        const activeBoard = boards.find((b) => b.id === activeBoardId);
+        if (!activeBoard || !activeBoard.isShared) return;
+
+        const updatedBoard = await collaborationService.updateMemberRole(
+          activeBoard.id,
+          memberUid,
+          role,
+          activeBoard
+        );
+
+        set((state) => ({
+          boards: state.boards.map((b) => (b.id === activeBoardId ? updatedBoard : b)),
+        }));
+      },
+      removeMemberFromBoard: async (memberUid) => {
+        const { boards, activeBoardId } = get();
+        const activeBoard = boards.find((b) => b.id === activeBoardId);
+        if (!activeBoard || !activeBoard.isShared) return;
+
+        const updatedBoard = await collaborationService.removeMember(
+          activeBoard.id,
+          memberUid,
+          activeBoard
+        );
+
+        set((state) => ({
+          boards: state.boards.map((b) => (b.id === activeBoardId ? updatedBoard : b)),
+        }));
+      },
+      getCurrentUserRole: (boardId) => {
+        const { boards, activeBoardId, userSession } = get();
+        const targetId = boardId || activeBoardId;
+        const targetBoard = boards.find((b) => b.id === targetId);
+        return collaborationService.getUserRole(targetBoard, userSession.id);
+      },
+      canCurrentUserEdit: (boardId) => {
+        const { boards, activeBoardId, userSession } = get();
+        const targetId = boardId || activeBoardId;
+        const targetBoard = boards.find((b) => b.id === targetId);
+        return collaborationService.canUserEdit(targetBoard, userSession.id);
+      },
 
       // Tasks
       tasks: INITIAL_TASKS,

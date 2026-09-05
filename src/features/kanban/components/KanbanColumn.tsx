@@ -20,6 +20,22 @@ interface KanbanColumnProps {
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOverlay = false }) => {
   const colorConfig = getColumnColorConfig(column.color);
 
+  const {
+    openAddTaskModal,
+    openVoiceForColumn,
+    isMultiSelectMode,
+    toggleTaskSelection,
+    selectedTaskIds,
+    addTask,
+    activeBoardId,
+    dragOverLocation,
+    activeDragTaskId,
+    updateColumnInActiveBoard,
+    canCurrentUserEdit,
+  } = useKanbanStore();
+
+  const canEdit = canCurrentUserEdit();
+
   // Sortable for Column Reordering
   const {
     attributes,
@@ -34,7 +50,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
       type: "Column",
       column,
     },
-    disabled: isOverlay,
+    disabled: isOverlay || !canEdit,
   });
 
   // Droppable for Tasks inside this column
@@ -44,21 +60,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
       type: "Column",
       column,
     },
-    disabled: isOverlay,
+    disabled: isOverlay || !canEdit,
   });
-
-  const {
-    openAddTaskModal,
-    openVoiceForColumn,
-    isMultiSelectMode,
-    toggleTaskSelection,
-    selectedTaskIds,
-    addTask,
-    activeBoardId,
-    dragOverLocation,
-    activeDragTaskId,
-    updateColumnInActiveBoard,
-  } = useKanbanStore();
 
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState("");
@@ -540,7 +543,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
       </div>
 
       {/* Column Footer: Bottom Add Card & Voice Button Bar (Matches Media 3 & Media 4) */}
-      {!isAddingCard && (
+      {canEdit && !isAddingCard && (
         <div className="pt-1.5 flex items-center gap-1.5 shrink-0">
           <button
             type="button"
