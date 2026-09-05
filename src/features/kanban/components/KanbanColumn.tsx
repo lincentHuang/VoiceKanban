@@ -8,7 +8,8 @@ import { Column, Task, getColumnColorConfig } from "@/core/types/task";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { TaskCard } from "./TaskCard";
 import { ColumnActionMenu } from "./ColumnActionMenu";
-import { Plus, MoreHorizontal, CheckSquare, Mic, X, GripVertical, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { ColumnIconPicker } from "./ColumnIconPicker";
+import { Plus, MoreHorizontal, CheckSquare, Mic, X, GripVertical, CheckCircle2, ChevronDown, ChevronUp, Pencil, SmilePlus } from "lucide-react";
 
 interface KanbanColumnProps {
   column: Column;
@@ -56,12 +57,58 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
     activeBoardId,
     dragOverLocation,
     activeDragTaskId,
+    updateColumnInActiveBoard,
   } = useKanbanStore();
 
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+
+  // Column Title Inline Editing State
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState(column.title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setTitleInput(column.title);
+    }
+  }, [column.title, isEditingTitle]);
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [isEditingTitle]);
+
+  const handleSaveTitle = () => {
+    const trimmed = titleInput.trim();
+    if (trimmed && trimmed !== column.title) {
+      updateColumnInActiveBoard(column.id, trimmed);
+    } else {
+      setTitleInput(column.title);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleCancelTitle = () => {
+    setTitleInput(column.title);
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSaveTitle();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      handleCancelTitle();
+    }
+  };
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -219,12 +266,69 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
         className="flex items-center justify-between px-1 py-1 shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
         title="按住標頭可拖曳重新排列欄位順序"
       >
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <GripVertical className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover/col:text-slate-600 dark:group-hover/col:text-slate-300 transition-colors shrink-0 -ml-0.5" />
-          {column.icon && <span className="text-base shrink-0">{column.icon}</span>}
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate">
-            {column.title}
-          </h3>
+          
+          {/* Column Icon Picker */}
+          <ColumnIconPicker
+            value={column.icon || ""}
+            onChange={(newIcon) => updateColumnInActiveBoard(column.id, undefined, newIcon)}
+            variant="ghost"
+          >
+            <span
+              className="text-base shrink-0 cursor-pointer hover:scale-115 active:scale-95 transition-transform p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center"
+              title="點擊更換欄位圖示"
+            >
+              {column.icon ? column.icon : <SmilePlus className="w-3.5 h-3.5 text-slate-400" />}
+            </span>
+          </ColumnIconPicker>
+
+          {/* Title or Inline Edit Input */}
+          {isEditingTitle ? (
+            <div
+              className="flex-1 min-w-0 pr-1"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={titleInput}
+                onChange={(e) => setTitleInput(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                onBlur={handleSaveTitle}
+                className="w-full font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight px-1.5 py-0.5 rounded-lg border-2 border-orange-500 bg-white/95 dark:bg-slate-800/95 shadow-sm focus:outline-none min-w-0"
+                maxLength={40}
+                placeholder="欄位名稱"
+              />
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-1 min-w-0 group/title cursor-pointer overflow-hidden"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                setIsEditingTitle(true);
+              }}
+              title="雙擊直接編輯名稱"
+            >
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+                {column.title}
+              </h3>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingTitle(true);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="opacity-0 group-hover/col:opacity-70 hover:!opacity-100 p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all rounded shrink-0 cursor-pointer"
+                title="修改名稱"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           <span
             className={`ml-0.5 px-2 py-0.5 rounded-full font-bold text-xs shadow-2xs shrink-0 ${colorConfig.badgeClass}`}
             title={completedTasks.length > 0 ? `待處理: ${uncompletedTasks.length} / 已完成: ${completedTasks.length}` : `共 ${uncompletedTasks.length} 項`}
@@ -234,7 +338,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
         </div>
 
         <div
-          className="flex items-center gap-1 shrink-0"
+          className="flex items-center gap-1 shrink-0 ml-1"
           onPointerDown={(e) => e.stopPropagation()}
         >
           {/* Select all in column */}
@@ -252,6 +356,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
           <ColumnActionMenu
             column={column}
             onAddTask={() => setIsAddingCard(true)}
+            onStartRename={() => setIsEditingTitle(true)}
           />
         </div>
       </div>

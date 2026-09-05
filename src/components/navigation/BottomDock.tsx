@@ -50,7 +50,7 @@ export const BottomDock: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto max-w-[calc(100vw-5rem)] sm:max-w-none">
+    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-30 pointer-events-auto max-w-[calc(100vw-5rem)] sm:max-w-none">
       <div className="backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-full shadow-glass-elevated px-2.5 sm:px-3 py-1.5 flex items-center gap-1 sm:gap-2 transition-all">
         {/* Inbox View Toggle */}
         <button

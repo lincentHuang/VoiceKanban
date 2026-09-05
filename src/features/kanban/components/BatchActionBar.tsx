@@ -74,7 +74,7 @@ export const BatchActionBar: React.FC = () => {
   };
 
     return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-full max-w-[calc(100vw-1.25rem)] sm:max-w-2xl px-1 sm:px-4 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
+    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-40 w-full max-w-[calc(100vw-1.25rem)] sm:max-w-2xl px-1 sm:px-4 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
       <div className="backdrop-blur-2xl bg-slate-900/95 dark:bg-slate-900/98 text-white border border-slate-700/80 shadow-2xl rounded-2xl sm:rounded-full p-2.5 sm:px-5 sm:py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
         {/* Row 1 on mobile: Selection Count & Quick Exit */}
         <div className="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 w-full sm:w-auto">

@@ -68,7 +68,7 @@ interface KanbanStoreState {
   createBoard: (name: string, icon?: string, description?: string) => void;
   getActiveBoardColumns: () => Column[];
   addColumnToActiveBoard: (title: string, icon?: string, color?: string) => void;
-  updateColumnInActiveBoard: (columnId: string, title: string, icon?: string) => void;
+  updateColumnInActiveBoard: (columnId: string, title?: string, icon?: string) => void;
   setColumnColor: (columnId: string, color: string) => void;
   deleteColumnFromActiveBoard: (columnId: string) => void;
   sortColumnTasks: (columnId: string, sortBy: "date" | "priority" | "title") => void;
@@ -573,11 +573,17 @@ export const useKanbanStore = create<KanbanStoreState>()(
         get().triggerSync();
       },
 
-      updateColumnInActiveBoard: (columnId, title, icon = "✨") => {
+      updateColumnInActiveBoard: (columnId, title, icon) => {
         const { boards, activeBoardId } = get();
         const currentColumns = get().getActiveBoardColumns();
         const updatedColumns = currentColumns.map((col) =>
-          col.id === columnId ? { ...col, title, icon } : col
+          col.id === columnId
+            ? {
+                ...col,
+                title: title !== undefined && title.trim() ? title.trim() : col.title,
+                icon: icon !== undefined ? icon : col.icon,
+              }
+            : col
         );
 
         set({

@@ -26,17 +26,21 @@ import {
   FileText,
   ChevronDown,
   Boxes,
+  Pencil,
+  SlidersHorizontal,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
 interface ColumnActionMenuProps {
   column: Column;
   onAddTask: () => void;
+  onStartRename?: () => void;
 }
 
 export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
   column,
   onAddTask,
+  onStartRename,
 }) => {
   const {
     setColumnColor,
@@ -45,6 +49,7 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
     archiveColumn,
     aggregateColumnToTask,
     getActiveBoardColumns,
+    setIsColumnManagerOpen,
   } = useKanbanStore();
 
   const [isColorPickerExpanded, setIsColorPickerExpanded] = useState(false);
@@ -85,11 +90,25 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
             onAddTask();
             setIsOpen(false);
           }}
-          className="flex items-center gap-2 font-medium"
+          className="flex items-center gap-2 font-medium cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5 text-slate-400" />
           <span>新增卡片</span>
         </DropdownMenuItem>
+
+        {/* 2. Rename Column */}
+        {onStartRename && (
+          <DropdownMenuItem
+            onClick={() => {
+              setIsOpen(false);
+              onStartRename();
+            }}
+            className="flex items-center gap-2 font-medium cursor-pointer"
+          >
+            <Pencil className="w-3.5 h-3.5 text-slate-400" />
+            <span>重新命名列表</span>
+          </DropdownMenuItem>
+        )}
 
         {/* 2. Color Picker (Accordion style inside menu) */}
         <div className="my-0.5">
@@ -245,7 +264,19 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
 
         <DropdownMenuSeparator />
 
-        {/* 6. Archive Column */}
+        {/* 6. Manage Columns / Workflow */}
+        <DropdownMenuItem
+          onClick={() => {
+            setIsOpen(false);
+            setIsColumnManagerOpen(true);
+          }}
+          className="flex items-center gap-2 font-medium cursor-pointer text-slate-700 dark:text-slate-200"
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+          <span>管理所有欄位流程...</span>
+        </DropdownMenuItem>
+
+        {/* 7. Archive Column */}
         <DropdownMenuItem
           variant="destructive"
           onClick={() => {

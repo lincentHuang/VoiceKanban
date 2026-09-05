@@ -88,8 +88,8 @@ export const CalendarView: React.FC = () => {
   const weekDayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
 
   return (
-    <div className="w-full h-full p-1 text-slate-800 dark:text-slate-100 overflow-hidden">
-      <div className="backdrop-blur-2xl bg-white/75 dark:bg-slate-900/75 border border-white/80 dark:border-slate-800 rounded-3xl shadow-glass overflow-hidden h-full flex flex-col">
+    <div className="w-full flex-1 min-h-0 p-1 text-slate-800 dark:text-slate-100 overflow-hidden flex flex-col">
+      <div className="backdrop-blur-2xl bg-white/75 dark:bg-slate-900/75 border border-white/80 dark:border-slate-800 rounded-3xl shadow-glass overflow-hidden flex-1 min-h-0 flex flex-col">
         {/* Calendar Top Controls Header (Matching Image 2) */}
         <div className="p-4 sm:p-5 border-b border-slate-200/70 dark:border-slate-800/70 flex flex-wrap items-center justify-between gap-3">
           {/* Left: Year/Month Selector & Navigation */}
@@ -175,7 +175,7 @@ export const CalendarView: React.FC = () => {
         )}
 
         {/* Calendar 7-Column Grid (Image 2) */}
-        <div className="overflow-x-auto">
+        <div className="overflow-auto flex-1 min-h-0 custom-scrollbar">
           {/* Weekday Header */}
           <div className="grid grid-cols-7 border-b border-slate-200/80 dark:border-slate-800 min-w-[700px] text-center bg-slate-50/50 dark:bg-slate-800/30">
             {weekDayNames.map((dayName, idx) => (

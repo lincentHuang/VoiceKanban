@@ -18,11 +18,14 @@
    - **同欄排序**：基於 `pointerWithin` 與卡片垂直中線（Midpoint Thresholding）幾何判定，拖至最頂端、兩張卡片縫隙或最底端皆能 100% 精準切入。
 4. **Lexorank 排序引擎 (Lexorank Engine)**：
    - 任務排序鍵符合 Base36 字元規格，支援任意卡片間隙快速插入與重排。
-5. **欄位管理、垂直拖曳排序與彈跳式圖示選擇器 (Column Management, DnD Reordering & Popover Icon Picker)**：
-   - 支援新增、重命名、變更全欄位柔和淺色主題（包含清新淺綠、溫暖淺黃、晨曦淺橘、恬靜淺紫、柔霧淺藍、浪漫淺粉、冰晶淺青、嫩芽草綠、奶茶燕麥、質感冷灰等淺色調）。
+5. **欄位管理、行內極速編輯與彈跳式圖示選擇器 (Column Management, Inline Rename & Popover Icon Picker)**：
+   - **雙軌欄位重新命名**：
+     - **標頭就地行內編輯 (Inline Edit)**：支援雙擊標頭文字或點擊懸停鉛筆圖示進入行內編輯輸入框（自動聚焦全選文字）；支援 `Enter` 儲存、`Escape` 取消還原、`Blur` 自動保存；空文字輸入防呆復原原名稱。
+     - **選單動作整合**：`ColumnActionMenu` 新增「✏️ 重新命名列表」直接啟動該欄位行內編輯，並新增「⚙️ 管理所有欄位流程...」直通流程管理視窗。
+   - **Popover 圖示選擇器 (`ColumnIconPicker`)**：點擊欄位標頭圖示或流程管理彈窗內圖示按鈕，即刻展開精緻 Popover 面板，支援直覺挑選 Emoji 或設為「無圖示 (純文字)」；更換圖示與名稱相互獨立保留不覆蓋。
+   - **手勢防衝突隔離**：行內輸入框、編輯按鈕與圖示按鈕全面阻斷指標事件（`onPointerDown` stopPropagation），保證編輯打字時絕不誤觸發欄位 DnD 水平排序。
    - 狀態流程管理視窗 (`ColumnManagerModal`) 支援按住左側 `⋮⋮` 把手進行**垂直拖曳（Drag & Drop）直覺排序**，即時預覽並持久化。
-   - 採用精緻小巧之 Popover 彈跳圖示選擇器，移除佔空間之下拉箭頭，並完整支援「🚫 不使用圖示 (純文字)」選項。
-   - 欄位顏色全面套用於整個欄位容器背景與邊框，移除單一線條，呈現精緻層次與卡片對比度。
+   - 變更全欄位柔和淺色主題（清新淺綠、溫暖淺黃、晨曦淺橘、恬靜淺紫、柔霧淺藍、浪漫淺粉等）。
    - 支援刪除欄位與設定 WIP (Work-In-Progress) 數量上限，超過時呈現視覺警示。
 6. **任務全屬性 CRUD (Task CRUD & Modals)**：
    - `AddTaskModal`：快速新增任務（標題、描述、優先級、到期日、標籤、預估時間）。
@@ -33,12 +36,15 @@
    - 展開後完整顯示已完成卡片，支援點擊查看詳情與卡片拖曳排序。
 8. **多選與批次操作 (Batch Actions & Mobile Responsive Bar)**：
    - 支援勾選多張卡片，底部浮動 `BatchActionBar` 提供批次移動欄位、批次變更優先級、批次完成與批次刪除。
-   - **手機版雙行響應式佈局**：小螢幕（`< sm`）下切換為圓角雙行卡片（Row 1：選取數量徽章、計數文字與「退出多選」按鈕；Row 2：移動至、優先級、未完成、完成、刪除等操作按鈕，標籤加上 `whitespace-nowrap` 防折行），桌機寬螢幕（`≥ sm`）維持俐落單行膠囊列。
+   - **手機版雙行響應式佈局**：小螢幕（`< sm`）下切換為圓角雙行卡片（Row 1：選取數量徽章、計數文字與「退出多選」按鈕；Row 2：移動至、優先級、未完成、完成、刪除等操作按鈕，標籤加上 `whitespace-nowrap` 防折行），桌機寬螢幕（`≥ sm`）則維持俐落單行膠囊列。
 9. **手機版看板磁力滑動置中與邊緣懸停磁吸切換 (Mobile Scroll Snap & Edge Magnet Drag Navigation)**：
    - 手機小螢幕瀏覽時，看板容器啟用 `snap-x snap-mandatory`，各欄位 `w-[84vw] max-w-[320px] snap-center`，滑動時自動置中於畫面中央並保留兩側鄰欄邊緣預覽。
 10. **展開與聚合工作流 (Expand & Aggregate Workflow)**：
     - **任務展開為欄位 (Expand Task to Column)**：在 `EditTaskModal` 詳細視窗中提供「🚀 展開為狀態欄位」按鈕。點擊後主任務標題升級為看板新欄位，其 Checklist 子任務全部提取轉化為該欄位內的獨立任務卡片（保留各自勾選完成狀態），原任務卡片安全移除。
     - **欄位聚合為任務 (Aggregate Column to Task)**：在 `ColumnActionMenu` 下拉選單中提供「📦 聚合為單一任務卡（移至收件匣）」選項。點擊後該狀態欄位名稱轉化為新任務卡片，欄內所有任務卡片轉化為 Checklist 子清單（保留完成狀態），原卡片深層屬性（標籤、到期日、備註）結構化彙整於新任務 Markdown 描述中（零資料遺失），新任務卡片直接存入收件匣（Inbox）並自動開啟收件匣側欄供檢視，原欄位與其內部任務安全除役。
+11. **手機端欄位底部與浮動 Dock 安全避讓 (Mobile Dock Clearance & Safe Area)**：
+    - 主畫布容器與收件匣內容區配置精準內距 `pb-[54px] sm:pb-16`，徹底消除手機版（`< sm`）因無效類別或高度計算缺失導致欄位底部卡片、「已完成 (N)」折疊條及「+ 新增卡片」按鈕與底部浮動 Dock (`BottomDock`)、語音 FAB 互相疊合的問題。
+    - 支援 iOS / Android 原生 Safe Area Insets 避讓，確保卡片內容滾動到底時完整可視且 100% 易於點擊。
 
 ---
 
@@ -48,13 +54,14 @@ src/features/kanban/
 ├── components/
 │   ├── BoardCanvasContainer.tsx   # 看板主畫布容器 (支援視圖切換與篩選)
 │   ├── KanbanContainer.tsx        # 看板欄位橫向滾動容器 (含 Scroll Snap、拖曳邊緣磁吸翻頁與行內新增欄位)
-│   ├── KanbanColumn.tsx           # 單一欄位容器 (包含標頭拖曳把手、snap-center、未完成與已完成折疊)
+│   ├── KanbanColumn.tsx           # 單一欄位容器 (包含標頭拖曳把手、行內標題編輯、圖示挑選、未完成與已完成折疊)
 │   ├── TaskCard.tsx               # 單一任務卡片 (支援優先級、標籤、封面、子任務進度、到期狀態)
 │   ├── AddTaskModal.tsx           # 新增任務彈窗
 │   ├── EditTaskModal.tsx          # 編輯任務彈窗 (完整屬性編輯、子任務排序、展開為獨立欄位)
 │   ├── BatchActionBar.tsx         # 多選批次操作懸浮列
-│   ├── ColumnActionMenu.tsx       # 欄位下拉選單 (淺色選色器、排序、聚合為單一任務卡、清除、編輯)
-│   └── ColumnManagerModal.tsx     # 欄位管理與自訂彈窗 (含 Popover 圖示選擇器、無圖示支援、▲/▼ 順序調整)
+│   ├── ColumnIconPicker.tsx       # 獨立欄位圖示 Popover 選擇器 (支援 Emoji 與純文字)
+│   ├── ColumnActionMenu.tsx       # 欄位下拉選單 (重新命名、淺色選色器、排序、聚合為單一任務卡、管理流程)
+│   └── ColumnManagerModal.tsx     # 欄位管理與自訂彈窗 (含 Popover 圖示選擇器、無圖示支援、垂直拖曳排序)
 ├── index.ts                       # 模組統一出口
 └── feature.md                     # 功能規格與驗收標準文檔
 ```
@@ -94,4 +101,8 @@ src/features/kanban/
   - 刪除防呆確認 Modal 於桌機端（Desktop）與手機端（Mobile）維持完全一致的中央彈出視窗（含暗色半透明遮罩、不可復原警告文案、紅色確認與取消按鈕），修復桌機版先前因 `fixed` 座標與 `overflow-hidden` 裁切導致確認視窗無法顯示之問題。
   - 支援 ESC 鍵與點擊遮罩即時取消關閉確認視窗。
   - 雲端同步層（`syncService`）徹底抹除已刪除任務鍵值，杜絕 Firestore `merge: true` 導致已刪除任務被雲端重疊復活之異常。
+- [x] **AC-KANBAN-17**：**手機端欄位底部與浮動 Dock 安全避讓 (Mobile Column Bottom Dock Clearance & Safe Area)**：
+  - 看板主畫布視圖容器與收件匣內容區配置 `pb-[54px] sm:pb-16`，修復先前無效類別導致手機端 0 邊距重疊之問題。
+  - 欄位內部之最後一張卡片、已完成任務折疊條（`visibleCompletedTasks`）以及欄位底部「+ 新增卡片」按鈕在各手機尺寸下均 100% 完整露出於浮動 Dock 及語音 FAB 之上，零重疊、易點擊，背景自然透出漸層。
+
 

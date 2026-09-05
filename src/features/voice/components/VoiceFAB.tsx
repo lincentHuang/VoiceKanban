@@ -36,7 +36,7 @@ export const VoiceFAB: React.FC = () => {
   if (isVoiceOverlayOpen) return null;
 
   return (
-    <div className="fixed bottom-4 sm:bottom-6 right-3 sm:right-6 z-40">
+    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:bottom-6 right-3 sm:right-6 z-40">
       <div className="relative group">
         {/* Pulsing Ripple Effect */}
         <div className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-orange-400 to-rose-500 opacity-40 group-hover:opacity-75 blur-md animate-pulse transition duration-1000 group-hover:duration-200" />

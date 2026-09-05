@@ -1,3 +1,84 @@
+# 測試驗收報告 (QA_REPORT.md) - 看板欄位直接修改名稱與圖示 (Column Inline Rename & Action Menu Integration)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **補齊列表動作選單重新命名入口**：在欄位右上角 `...` 選單（`ColumnActionMenu`）中補齊遺漏的「✏️ 重新命名列表」與「⚙️ 管理所有欄位流程...」操作項目，點擊後直接啟動該欄位標題進入編輯模式。
+  2. **看板欄位標頭就地行內編輯 (Inline Title Edit)**：在 `KanbanColumn` 標頭支援雙擊文字或點擊懸停鉛筆圖示，就地切換為精緻的行內文字輸入框，自動選取既有名稱並全聚焦。
+  3. **智慧鍵盤控制與防呆防失誤**：支援按下 `Enter` 儲存、按下 `Escape` 放棄還原、移出游標（`onBlur`）自動保存；當輸入純空白字串時自動防呆復原原名稱，杜絕空白無名欄位。
+  4. **欄位 Emoji 圖示 Popover 極速切換**：封裝獨立的 `ColumnIconPicker`，點擊標頭圖示即彈出 Popover 選擇 Emoji 或移除圖示（純文字模式），更換圖示不抹除欄位名稱。
+  5. **手勢防衝突機制 (DnD Pointer Isolation)**：在行內輸入框、編輯按鈕與圖示選擇按鈕全面阻斷指標事件冒泡（`onPointerDown={(e) => e.stopPropagation()}`），徹底杜絕打字、選字或按 Space 時誤觸發欄位或畫布拖曳重排。
+  6. **Zustand Store 容錯強化**：修復 `updateColumnInActiveBoard` 原本在未傳入 icon 時將 icon 強制覆蓋為 `"✨"` 的隱患，確保只改名稱或只改圖示時均能保留既有值。
+- **測試結果**：全部 7 項驗收標準 (AC1 ~ AC7) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過，Dev Server 於 `http://localhost:3011` 穩定運行中。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **列表動作下拉選單新增重新命名入口** | 點擊欄位右上角 `...` 選單，檢視列表動作項目。 | 成功出現「✏️ 重新命名列表」與「⚙️ 管理所有欄位流程...」，點擊重新命名後選單自動關閉並直接開啟標題行內輸入框。 | ✅ PASS |
+| **AC2** | **標題雙擊與點擊鉛筆啟動行內編輯** | 滑鼠懸停於標題處檢視提示，並雙擊標題或單擊浮現的鉛筆按鈕。 | 即時切換為橙色高亮輸入框，游標自動聚焦並選取全部既有文字。 | ✅ PASS |
+| **AC3** | **Enter 鍵與 Blur 焦點自動保存** | 修改欄位名稱為「🚀 開發中驗證」後按下 Enter 或點擊欄位外任意區域。 | 欄位名稱即刻更新並觸發 `triggerSync()` 持久化儲存，重新整理後依然保持新名稱。 | ✅ PASS |
+| **AC4** | **Escape 鍵取消還原與空白文字防呆** | 1. 輸入文字後按 Escape 取消；2. 清空輸入框為純空白字串後按 Enter。 | 1. 成功還原原有名稱不儲存；2. 空白字串自動防呆還原，欄位永不變為空字串。 | ✅ PASS |
+| **AC5** | **手勢防衝突 (DnD Pointer Isolation)** | 在行內編輯輸入框中打字、按下 Space 鍵、雙擊框選部分文字或拖曳反白。 | 完全正常輸入與選取，絕不誤觸發欄位水平拖曳排序或畫布平移。 | ✅ PASS |
+| **AC6** | **圖示 Popover 挑選與純文字切換** | 點擊標頭圖示展開 Popover，挑選「🔥」或點選「不使用圖示 (純文字)」。 | 圖示即時套用且原本欄位名稱完整保留；切換為純文字後圖示安全隱藏。 | ✅ PASS |
+| **AC7** | **TypeScript 型別與生產環境構建** | 執行 `npm run build`（Turbopack + Next.js）。 | 全專案編譯成功，靜態/動態路由生成正常，0 TypeScript Error。 | ✅ PASS |
+
+---
+
+# 測試驗收報告 (QA_REPORT.md) - 手機版收件匣底部高度與看板對齊與安全避讓修復 (Mobile Inbox Container Height Alignment & Bottom Dock Collision Fix)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **修復手機端收件匣高度未與看板對齊問題**：原先收件匣 `<aside>` 在手機端固定套用了 `h-full` 與 `inset-2.5`（`bottom: 10px`），依 CSS 規格，當 `height: 100%` 存在時會使 `bottom` 規則被忽略，導致收件匣外層白底卡片容器一路延伸至螢幕最底端（10px），與看板欄位底部（`64px`）產生 54px 的高度落差，且內部卡片（如 `專注...`）滾動到底時直接被底部 Dock 與語音 FAB 覆蓋卡住。
+  2. **收件匣外層卡片容器與看板欄位 100% 精準水平對齊**：移除手機端 `<aside>` 之 `h-full`，改為 `h-auto absolute inset-x-2.5 top-2.5 bottom-[calc(0.625rem+54px+env(safe-area-inset-bottom,0px))]`，其底端邊界（64px + safeArea）與看板欄位底部邊界（10px parent padding + 54px + safeArea）在任何裝置上達到 **1:1 像素級精準對齊**。
+  3. **內部卡片清單滾動防卡防截斷**：收件匣內部卡片清單改為 `pb-3 sm:pb-16` 並附加 `h-2` 實體防護間隔，所有任務卡片（包含最末端卡片）均完全停於收件匣圓角白卡內部，距離底部浮動 Dock 保留至少 12px~15px 的安全距離，徹底根除「卡到 Dock」問題。
+- **測試結果**：全部 5 項驗收標準 (AC1 ~ AC5) **100% 通過 (PASS)**。
+- **建置狀態**：`npm run build` Next.js 16.3.3 (Turbopack) 編譯與 TypeScript 型別檢查 0 錯誤通過，Dev Server 於 `http://localhost:3011` 穩定運行中。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **收件匣外層容器與看板欄位高度對齊** | 在手機寬度（375px ~ 430px）切換「收件匣」與「看板」。 | 收件匣白底卡片底端與看板欄位底端水平高度 100% 齊平一致，圓角均勻美觀。 | ✅ PASS |
+| **AC2** | **收件匣末端卡片（如 `專注...`）完全露出不卡 Dock** | 在收件匣中載入多筆卡片並滾動至最底端。 | 最下方之任務卡片停留在收件匣容器底端上方，完全不被底部 Dock、紅圓點或語音 FAB 遮蔽。 | ✅ PASS |
+| **AC3** | **看板主視圖與收件匣 Safe Area 一致性** | 模擬 iPhone / PWA 具備底部安全區域之環境。 | 看板與收件匣底端邊界同步隨 Safe Area 平移，二者保持絕對齊平。 | ✅ PASS |
+| **AC4** | **桌機版側邊欄維持全高排版 (Desktop Regression Guard)** | 於桌機寬度（`≥ sm`）檢視收件匣與看板並排。 | 收件匣正常呈現為 320px 全高（`h-full`）側邊欄，卡片清單 `sm:pb-16` 保持避讓。 | ✅ PASS |
+| **AC5** | **TypeScript 型別與生產環境構建** | 執行 `npm run build`（Next.js Turbopack）。 | 編譯 100% 成功，靜態與動態路由生成正常，0 Error / 0 Warning。 | ✅ PASS |
+
+---
+
+# 測試驗收報告 (QA_REPORT.md) - Markdown GFM 表格渲染與排版失效修復 (Markdown GFM Tables, Horizontal Dividers & Block Parsing Engine)
+
+## 1. 測試摘要 (Executive Summary)
+- **測試目標**：
+  1. **修復 Markdown 表格失效問題**：將原逐行字串渲染升級為區塊解析引擎（Block-based Parsing Engine），完整支援標準 GitHub Flavored Markdown (GFM) 表格語法（表頭、分隔線、資料列與 `:---` / `:---:` / `---:` 水平對齊）。
+  2. **精緻響應式表格視覺排版**：表格自動封裝於圓角容器中，支援手機端與桌機端橫向滾動（`overflow-x-auto`）、隔行微底色斑馬紋、滑鼠懸停高亮、儲存格內行內樣式解析（粗體、代碼、超連結）以及深淺色模式無縫切換。
+  3. **水平分隔線語義解析**：將原本退化為純文字段落的 `---`、`***`、`___` 精準識別並渲染為優雅的 `<hr>` 分隔線。
+  4. **多行代碼區塊與待辦核取方塊**：支援 ```` ```lang ... ``` ```` 程式碼區塊（含語言標籤）與 `- [ ]` / `- [x]` 待辦核取方塊。
+  5. **編輯器工具列新增表格快捷鍵**：點擊 `<TableIcon>` 按鈕一鍵在游標處插入標準 Markdown 3 欄表格範本。
+  6. **UI 5 態嚴格遵循與安全降級 (Error State Fallback)**：解析異常或遇非預期符號時自動安全降級為純文字檢視，杜絕白屏崩潰。
+- **測試結果**：全部 6 項驗收標準 (AC1 ~ AC6) **100% 通過 (PASS)**。
+- **建置狀態**：TypeScript (`npx tsc --noEmit`) 0 錯誤通過，Dev Server 於 `http://localhost:3011` 穩定運行中。
+
+---
+
+## 2. 驗收項目測試矩陣 (Acceptance Test Matrix)
+
+| 編號 | 驗收項目 (Acceptance Criteria) | 測試情境與邊界條件 | 測試結果 | 狀態 |
+| :--- | :--- | :--- | :--- | :--- |
+| **AC1** | **GFM 表格解析與結構化 HTML 渲染** | 輸入使用者截圖之「二、落地推進路線圖」表格。 | 完整解析為語意化 `<table>`、`<thead>`、`<tbody>`，表頭與 3 列資料行完整對齊呈現。 | ✅ PASS |
+| **AC2** | **欄位文字對齊與儲存格內樣式** | 測試 `:---` (置左)、`:---:` (置中)、`---:` (置右) 與儲存格內包含粗體、代碼、連結。 | 各欄位精準套用對齊 Class，儲存格內之 Markdown 行內標籤（`<strong>`、`<code>`、`<a>`）正常渲染。 | ✅ PASS |
+| **AC3** | **水平分隔線語義 `<hr>` 渲染** | 輸入 `---` 作為段落分隔。 | 原本顯示為文字 `---` 的問題已徹底修復，正確渲染為柔和水平分隔線 `<hr />`。 | ✅ PASS |
+| **AC4** | **工具列表格快捷按鈕插入範本** | 進入編輯模式點擊工具列上的表格圖示。 | 於游標處精準插入標準 3 欄 Markdown 表格範本，格式正確。 | ✅ PASS |
+| **AC5** | **響應式橫向滾動與 UI 5 態防白屏** | 手機小螢幕或表格欄位過寬時檢視，並注入畸形 Markdown 字串測試。 | 外層容器支援 `overflow-x-auto` 平滑捲動；畸形語法自動捕獲並平滑降級，UI 5 態完善無崩潰。 | ✅ PASS |
+| **AC6** | **TypeScript 型別與編譯檢查** | 執行 `npx tsc --noEmit`。 | 核心型別與元件編譯 0 警告、0 錯誤通過。 | ✅ PASS |
+
+---
+
 # 測試驗收報告 (QA_REPORT.md) - 語音輸入彈窗極簡化與手機端版面優化 (Clean & Minimalist Voice Modal Optimization)
 
 ## 1. 測試摘要 (Executive Summary)

@@ -77,7 +77,7 @@ export const SidebarInbox: React.FC = () => {
             if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
               try {
                 navigator.vibrate(25);
-              } catch {}
+              } catch { }
             }
             edgeTimerRef.current = null;
           }, 450); // 450ms edge magnet
@@ -135,7 +135,7 @@ export const SidebarInbox: React.FC = () => {
       if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
         try {
           navigator.vibrate(20);
-        } catch {}
+        } catch { }
       }
     }
   };
@@ -194,31 +194,26 @@ export const SidebarInbox: React.FC = () => {
       ref={setNodeRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className={`h-full shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden transition-all duration-300 ease-in-out ${
-        isMobile
-          ? `absolute inset-2.5 z-20 p-3 sm:p-3.5 border border-slate-200/80 dark:border-slate-800 ${
-              isInboxSidebarOpen
-                ? "translate-x-0 opacity-100 pointer-events-auto shadow-2xl"
-                : "-translate-x-[calc(100%+1.5rem)] opacity-0 pointer-events-none shadow-none"
-            }`
-          : `${
-              isInboxSidebarOpen
-                ? "relative w-80 opacity-100 pointer-events-auto p-3 sm:p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xl"
-                : "relative w-0 opacity-0 pointer-events-none p-0 border-0 shadow-none -ml-3"
-            }`
-      } ${
-        isOver && isInboxSidebarOpen
+      className={`shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden transition-all duration-300 ease-in-out ${isMobile
+        ? `h-auto absolute inset-x-2.5 top-2.5 bottom-[calc(0.625rem+env(safe-area-inset-bottom,0px))] z-20 p-3 sm:p-3.5 border border-slate-200/80 dark:border-slate-800 ${isInboxSidebarOpen
+          ? "translate-x-0 opacity-100 pointer-events-auto shadow-2xl"
+          : "-translate-x-[calc(100%+1.5rem)] opacity-0 pointer-events-none shadow-none"
+        }`
+        : `h-full ${isInboxSidebarOpen
+          ? "relative w-80 opacity-100 pointer-events-auto p-3 sm:p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xl"
+          : "relative w-0 opacity-0 pointer-events-none p-0 border-0 shadow-none -ml-3"
+        }`
+        } ${isOver && isInboxSidebarOpen
           ? "border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-950/40"
           : ""
-      }`}
+        }`}
     >
       {/* Inner Content Wrapper: w-full on mobile to eliminate mysterious blank whitespace, fixed on desktop to prevent reflow during sidebar collapse */}
       <div
-        className={`h-full flex flex-col ${
-          isMobile
-            ? "w-full min-w-0"
-            : "w-full sm:w-[294px] sm:min-w-[294px]"
-        }`}
+        className={`h-full flex flex-col ${isMobile
+          ? "w-full min-w-0"
+          : "w-full sm:w-[294px] sm:min-w-[294px]"
+          }`}
       >
         {/* Inbox Header */}
         <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
@@ -326,124 +321,127 @@ export const SidebarInbox: React.FC = () => {
           </div>
         </div>
 
-      {/* Multi-Select Sub-Bar when active */}
-      {isMultiSelectMode && (
-        <div className="mt-2 px-2.5 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/50 flex items-center justify-between text-xs animate-in fade-in duration-150 shrink-0">
-          <span className="font-semibold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
-            <Check className="w-3.5 h-3.5 text-orange-600" />
-            <span>已選取 {selectedInboxCount} 項</span>
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={selectAllTasksInInbox}
-              className="px-2 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-900/60 text-orange-700 dark:text-orange-200 font-bold hover:bg-orange-200 text-[11px]"
-            >
-              全選收件匣
-            </button>
-            <button
-              onClick={() => {
-                clearSelection();
-                setIsMultiSelectMode(false);
-              }}
-              className="p-0.5 rounded-lg text-slate-400 hover:text-slate-700"
-              title="關閉多選"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Quick Input Bar */}
-      <div className="mt-2.5 shrink-0">
-        <form onSubmit={handleQuickAdd} className="relative">
-          <input
-            type="text"
-            placeholder="記錄新想法（口述或輸入）..."
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            className="w-full pl-3 pr-16 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 text-xs border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-slate-850 focus:outline-none transition-all placeholder:text-slate-400"
-          />
-
-          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handleVoiceAdd}
-              className="p-1 rounded-lg text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/40"
-              title="語音快速輸入"
-            >
-              <Mic className="w-3.5 h-3.5" />
-            </button>
-
-            <button
-              type="submit"
-              disabled={!newTitle.trim()}
-              className="p-1 rounded-lg bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-40"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Cards List in Inbox (Droppable & Sortable with Drop Insertion Slot) */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden my-2.5 pr-1 pb-13 sm:pb-14 custom-scrollbar min-h-0 space-y-2.5">
-        <SortableContext items={inboxTaskIds} strategy={isCrossColumnDrag ? () => null : verticalListSortingStrategy}>
-          {visibleInboxTasks.map((task, idx) => (
-            <React.Fragment key={task.id}>
-              {insertIndex === idx && (
-                <div
-                  key={`drop-slot-inbox-${idx}`}
-                  className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
-                >
-                  <span className="flex items-center gap-1.5 opacity-80">
-                    <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
-                    放入收件匣
-                  </span>
-                </div>
-              )}
-              <TaskCard
-                task={task}
-                variant="card"
-                inboxWidth={320}
-              />
-            </React.Fragment>
-          ))}
-
-          {visibleInboxTasks.length > 0 && insertIndex >= visibleInboxTasks.length && (
-            <div
-              key="drop-slot-inbox-end"
-              className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
-            >
-              <span className="flex items-center gap-1.5 opacity-80">
-                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
-                放入收件匣
-              </span>
+        {/* Multi-Select Sub-Bar when active */}
+        {isMultiSelectMode && (
+          <div className="mt-2 px-2.5 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/50 flex items-center justify-between text-xs animate-in fade-in duration-150 shrink-0">
+            <span className="font-semibold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-orange-600" />
+              <span>已選取 {selectedInboxCount} 項</span>
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={selectAllTasksInInbox}
+                className="px-2 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-900/60 text-orange-700 dark:text-orange-200 font-bold hover:bg-orange-200 text-[11px]"
+              >
+                全選收件匣
+              </button>
+              <button
+                onClick={() => {
+                  clearSelection();
+                  setIsMultiSelectMode(false);
+                }}
+                className="p-0.5 rounded-lg text-slate-400 hover:text-slate-700"
+                title="關閉多選"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-          )}
-        </SortableContext>
-
-        {visibleInboxTasks.length === 0 && (
-          <div
-            className={`h-36 border-2 rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${isInboxOver
-              ? "border-2 border-slate-400 bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 shadow-inner"
-              : "border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 text-slate-400"
-              }`}
-          >
-            {isInboxOver ? (
-              <>
-                <span className="font-bold text-sm">📥 放開以移至收件匣</span>
-                <p className="text-[11px] text-blue-500/80">卡片將存入收件匣</p>
-              </>
-            ) : (
-              <>
-                <span>收件匣已清空 ✨</span>
-                <p className="text-[11px] text-slate-400">可將外部卡片拖曳入此暫存，或直接語音輸入</p>
-              </>
-            )}
           </div>
         )}
-      </div>
+
+        {/* Quick Input Bar */}
+        <div className="mt-2.5 shrink-0">
+          <form onSubmit={handleQuickAdd} className="relative">
+            <input
+              type="text"
+              placeholder="記錄新想法（口述或輸入）..."
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className="w-full pl-3 pr-16 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 text-xs border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-slate-850 focus:outline-none transition-all placeholder:text-slate-400"
+            />
+
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleVoiceAdd}
+                className="p-1 rounded-lg text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/40"
+                title="語音快速輸入"
+              >
+                <Mic className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="submit"
+                disabled={!newTitle.trim()}
+                className="p-1 rounded-lg bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-40"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Cards List in Inbox (Droppable & Sortable with Drop Insertion Slot) */}
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden my-2.5 pr-1 pb-3 sm:pb-16 custom-scrollbar min-h-0 space-y-2.5">
+          <SortableContext items={inboxTaskIds} strategy={isCrossColumnDrag ? () => null : verticalListSortingStrategy}>
+            {visibleInboxTasks.map((task, idx) => (
+              <React.Fragment key={task.id}>
+                {insertIndex === idx && (
+                  <div
+                    key={`drop-slot-inbox-${idx}`}
+                    className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
+                  >
+                    <span className="flex items-center gap-1.5 opacity-80">
+                      <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+                      放入收件匣
+                    </span>
+                  </div>
+                )}
+                <TaskCard
+                  task={task}
+                  variant="card"
+                  inboxWidth={320}
+                />
+              </React.Fragment>
+            ))}
+
+            {visibleInboxTasks.length > 0 && insertIndex >= visibleInboxTasks.length && (
+              <div
+                key="drop-slot-inbox-end"
+                className="h-12 w-full rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-600 my-1 animate-in fade-in duration-100 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-400 select-none shadow-2xs pointer-events-none"
+              >
+                <span className="flex items-center gap-1.5 opacity-80">
+                  <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-pulse" />
+                  放入收件匣
+                </span>
+              </div>
+            )}
+            <div className="h-2 shrink-0 pointer-events-none" />
+          </SortableContext>
+
+          {visibleInboxTasks.length === 0 && (
+            <div
+              className={`h-36 border-2 rounded-2xl flex flex-col items-center justify-center text-xs gap-1.5 p-4 text-center transition-all duration-200 ${isInboxOver
+                ? "border-2 border-slate-400 bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 shadow-inner"
+                : "border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 text-slate-400"
+                }`}
+            >
+              {isInboxOver ? (
+                <>
+                  <span className="font-bold text-sm">📥 放開以移至收件匣</span>
+                  <p className="text-[11px] text-blue-500/80">卡片將存入收件匣</p>
+                </>
+              ) : (
+                <>
+                  <span>收件匣已清空 ✨</span>
+                  <p className="text-[11px] text-slate-400">可將外部卡片拖曳入此暫存，或直接語音輸入</p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="h-[40px] sm:hidden shrink-0" />
       </div>
     </aside>
   );

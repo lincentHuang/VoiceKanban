@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Table as TableIcon,
 } from "lucide-react";
 import { compressImage } from "@/core/utils/imageUtils";
 import { uploadFile } from "@/core/utils/uploadUtils";
@@ -161,6 +162,52 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
   };
 
+  // --- Helpers for Table Parsing & Inline Formatting ---
+  const parseCells = (row: string): string[] => {
+    let cleaned = row.trim();
+    if (cleaned.startsWith("|")) cleaned = cleaned.slice(1);
+    if (cleaned.endsWith("|")) cleaned = cleaned.slice(0, -1);
+    const rawCells = cleaned.split(/(?<!\\)\|/);
+    return rawCells.map((c) => c.trim().replace(/\\\|/g, "|"));
+  };
+
+  const isTableRow = (line: string): boolean => {
+    const trimmed = line.trim();
+    return (
+      trimmed.includes("|") &&
+      !trimmed.startsWith("#") &&
+      !trimmed.startsWith("```") &&
+      !trimmed.startsWith(">")
+    );
+  };
+
+  const isTableDelimiter = (line: string): boolean => {
+    const trimmed = line.trim();
+    if (!trimmed.includes("|") || !trimmed.includes("-")) return false;
+    const cells = parseCells(trimmed);
+    if (cells.length === 0) return false;
+    return cells.every((cell) => /^:?-{1,}:?$/.test(cell));
+  };
+
+  const parseAlignments = (
+    delimiterLine: string
+  ): ("left" | "center" | "right")[] => {
+    const cells = parseCells(delimiterLine);
+    return cells.map((cell) => {
+      const leftColon = cell.startsWith(":");
+      const rightColon = cell.endsWith(":");
+      if (leftColon && rightColon) return "center";
+      if (rightColon) return "right";
+      return "left";
+    });
+  };
+
+  const getAlignClass = (align?: "left" | "center" | "right"): string => {
+    if (align === "center") return "text-center";
+    if (align === "right") return "text-right";
+    return "text-left";
+  };
+
   // Safe inline text markdown formatter
   const formatInlineMarkdown = (text: string): React.ReactNode => {
     const linkRegex = /\[(.*?)\]\((https?:\/\/[^\s)]+|[^\s)]+)\)/g;
@@ -171,7 +218,12 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     while ((match = linkRegex.exec(text)) !== null) {
       const matchIndex = match.index;
       if (matchIndex > lastIndex) {
-        parts.push(renderTextDecorations(text.substring(lastIndex, matchIndex)));
+        parts.push(
+          renderTextDecorations(
+            text.substring(lastIndex, matchIndex),
+            `text-${matchIndex}`
+          )
+        );
       }
       const linkLabel = match[1] || match[2];
       const linkHref = match[2];
@@ -192,13 +244,18 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
 
     if (lastIndex < text.length) {
-      parts.push(renderTextDecorations(text.substring(lastIndex)));
+      parts.push(
+        renderTextDecorations(text.substring(lastIndex), `text-end-${lastIndex}`)
+      );
     }
 
     return parts.length > 0 ? parts : renderTextDecorations(text);
   };
 
-  const renderTextDecorations = (str: string): React.ReactNode => {
+  const renderTextDecorations = (
+    str: string,
+    key?: string | number
+  ): React.ReactNode => {
     let formatted = str
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -208,12 +265,15 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       .replace(/\*(.*?)\*/g, "<em>$1</em>")
       .replace(/_(.*?)_/g, "<em>$1</em>")
       .replace(/~~(.*?)~~/g, "<del>$1</del>")
-      .replace(/`([^`]+)`/g, "<code class='px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-orange-600 dark:text-orange-400 font-mono text-[11px] font-semibold'>$1</code>");
+      .replace(
+        /`([^`]+)`/g,
+        "<code class='px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-orange-600 dark:text-orange-400 font-mono text-[11px] font-semibold'>$1</code>"
+      );
 
-    return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
+    return <span key={key} dangerouslySetInnerHTML={{ __html: formatted }} />;
   };
 
-  // Full Markdown renderer for Browse / View mode
+  // Full Markdown renderer for Browse / View mode with GFM Table support
   const renderMarkdown = (text: string) => {
     if (!text || !text.trim()) {
       return (
@@ -227,108 +287,341 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       );
     }
 
-    const lines = text.split("\n");
-    return (
-      <div className="space-y-1.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed break-words">
-        {lines.map((line, idx) => {
-          const trimmed = line.trim();
+    try {
+      const lines = text.split("\n");
+      const blocks: React.ReactNode[] = [];
+      let i = 0;
 
-          // 1. Image ![alt](src)
-          const imgMatch = line.match(/!\[(.*?)\]\((.*?)\)/);
-          if (imgMatch) {
-            return (
-              <div key={idx} className="my-2.5">
-                <img
-                  src={imgMatch[2]}
-                  alt={imgMatch[1]}
-                  loading="lazy"
-                  className="max-h-80 max-w-full rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs object-contain bg-slate-900/5 dark:bg-slate-900/40"
-                />
-                {imgMatch[1] && (
-                  <span className="text-[11px] text-slate-400 block mt-1">
-                    📷 {imgMatch[1]}
-                  </span>
-                )}
-              </div>
-            );
-          }
+      while (i < lines.length) {
+        const line = lines[i];
+        const trimmed = line.trim();
 
-          // 2. Headings (# H1, ## H2, ### H3)
-          if (trimmed.startsWith("### ")) {
-            return (
-              <h3 key={idx} className="text-sm font-bold text-slate-900 dark:text-white pt-1">
-                {formatInlineMarkdown(trimmed.replace(/^###\s+/, ""))}
-              </h3>
-            );
+        // 1. Fenced Code Block (```)
+        if (trimmed.startsWith("```")) {
+          const lang = trimmed.slice(3).trim();
+          const codeLines: string[] = [];
+          i++;
+          while (i < lines.length && !lines[i].trim().startsWith("```")) {
+            codeLines.push(lines[i]);
+            i++;
           }
-          if (trimmed.startsWith("## ")) {
-            return (
-              <h2 key={idx} className="text-base font-bold text-slate-900 dark:text-white pt-1.5 border-b border-slate-100 dark:border-slate-800 pb-1">
-                {formatInlineMarkdown(trimmed.replace(/^##\s+/, ""))}
-              </h2>
-            );
+          if (i < lines.length) {
+            i++; // consume closing ```
           }
-          if (trimmed.startsWith("# ")) {
-            return (
-              <h1 key={idx} className="text-lg font-bold text-slate-900 dark:text-white pt-2 border-b border-slate-200 dark:border-slate-700 pb-1">
-                {formatInlineMarkdown(trimmed.replace(/^#\s+/, ""))}
-              </h1>
-            );
-          }
-
-          // 3. Bullet list item (- , * , • )
-          if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• ")) {
-            return (
-              <div key={idx} className="flex items-start gap-2 pl-2">
-                <span className="text-orange-500 font-bold text-sm leading-tight">•</span>
-                <span className="flex-1 min-w-0">
-                  {formatInlineMarkdown(trimmed.replace(/^[-*•]\s+/, ""))}
-                </span>
-              </div>
-            );
-          }
-
-          // 4. Numbered list item (1. )
-          const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
-          if (numMatch) {
-            return (
-              <div key={idx} className="flex items-start gap-2 pl-2">
-                <span className="font-bold text-[11px] text-slate-400 min-w-4 text-right">
-                  {numMatch[1]}.
-                </span>
-                <span className="flex-1 min-w-0">
-                  {formatInlineMarkdown(numMatch[2])}
-                </span>
-              </div>
-            );
-          }
-
-          // 5. Blockquote (> )
-          if (trimmed.startsWith("> ")) {
-            return (
-              <div
-                key={idx}
-                className="border-l-3 border-orange-400 dark:border-orange-500 pl-3 py-1 my-1 bg-orange-50/40 dark:bg-orange-950/20 text-slate-700 dark:text-slate-300 rounded-r-lg text-xs"
-              >
-                {formatInlineMarkdown(trimmed.replace(/^>\s+/, ""))}
-              </div>
-            );
-          }
-
-          // 6. Empty line
-          if (!trimmed) {
-            return <div key={idx} className="h-1.5" />;
-          }
-
-          // 7. Regular paragraph
-          return (
-            <p key={idx} className="my-0.5">
-              {formatInlineMarkdown(line)}
-            </p>
+          blocks.push(
+            <div
+              key={`code-${i}`}
+              className="my-2.5 rounded-xl overflow-hidden border border-slate-700/80 bg-slate-900 text-slate-100 shadow-xs"
+            >
+              {lang && (
+                <div className="px-3 py-1 bg-slate-800 text-[10px] text-slate-400 font-mono uppercase tracking-wider border-b border-slate-700/60 flex items-center justify-between">
+                  <span>{lang}</span>
+                  <Code className="w-3 h-3 text-slate-500" />
+                </div>
+              )}
+              <pre className="p-3 text-xs font-mono overflow-x-auto leading-relaxed text-slate-200">
+                <code>{codeLines.join("\n")}</code>
+              </pre>
+            </div>
           );
-        })}
-      </div>
-    );
+          continue;
+        }
+
+        // 2. Horizontal Rule (--- or *** or ___)
+        if (/^(\*{3,}|-{3,}|_{3,})$/.test(trimmed)) {
+          blocks.push(
+            <hr
+              key={`hr-${i}`}
+              className="my-3 border-t border-slate-200 dark:border-slate-700/80"
+            />
+          );
+          i++;
+          continue;
+        }
+
+        // 3. GFM Table
+        if (
+          isTableRow(trimmed) &&
+          i + 1 < lines.length &&
+          isTableDelimiter(lines[i + 1])
+        ) {
+          const tableHeaderLine = trimmed;
+          const delimiterLine = lines[i + 1].trim();
+
+          const headers = parseCells(tableHeaderLine);
+          const alignments = parseAlignments(delimiterLine);
+
+          i += 2; // move past header and delimiter
+
+          const rows: string[][] = [];
+          while (
+            i < lines.length &&
+            isTableRow(lines[i].trim()) &&
+            !isTableDelimiter(lines[i].trim())
+          ) {
+            rows.push(parseCells(lines[i].trim()));
+            i++;
+          }
+
+          const colCount = Math.max(
+            headers.length,
+            alignments.length,
+            ...rows.map((r) => r.length)
+          );
+          while (headers.length < colCount) headers.push("");
+          while (alignments.length < colCount) alignments.push("left");
+
+          blocks.push(
+            <div
+              key={`table-${i}`}
+              className="my-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-850/50 shadow-2xs"
+            >
+              <table className="min-w-full text-xs text-left divide-y divide-slate-200 dark:divide-slate-700 border-collapse">
+                <thead className="bg-slate-100/90 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold">
+                  <tr>
+                    {headers.map((header, colIdx) => (
+                      <th
+                        key={`th-${colIdx}`}
+                        className={`px-3.5 py-2.5 border-r border-slate-200/60 dark:border-slate-700/60 last:border-r-0 tracking-wide font-semibold text-slate-900 dark:text-slate-100 ${getAlignClass(
+                          alignments[colIdx]
+                        )}`}
+                      >
+                        {formatInlineMarkdown(header)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                  {rows.map((row, rowIdx) => (
+                    <tr
+                      key={`tr-${rowIdx}`}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors odd:bg-transparent even:bg-slate-50/40 dark:even:bg-slate-800/20"
+                    >
+                      {headers.map((_, colIdx) => (
+                        <td
+                          key={`td-${rowIdx}-${colIdx}`}
+                          className={`px-3.5 py-2.5 border-r border-slate-100 dark:border-slate-800/80 last:border-r-0 text-slate-700 dark:text-slate-300 leading-relaxed ${getAlignClass(
+                            alignments[colIdx]
+                          )}`}
+                        >
+                          {formatInlineMarkdown(row[colIdx] || "")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+          continue;
+        }
+
+        // 4. Standalone Image ![alt](src)
+        const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+        if (imgMatch) {
+          blocks.push(
+            <div key={`img-${i}`} className="my-2.5">
+              <img
+                src={imgMatch[2]}
+                alt={imgMatch[1]}
+                loading="lazy"
+                className="max-h-80 max-w-full rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs object-contain bg-slate-900/5 dark:bg-slate-900/40"
+              />
+              {imgMatch[1] && (
+                <span className="text-[11px] text-slate-400 block mt-1">
+                  📷 {imgMatch[1]}
+                </span>
+              )}
+            </div>
+          );
+          i++;
+          continue;
+        }
+
+        // 5. Headings (# H1, ## H2, ### H3, #### H4)
+        if (trimmed.startsWith("#### ")) {
+          blocks.push(
+            <h4
+              key={`h4-${i}`}
+              className="text-xs font-bold text-slate-900 dark:text-white pt-1"
+            >
+              {formatInlineMarkdown(trimmed.replace(/^####\s+/, ""))}
+            </h4>
+          );
+          i++;
+          continue;
+        }
+        if (trimmed.startsWith("### ")) {
+          blocks.push(
+            <h3
+              key={`h3-${i}`}
+              className="text-sm font-bold text-slate-900 dark:text-white pt-1"
+            >
+              {formatInlineMarkdown(trimmed.replace(/^###\s+/, ""))}
+            </h3>
+          );
+          i++;
+          continue;
+        }
+        if (trimmed.startsWith("## ")) {
+          blocks.push(
+            <h2
+              key={`h2-${i}`}
+              className="text-base font-bold text-slate-900 dark:text-white pt-1.5 border-b border-slate-100 dark:border-slate-800 pb-1"
+            >
+              {formatInlineMarkdown(trimmed.replace(/^##\s+/, ""))}
+            </h2>
+          );
+          i++;
+          continue;
+        }
+        if (trimmed.startsWith("# ")) {
+          blocks.push(
+            <h1
+              key={`h1-${i}`}
+              className="text-lg font-bold text-slate-900 dark:text-white pt-2 border-b border-slate-200 dark:border-slate-700 pb-1"
+            >
+              {formatInlineMarkdown(trimmed.replace(/^#\s+/, ""))}
+            </h1>
+          );
+          i++;
+          continue;
+        }
+
+        // 6. Checklist item (- [ ] or - [x] or * [ ] or * [x])
+        const checkMatch = trimmed.match(/^[-*•]\s+\[([ xX])\]\s+(.*)/);
+        if (checkMatch) {
+          const isChecked = checkMatch[1].toLowerCase() === "x";
+          const leadingSpaces = line.length - line.trimStart().length;
+          const indentClass =
+            leadingSpaces >= 4 ? "pl-8" : leadingSpaces >= 2 ? "pl-5" : "pl-2";
+          blocks.push(
+            <div
+              key={`check-${i}`}
+              className={`flex items-center gap-2 my-1 ${indentClass}`}
+            >
+              <input
+                type="checkbox"
+                checked={isChecked}
+                readOnly
+                className="w-3.5 h-3.5 rounded text-orange-500 border-slate-300 dark:border-slate-600 focus:ring-orange-400 pointer-events-none"
+              />
+              <span
+                className={`flex-1 min-w-0 text-xs sm:text-sm ${
+                  isChecked
+                    ? "line-through text-slate-400 dark:text-slate-500"
+                    : ""
+                }`}
+              >
+                {formatInlineMarkdown(checkMatch[2])}
+              </span>
+            </div>
+          );
+          i++;
+          continue;
+        }
+
+        // 7. Bullet list item (- , * , • )
+        if (
+          trimmed.startsWith("- ") ||
+          trimmed.startsWith("* ") ||
+          trimmed.startsWith("• ")
+        ) {
+          const leadingSpaces = line.length - line.trimStart().length;
+          const indentClass =
+            leadingSpaces >= 4 ? "pl-8" : leadingSpaces >= 2 ? "pl-5" : "pl-2";
+          blocks.push(
+            <div
+              key={`bullet-${i}`}
+              className={`flex items-start gap-2 ${indentClass}`}
+            >
+              <span className="text-orange-500 font-bold text-sm leading-tight">
+                •
+              </span>
+              <span className="flex-1 min-w-0">
+                {formatInlineMarkdown(trimmed.replace(/^[-*•]\s+/, ""))}
+              </span>
+            </div>
+          );
+          i++;
+          continue;
+        }
+
+        // 8. Numbered list item (1. )
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+        if (numMatch) {
+          const leadingSpaces = line.length - line.trimStart().length;
+          const indentClass =
+            leadingSpaces >= 4 ? "pl-8" : leadingSpaces >= 2 ? "pl-5" : "pl-2";
+          blocks.push(
+            <div
+              key={`num-${i}`}
+              className={`flex items-start gap-2 ${indentClass}`}
+            >
+              <span className="font-bold text-[11px] text-slate-400 min-w-4 text-right">
+                {numMatch[1]}.
+              </span>
+              <span className="flex-1 min-w-0">
+                {formatInlineMarkdown(numMatch[2])}
+              </span>
+            </div>
+          );
+          i++;
+          continue;
+        }
+
+        // 9. Blockquote (> )
+        if (trimmed.startsWith("> ")) {
+          const quoteLines: string[] = [];
+          while (i < lines.length && lines[i].trim().startsWith("> ")) {
+            quoteLines.push(lines[i].trim().replace(/^>\s*/, ""));
+            i++;
+          }
+          blocks.push(
+            <div
+              key={`quote-${i}`}
+              className="border-l-3 border-orange-400 dark:border-orange-500 pl-3 py-1.5 my-1.5 bg-orange-50/40 dark:bg-orange-950/20 text-slate-700 dark:text-slate-300 rounded-r-lg text-xs space-y-1"
+            >
+              {quoteLines.map((qLine, qIdx) => (
+                <p key={qIdx}>{formatInlineMarkdown(qLine)}</p>
+              ))}
+            </div>
+          );
+          continue;
+        }
+
+        // 10. Empty line
+        if (!trimmed) {
+          blocks.push(<div key={`empty-${i}`} className="h-1.5" />);
+          i++;
+          continue;
+        }
+
+        // 11. Regular paragraph
+        blocks.push(
+          <p key={`p-${i}`} className="my-0.5">
+            {formatInlineMarkdown(line)}
+          </p>
+        );
+        i++;
+      }
+
+      return (
+        <div className="space-y-1.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed break-words">
+          {blocks}
+        </div>
+      );
+    } catch (err) {
+      console.error(
+        "Markdown rendering error, falling back to safe view:",
+        err
+      );
+      return (
+        <pre className="whitespace-pre-wrap text-xs text-slate-700 dark:text-slate-300 font-sans">
+          {text}
+        </pre>
+      );
+    }
   };
 
   return (
@@ -428,6 +721,20 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 title="清單項目 (- 項目)"
               >
                 <List className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Table */}
+              <button
+                type="button"
+                onClick={() =>
+                  insertText(
+                    "\n| 標題 1 | 標題 2 | 標題 3 |\n| :--- | :--- | :--- |\n| 內容 1 | 內容 2 | 內容 3 |\n"
+                  )
+                }
+                className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                title="插入表格 (| 欄位 | 欄位 |)"
+              >
+                <TableIcon className="w-3.5 h-3.5" />
               </button>
 
               {/* Link */}

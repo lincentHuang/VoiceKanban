@@ -305,7 +305,7 @@ export const KanbanContainer: React.FC = () => {
   });
 
   return (
-    <div className="relative w-full h-full max-h-full overflow-hidden">
+    <div className="relative w-full flex-1 min-h-0 overflow-hidden flex flex-col">
       {/* Visual Edge Hover Magnet Guide Overlays during Drag */}
       {isDragging && edgeHoverSide === "right" && (
         <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-orange-500/30 via-orange-500/10 to-transparent pointer-events-none flex items-center justify-end pr-2.5 z-40 animate-pulse">
@@ -332,7 +332,7 @@ export const KanbanContainer: React.FC = () => {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         style={{ scrollPadding: "0 1rem" }}
-        className={`w-full h-full max-h-full overflow-x-auto overflow-y-hidden px-4 sm:px-3 pt-2 pb-2 sm:pb-2.5 custom-scrollbar ${
+        className={`w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden px-4 sm:px-3 pt-2 pb-2 sm:pb-2.5 custom-scrollbar ${
           isPanning
             ? "cursor-grabbing select-none scroll-auto"
             : isDragging
