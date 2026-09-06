@@ -77,6 +77,47 @@ src/features/kanban/
 
 ---
 
+12. **看板編輯（改名與圖示）與安全刪除防呆 (Board Edit, Rename, Icon Picker & Safe Deletion)**：
+    - **看板切換選單動作整合 (`BoardSwitcherMenu`)**：在下拉選單各看板項目提供懸停/常態「✏️ 編輯」與「🗑️ 刪除」快捷入口，並支援開啟看板編輯視窗。
+    - **專屬編輯看板彈窗 (`EditBoardModal`)**：支援就地自訂看板名稱、選取 Emoji 圖示（或設定純文字）與自訂描述，點擊儲存即時更新並同步至 Store 與 Firestore 雲端。
+    - **看板刪除安全防呆 (`DeleteBoardConfirmModal`)**：
+      - 當系統僅剩最後 1 個看板時，刪除按鈕自動停用或提示不可刪除，確保核心看板資料完整。
+      - 刪除前提示明確之確認 Modal（含看板名稱、涵蓋之任務數量、不可復原警告）。
+      - 刪除目前正在使用的看板時，系統自動將作用看板切換至剩餘看板中的首個，並安全清理所屬任務後同步雲端。
+
+---
+
+## 3. 元件架構 (Components Hierarchy)
+```text
+src/features/kanban/
+├── components/
+│   ├── BoardCanvasContainer.tsx     # 看板主畫布容器 (支援視圖切換與篩選)
+│   ├── KanbanContainer.tsx          # 看板欄位橫向滾動容器 (含 Scroll Snap、拖曳邊緣磁吸翻頁與行內新增欄位)
+│   ├── KanbanColumn.tsx             # 單一欄位容器 (包含標頭拖曳把手、行內標題編輯、圖示挑選、未完成與已完成折疊)
+│   ├── TaskCard.tsx                 # 單一任務卡片 (支援優先級、標籤、封面、子任務進度、到期狀態)
+│   ├── AddTaskModal.tsx             # 新增任務彈窗
+│   ├── EditTaskModal.tsx            # 編輯任務彈窗 (完整屬性編輯、子任務排序、展開為獨立欄位)
+│   ├── EditBoardModal.tsx           # 編輯看板彈窗 (自訂名稱、Emoji 圖示挑選與描述)
+│   ├── DeleteBoardConfirmModal.tsx  # 看板刪除確認彈窗 (包含任務計數警告與最後看板保護)
+│   ├── BatchActionBar.tsx           # 多選批次操作懸浮列
+│   ├── ColumnIconPicker.tsx         # 獨立欄位圖示 Popover 選擇器 (支援 Emoji 與純文字)
+│   ├── ColumnActionMenu.tsx         # 欄位下拉選單 (重新命名、淺色選色器、排序、聚合為單一任務卡、管理流程)
+│   └── ColumnManagerModal.tsx       # 欄位管理與自訂彈窗 (含 Popover 圖示選擇器、無圖示支援、垂直拖曳排序)
+├── index.ts                         # 模組統一出口
+└── feature.md                       # 功能規格與驗收標準文檔
+```
+
+---
+
+## 4. UI 5 種狀態規範 (5 UI States)
+- **Loading**：看板資料初始載入或同步時呈現骨架屏（Skeleton Loader）。
+- **Empty**：欄位無待辦任務時顯示優雅提示（如「所有待辦皆已完成 ✨」）或簡潔 Empty 區域。
+- **Error**：操作失敗時 Toast 提示並自動還原樂觀更新（Optimistic Rollback）。
+- **Success**：任務標記完成、批次操作、欄位新增、重排、看板改名/刪除完成時給予震動或視覺反饋。
+- **Active**：已完成區塊點擊平滑展開/收合，卡片或欄位拖曳中呈現 3D 浮空 `DragOverlay`，目標位置呈現高亮與預覽插槽；拖曳靠近邊緣時顯示動態微光導引。
+
+---
+
 ## 5. 驗收標準 (Acceptance Criteria, AC)
 - [x] **AC-KANBAN-1**：狀態列欄位支援 Header 拖曳與長按橫向重排，順序即時更新並持久化至 store 與雲端。
 - [x] **AC-KANBAN-2**：看板最右側具備行內「+ 新增欄位」功能，可快速自訂名稱、圖示與顏色。
@@ -104,5 +145,10 @@ src/features/kanban/
 - [x] **AC-KANBAN-17**：**手機端欄位底部與浮動 Dock 安全避讓 (Mobile Column Bottom Dock Clearance & Safe Area)**：
   - 看板主畫布視圖容器與收件匣內容區配置 `pb-[54px] sm:pb-16`，修復先前無效類別導致手機端 0 邊距重疊之問題。
   - 欄位內部之最後一張卡片、已完成任務折疊條（`visibleCompletedTasks`）以及欄位底部「+ 新增卡片」按鈕在各手機尺寸下均 100% 完整露出於浮動 Dock 及語音 FAB 之上，零重疊、易點擊，背景自然透出漸層。
+- [ ] **AC-KANBAN-18**：**看板編輯（改名、圖示、說明）與安全刪除防呆 (Board Edit & Safe Deletion)**：
+  - `BoardSwitcherMenu` 下拉選單中支援對各看板進行「編輯」與「刪除」操作。
+  - `EditBoardModal` 支援修改看板名稱、Emoji 圖示（Popover 挑選或純文字）與描述，儲存後即時生效並同步。
+  - `DeleteBoardConfirmModal` 具備刪除防呆（顯示任務數量警告），最後 1 個看板禁用刪除，刪除啟用中看板自動切換至剩餘第一個看板並清理關聯任務與雲端同步。
+
 
 

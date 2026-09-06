@@ -39,15 +39,14 @@
   - `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`
   - 響應動態島（Dynamic Island）與底部 Home Bar 安全邊距。
 
-### 2.3 頭像選單「在手機安裝應用」按鈕與雙軌體驗
-- **選單入口**：位於 Navbar 頭像下拉選單中的「在手機安裝應用」選單項目。
-- **智慧隱藏**：若偵測到當前已處於獨立 PWA 模式（`window.matchMedia('(display-mode: standalone)').matches`）或 Capacitor 原生 App 中，自動隱藏該按鈕，維持選單純淨。
-- **雙軌安裝體驗**：
-  - **Android / 桌面 Chrome**：捕獲 `beforeinstallprompt` 事件，點擊後調用系統原生安裝彈窗。
-  - **iOS Safari**：因 iOS 不支援程式化安裝，自動開啟精緻 3 步驟圖文導引視窗（`IosInstallGuideModal`）：
-    1. 點擊 Safari 底部工具列的「分享」按鈕（圖示：⎋）。
-    2. 滑動選單並點選「加入主畫面 ➕ (Add to Home Screen)」。
-    3. 點擊右上角的「新增」，立即在手機桌面生成獨立 App 圖示。
+### 2.3 雙軌安裝入口（Navbar「💻 安裝電腦版」+ 頭像選單）與桌面獨立應用體驗
+- **Navbar 專屬入口**：桌機瀏覽器環境下，頂部導覽列顯示「💻 安裝電腦版」膠囊按鈕，點擊直達安裝流程。
+- **選單入口**：位於 Navbar 頭像下拉選單中，動態適配裝置環境（桌機顯示「💻 安裝為電腦桌面應用」、手機顯示「📱 在手機安裝應用」）。
+- **智慧隱藏**：若偵測到當前已處於獨立 PWA 模式（`window.matchMedia('(display-mode: standalone)').matches`）或 Capacitor 原生 App 中，自動隱藏所有安裝按鈕，維持純淨沉浸感。
+- **跨瀏覽器桌面安裝體驗**：
+  - **桌面 Chrome / Edge / Brave / Android**：捕獲 `beforeinstallprompt` 事件，點擊後調用系統原生安裝彈窗。
+  - **macOS Safari (Sonoma 14+)**：自動展開專屬圖文導引視窗（`DesktopInstallGuideModal`），引導「檔案 ➔ 加入 Dock...」，秒級產生 Mac 原生獨立應用。
+  - **iOS Safari**：自動開啟 3 步驟圖文導引視窗（`IosInstallGuideModal`）「分享 ➔ 加入主畫面 ➕」。
 
 ---
 
@@ -56,14 +55,19 @@
 ```text
 src/features/pwa-mobile/
 ├── components/
-│   ├── IosInstallGuideModal.tsx   # iOS 3 步驟圖文安裝教學對話框 (落實 UI 5 態)
-│   └── InstallPwaMenuItem.tsx     # 下拉選單「在手機安裝應用」按鈕項目
+│   ├── DesktopInstallButton.tsx       # 頂部 Navbar「💻 安裝電腦版」按鈕
+│   ├── DesktopInstallGuideModal.tsx   # 電腦桌面安裝圖文指引彈窗 (UI 5 態)
+│   ├── DesktopInstallSteps.tsx        # 電腦安裝圖文步驟卡片
+│   ├── IosInstallGuideModal.tsx       # iOS 3 步驟圖文安裝教學對話框
+│   ├── IosInstallSteps.tsx            # iOS 安裝步驟卡片
+│   ├── InstallPwaMenuItem.tsx         # 下拉選單動態適配安裝按鈕項目
+│   └── PwaRegister.tsx                # Service Worker 前端自動註冊
 ├── hooks/
-│   └── usePwaInstall.ts           # PWA 安裝事件捕獲、平台偵測與安裝狀態管理
+│   └── usePwaInstall.ts               # PWA 安裝事件捕獲、桌面/平台偵測與狀態管理
 ├── types/
-│   └── index.ts                   # PWA 與行動端相關型別定義
-├── index.ts                       # 模組統一對外出口
-└── feature.md                     # 本功能規格文檔
+│   └── index.ts                       # PWA、桌面與行動端相關型別定義
+├── index.ts                           # 模組統一對外出口
+└── feature.md                         # 本功能規格文檔
 ```
 
 ---
@@ -72,8 +76,8 @@ src/features/pwa-mobile/
 
 1. **Loading**：安裝流程觸發中（呼叫原生 prompt 或確認安裝狀態），按鈕顯示微載入動畫，防止重複點擊。
 2. **Empty / Hidden**：當已處於 Standalone PWA 或 Capacitor 原生環境時，元件回傳 `null` 自動隱藏。
-3. **Error**：使用者取消安裝或瀏覽器拒絕時，彈出友善 Toast 提示「安裝未完成，可隨時再次點擊安裝」。
-4. **Success**：安裝完成（捕獲 `appinstalled` 事件），觸發震動反饋或成功提示，自動隱藏按鈕。
+3. **Error**：使用者取消安裝或瀏覽器拒絕時，彈出友善提示「安裝未完成，可隨時再次點擊安裝」。
+4. **Success**：安裝完成（捕獲 `appinstalled` 事件），自動隱藏按鈕並切換至獨立桌面視窗。
 5. **Active / Interactive**：Hover/聚焦狀態下具備柔和橘色高亮與微縮放效果；點擊時呈現點擊反饋。
 
 ---
@@ -82,6 +86,7 @@ src/features/pwa-mobile/
 
 - [x] **AC-PWA-1**：提供標準 `public/manifest.webmanifest`，包含名稱、主題色與各尺寸圖示，通過 PWA 規範校驗。
 - [x] **AC-PWA-2**：提供 `public/sw.js`，離線快取關鍵資源並支援自動註冊與更新機制。
-- [x] **AC-PWA-3**：在 Navbar 頭像選單中呈現「在手機安裝應用」按鈕，在 Standalone/原生環境下自動隱藏。
-- [x] **AC-PWA-4**：Chrome/Android 上點擊觸發 `beforeinstallprompt` 原生安裝；iOS Safari 點擊開啟 3 步驟圖文導引視窗。
+- [x] **AC-PWA-3**：在 Navbar 右側提供「💻 安裝電腦版」按鈕，在頭像選單提供「安裝為電腦桌面應用」選項，在獨立桌面應用模式下自動隱藏。
+- [x] **AC-PWA-4**：桌面 Chrome/Edge 支援原生 prompt 秒開安裝；macOS Safari 彈出專屬「加入 Dock」圖文導引視窗。
 - [x] **AC-PWA-5**：Capacitor 雙平台專案（`ios/` 與 `android/`）完整生成，設定 Bundle ID `com.voicekanban.app` 與名稱「聲動看板」，權限與建置指令配置齊全。
+

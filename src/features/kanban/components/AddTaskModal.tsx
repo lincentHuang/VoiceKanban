@@ -1,314 +1,72 @@
 "use client";
 
-import React, { useState } from "react";
-import { useKanbanStore } from "@/core/stores/useKanbanStore";
-import { ColumnId } from "@/core/types/task";
-import { DateTimePicker } from "@/components/common/DateTimePicker";
+import React from "react";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
-import { X, Calendar, Tag, Star, Plus } from "lucide-react";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  SelectLabel,
-  SelectGroup,
-  SelectSeparator,
-} from "@/components/ui/select";
+import { useAddTaskForm } from "./add-task/useAddTaskForm";
+import { AddTaskHeader } from "./add-task/AddTaskHeader";
+import { AddTaskTitleDescription } from "./add-task/AddTaskTitleDescription";
+import { AddTaskColumnStarRow } from "./add-task/AddTaskColumnStarRow";
+import { AddTaskDateSection } from "./add-task/AddTaskDateSection";
+import { AddTaskTagsSection } from "./add-task/AddTaskTagsSection";
+import { AddTaskModalFooter } from "./add-task/AddTaskModalFooter";
 
 export const AddTaskModal: React.FC = () => {
-  const {
-    isAddTaskModalOpen,
-    setIsAddTaskModalOpen,
-    addTaskDefaultColumn,
-    activeBoardId,
-    getActiveBoardColumns,
-    addTask,
-  } = useKanbanStore();
+  const form = useAddTaskForm();
 
   useEscapeKey(() => {
-    if (isAddTaskModalOpen) {
-      setIsAddTaskModalOpen(false);
-    }
-  }, isAddTaskModalOpen);
+    if (form.isAddTaskModalOpen) form.setIsAddTaskModalOpen(false);
+  }, form.isAddTaskModalOpen);
 
-  const columns = getActiveBoardColumns();
-
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [columnId, setColumnId] = useState<ColumnId>(() => {
-    const validCols = columns.map((c) => c.id);
-    if (addTaskDefaultColumn === "inbox" || validCols.includes(addTaskDefaultColumn)) {
-      return addTaskDefaultColumn;
-    }
-    return validCols[0] || "todo";
-  });
-  const [isStarred, setIsStarred] = useState(false);
-  const [dueDate, setDueDate] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<string | null>(null);
-  const [isAllDay, setIsAllDay] = useState(false);
-  const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Synchronize columnId with addTaskDefaultColumn whenever modal opens or column changes
-  React.useEffect(() => {
-    if (isAddTaskModalOpen) {
-      const validCols = columns.map((c) => c.id);
-      if (addTaskDefaultColumn === "inbox" || validCols.includes(addTaskDefaultColumn)) {
-        setColumnId(addTaskDefaultColumn);
-      } else {
-        setColumnId(validCols[0] || "todo");
-      }
-    }
-  }, [isAddTaskModalOpen, addTaskDefaultColumn, columns]);
-
-  if (!isAddTaskModalOpen) return null;
-
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput("");
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((t) => t !== tagToRemove));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      addTask({
-        title: title.trim(),
-        description: description.trim(),
-        boardId: columnId === "inbox" ? "global" : activeBoardId,
-        columnId,
-        isStarred,
-        tags,
-        startDate: startDate || null,
-        dueDate: dueDate || null, // Default null if empty
-        isAllDay,
-        completed: false,
-      });
-
-      // Reset and close
-      setTitle("");
-      setDescription("");
-      setIsStarred(false);
-      setDueDate(null);
-      setStartDate(null);
-      setIsAllDay(false);
-      setTags([]);
-      setIsAddTaskModalOpen(false);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  if (!form.isAddTaskModalOpen) return null;
 
   return (
     <div
-      onClick={() => setIsAddTaskModalOpen(false)}
+      onClick={() => form.setIsAddTaskModalOpen(false)}
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in duration-200 overflow-hidden"
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl relative overflow-hidden"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">新增任務卡片</h3>
-            <p className="text-xs text-slate-500">手動建立卡片或自訂詳細參數</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsAddTaskModalOpen(false)}
-            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        <AddTaskHeader onClose={() => form.setIsAddTaskModalOpen(false)} />
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 pt-4 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              任務標題 *
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="例如：完成季報分析、設計新版首頁..."
-              className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-orange-500 text-slate-800 dark:text-slate-100"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-              任務描述 / 備註
-            </label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="補充詳細背景或交付標準..."
-              className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-orange-500 text-slate-800 dark:text-slate-100"
-            />
-          </div>
-
-          {/* Column & Star Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                目標欄位
-              </label>
-              <Select
-                value={columnId}
-                onValueChange={(val) => setColumnId(val as ColumnId)}
-              >
-                <SelectTrigger className="w-full h-10 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium">
-                  <SelectValue placeholder="選擇目標欄位" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>📋 當前看板欄位</SelectLabel>
-                    {columns.map((col) => (
-                      <SelectItem key={col.id} value={col.id}>
-                        {col.icon} {col.title}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  <SelectSeparator />
-                  <SelectGroup>
-                    <SelectLabel>📥 暫存箱</SelectLabel>
-                    <SelectItem value="inbox">📥 側邊欄收件匣 (Inbox)</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                重要性設定
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsStarred(!isStarred)}
-                className={`w-full py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-between transition-all ${
-                  isStarred
-                    ? "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300"
-                    : "bg-slate-50 dark:bg-slate-800 text-slate-600 border-slate-200"
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Star
-                    className={`w-4 h-4 ${
-                      isStarred ? "fill-amber-500 text-amber-500" : "text-slate-400"
-                    }`}
-                  />
-                  <span>重要卡片</span>
-                </span>
-                <span>{isStarred ? "⭐ 是" : "否"}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Due Date (Optional, default empty) */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              到期日 / 活動時段 (選填)
-            </label>
-            <DateTimePicker
-              value={dueDate}
-              startDate={startDate}
-              isAllDay={isAllDay}
-              onChange={(dates) => {
-                setStartDate(dates.startDate || null);
-                setDueDate(dates.dueDate);
-                setIsAllDay(dates.isAllDay);
-              }}
-              placeholder="點擊選擇日期或活動時段..."
-            />
-          </div>
-
-          {/* Tags */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              分類標籤
-            </label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.nativeEvent.isComposing || e.key === "Process") return;
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddTag();
-                  }
-                }}
-                placeholder="輸入標籤名稱按 Enter 新增..."
-                className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
-              />
-              <button
-                type="button"
-                onClick={handleAddTag}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium hover:bg-slate-200"
-              >
-                新增
-              </button>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map((t) => (
-                <span
-                  key={t}
-                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium flex items-center gap-1"
-                >
-                  #{t}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(t)}
-                    className="hover:text-rose-500 text-slate-400 text-xs ml-0.5"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer Actions */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsAddTaskModalOpen(false)}
-              className="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !title.trim()}
-              className={`px-5 py-2 rounded-xl bg-base44-orange hover:bg-base44-orangeHover text-white text-xs sm:text-sm font-bold shadow-md transition-all ${
-                isSubmitting || !title.trim() ? "opacity-60 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.98]"
-              }`}
-            >
-              {isSubmitting ? "建立中..." : "建立卡片"}
-            </button>
-          </div>
+        <form onSubmit={form.handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 pt-4 space-y-4">
+          <AddTaskTitleDescription
+            title={form.title}
+            setTitle={form.setTitle}
+            description={form.description}
+            setDescription={form.setDescription}
+          />
+          <AddTaskColumnStarRow
+            columnId={form.columnId}
+            setColumnId={form.setColumnId}
+            columns={form.columns}
+            isStarred={form.isStarred}
+            setIsStarred={form.setIsStarred}
+          />
+          <AddTaskDateSection
+            dueDate={form.dueDate}
+            startDate={form.startDate}
+            isAllDay={form.isAllDay}
+            setStartDate={form.setStartDate}
+            setDueDate={form.setDueDate}
+            setIsAllDay={form.setIsAllDay}
+          />
+          <AddTaskTagsSection
+            tagInput={form.tagInput}
+            setTagInput={form.setTagInput}
+            tags={form.tags}
+            onAddTag={form.handleAddTag}
+            onRemoveTag={form.handleRemoveTag}
+          />
+          <AddTaskModalFooter
+            onClose={() => form.setIsAddTaskModalOpen(false)}
+            isSubmitting={form.isSubmitting}
+            disabled={form.isSubmitting || !form.title.trim()}
+          />
         </form>
       </div>
     </div>
   );
 };
+export default AddTaskModal;

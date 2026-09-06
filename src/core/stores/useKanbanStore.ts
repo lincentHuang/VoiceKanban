@@ -10,8 +10,31 @@ import { GUEST_USER, createGuestSession, loginWithProvider, logoutUser, subscrib
 import { syncEngine } from "../services/syncService";
 import { learningEngine } from "../services/learningEngine";
 import { collaborationService } from "@/features/collaboration/services/collaborationService";
+import { NotificationItem, ActivityPayload, NotificationActionType } from "@/features/notifications/types";
+import { notificationService } from "@/features/notifications/services/notificationService";
 
 interface KanbanStoreState {
+  // Notifications
+  notifications: NotificationItem[];
+  isBrowserNotificationEnabled: boolean;
+  setIsBrowserNotificationEnabled: (enabled: boolean) => void;
+  activeToasts: NotificationItem[];
+  addNotification: (activity: ActivityPayload) => void;
+  markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: () => void;
+  clearAllNotifications: () => void;
+  dismissToast: (id: string) => void;
+  emitActivity: (
+    actionType: NotificationActionType,
+    data: {
+      boardId: string;
+      taskId?: string;
+      taskTitle?: string;
+      sourceColumnTitle?: string;
+      targetColumnTitle?: string;
+    }
+  ) => void;
+
   // Authentication & Profile
   userSession: UserSession;
   isAuthModalOpen: boolean;
@@ -67,6 +90,12 @@ interface KanbanStoreState {
   activeBoardId: string;
   setActiveBoardId: (id: string) => void;
   createBoard: (name: string, icon?: string, description?: string) => void;
+  updateBoard: (boardId: string, partial: Partial<Pick<Board, "name" | "icon" | "description">>) => void;
+  deleteBoard: (boardId: string) => void;
+  editingBoardId: string | null;
+  setEditingBoardId: (id: string | null) => void;
+  deletingBoardId: string | null;
+  setDeletingBoardId: (id: string | null) => void;
   getActiveBoardColumns: () => Column[];
   addColumnToActiveBoard: (title: string, icon?: string, color?: string) => void;
   updateColumnInActiveBoard: (columnId: string, title?: string, icon?: string) => void;
@@ -436,8 +465,18 @@ export const useKanbanStore = create<KanbanStoreState>()(
           }
         });
 
+        // Load persisted notifications on start
+        const initialNotifications = notificationService.loadStoredNotifications();
+        if (initialNotifications.length > 0) {
+          set({ notifications: initialNotifications });
+        }
+
         // Cross-tab real-time sync for shared boards via BroadcastChannel
         const unsubCollab = collaborationService.onCrossTabUpdate(({ type, boardId, data }) => {
+          if (type === "ACTIVITY_EVENT" && data?.activity) {
+            get().addNotification(data.activity);
+          }
+
           if (type === "BOARD_UPDATED" && data) {
             set((state) => {
               let updatedBoards = state.boards;
@@ -459,6 +498,12 @@ export const useKanbanStore = create<KanbanStoreState>()(
                 tasks: updatedTasks,
               };
             });
+
+            if (data.recentActivities && Array.isArray(data.recentActivities)) {
+              data.recentActivities.forEach((act: ActivityPayload) => {
+                get().addNotification(act);
+              });
+            }
           }
         });
 
@@ -604,6 +649,45 @@ export const useKanbanStore = create<KanbanStoreState>()(
         }));
         get().triggerSync();
       },
+
+      updateBoard: (boardId, partial) => {
+        set((state) => ({
+          boards: state.boards.map((b) =>
+            b.id === boardId
+              ? {
+                  ...b,
+                  name: partial.name !== undefined && partial.name.trim() ? partial.name.trim() : b.name,
+                  icon: partial.icon !== undefined ? partial.icon : b.icon,
+                  description: partial.description !== undefined ? partial.description : b.description,
+                }
+              : b
+          ),
+        }));
+        get().triggerSync();
+      },
+
+      deleteBoard: (boardId) => {
+        const { boards, activeBoardId, tasks } = get();
+        if (boards.length <= 1) return; // Must keep at least one board
+
+        const remainingBoards = boards.filter((b) => b.id !== boardId);
+        const newActiveBoardId = activeBoardId === boardId ? remainingBoards[0].id : activeBoardId;
+        const remainingTasks = tasks.filter((t) => t.boardId !== boardId);
+
+        set({
+          boards: remainingBoards,
+          activeBoardId: newActiveBoardId,
+          tasks: remainingTasks,
+          selectedTaskIds: [],
+        });
+        get().triggerSync();
+      },
+
+      editingBoardId: null,
+      setEditingBoardId: (editingBoardId) => set({ editingBoardId }),
+
+      deletingBoardId: null,
+      setDeletingBoardId: (deletingBoardId) => set({ deletingBoardId }),
 
       getActiveBoardColumns: () => {
         const { boards, activeBoardId } = get();
@@ -953,7 +1037,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
             };
           });
 
-          collaborationService.subscribeToSharedBoard(joinedBoard.id, ({ board, tasks: remoteTasks }) => {
+          collaborationService.subscribeToSharedBoard(joinedBoard.id, ({ board, tasks: remoteTasks, recentActivities }) => {
             set((state) => ({
               boards: state.boards.map((b) => (b.id === joinedBoard.id ? { ...b, ...board } : b)),
               tasks: [
@@ -961,6 +1045,16 @@ export const useKanbanStore = create<KanbanStoreState>()(
                 ...remoteTasks,
               ],
             }));
+
+            if (recentActivities && Array.isArray(recentActivities)) {
+              recentActivities.forEach((act: ActivityPayload) => {
+                get().addNotification(act);
+              });
+            }
+          });
+
+          get().emitActivity("member_joined", {
+            boardId: joinedBoard.id,
           });
 
           return { success: true, message: result.message, board: joinedBoard };
@@ -1012,6 +1106,90 @@ export const useKanbanStore = create<KanbanStoreState>()(
         return collaborationService.canUserEdit(targetBoard, userSession.id);
       },
 
+      // Notifications
+      notifications: [],
+      isBrowserNotificationEnabled:
+        typeof window !== "undefined" &&
+        "Notification" in window &&
+        Notification.permission === "granted",
+      setIsBrowserNotificationEnabled: (enabled) => set({ isBrowserNotificationEnabled: enabled }),
+      activeToasts: [],
+      addNotification: (activity) => {
+        const currentUserId = get().userSession.id;
+        // Self-Action Exclusion Guard: Never notify own actions!
+        if (activity.actorId && currentUserId && activity.actorId === currentUserId) return;
+
+        set((state) => {
+          // Prevent duplicates
+          if (state.notifications.some((n) => n.id === activity.id)) {
+            return state;
+          }
+
+          const newItem: NotificationItem = {
+            ...activity,
+            read: false,
+          };
+
+          const updatedNotifications = [newItem, ...state.notifications].slice(0, 50);
+          notificationService.saveStoredNotifications(updatedNotifications);
+
+          // Trigger native Web Notification if enabled & window hidden
+          if (get().isBrowserNotificationEnabled) {
+            notificationService.showNativeNotification(newItem);
+          }
+
+          return {
+            notifications: updatedNotifications,
+            activeToasts: [newItem, ...state.activeToasts.slice(0, 2)],
+          };
+        });
+      },
+      markNotificationAsRead: (id) => {
+        set((state) => {
+          const updated = state.notifications.map((n) =>
+            n.id === id ? { ...n, read: true } : n
+          );
+          notificationService.saveStoredNotifications(updated);
+          return { notifications: updated };
+        });
+      },
+      markAllNotificationsAsRead: () => {
+        set((state) => {
+          const updated = state.notifications.map((n) => ({ ...n, read: true }));
+          notificationService.saveStoredNotifications(updated);
+          return { notifications: updated };
+        });
+      },
+      clearAllNotifications: () => {
+        set({ notifications: [], activeToasts: [] });
+        notificationService.saveStoredNotifications([]);
+      },
+      dismissToast: (id) => {
+        set((state) => ({
+          activeToasts: state.activeToasts.filter((t) => t.id !== id),
+        }));
+      },
+      emitActivity: (actionType, data) => {
+        const user = get().userSession;
+        const board = get().boards.find((b) => b.id === data.boardId);
+        if (!board || !board.isShared) return;
+
+        const activity = notificationService.createActivity(actionType, {
+          boardId: board.id,
+          boardName: board.name,
+          actorId: user.id,
+          actorName: user.name || "協作成員",
+          actorAvatar: user.avatarUrl,
+          taskId: data.taskId,
+          taskTitle: data.taskTitle,
+          sourceColumnTitle: data.sourceColumnTitle,
+          targetColumnTitle: data.targetColumnTitle,
+        });
+
+        // Sync to shared board & Broadcast
+        collaborationService.syncSharedBoardData(board, get().tasks, activity);
+      },
+
       // Tasks
       tasks: INITIAL_TASKS,
       addTask: (taskData) => {
@@ -1054,6 +1232,16 @@ export const useKanbanStore = create<KanbanStoreState>()(
           tasks: [...state.tasks, newTask],
         }));
 
+        if (effectiveBoardId !== "global") {
+          const targetCol = get().getActiveBoardColumns().find((c) => c.id === taskData.columnId);
+          get().emitActivity("task_created", {
+            boardId: effectiveBoardId,
+            taskId: newTask.id,
+            taskTitle: newTask.title,
+            targetColumnTitle: targetCol?.title || taskData.columnId,
+          });
+        }
+
         get().triggerSync();
         return newTask;
       },
@@ -1068,6 +1256,15 @@ export const useKanbanStore = create<KanbanStoreState>()(
       },
 
       deleteTask: (id) => {
+        const targetTask = get().tasks.find((t) => t.id === id);
+        if (targetTask && targetTask.boardId && targetTask.boardId !== "global") {
+          get().emitActivity("task_deleted", {
+            boardId: targetTask.boardId,
+            taskId: targetTask.id,
+            taskTitle: targetTask.title,
+          });
+        }
+
         set((state) => ({
           tasks: state.tasks.filter((t) => t.id !== id),
           selectedTaskIds: state.selectedTaskIds.filter((taskId) => taskId !== id),
@@ -1085,6 +1282,15 @@ export const useKanbanStore = create<KanbanStoreState>()(
       },
 
       toggleTaskComplete: (id) => {
+        const targetTask = get().tasks.find((t) => t.id === id);
+        if (targetTask && targetTask.boardId && targetTask.boardId !== "global") {
+          get().emitActivity(targetTask.completed ? "task_uncompleted" : "task_completed", {
+            boardId: targetTask.boardId,
+            taskId: targetTask.id,
+            taskTitle: targetTask.title,
+          });
+        }
+
         set((state) => ({
           tasks: state.tasks.map((t) => {
             if (t.id === id) {
@@ -1131,6 +1337,16 @@ export const useKanbanStore = create<KanbanStoreState>()(
         const nextTask = clampedIndex < columnTasks.length ? columnTasks[clampedIndex] : null;
 
         const newOrderKey = generateOrderKeyBetween(prevTask?.orderKey, nextTask?.orderKey);
+
+        if (taskToMove.columnId !== targetColumnId && newBoardId !== "global") {
+          const targetCol = get().getActiveBoardColumns().find((c) => c.id === targetColumnId);
+          get().emitActivity("task_moved", {
+            boardId: newBoardId,
+            taskId: taskToMove.id,
+            taskTitle: taskToMove.title,
+            targetColumnTitle: targetCol?.title || targetColumnId,
+          });
+        }
 
         set((state) => ({
           tasks: state.tasks.map((t) =>

@@ -104,6 +104,13 @@ export class CollaborationService {
   }
 
   /**
+   * Broadcast a specific member activity event to other browser tabs
+   */
+  public broadcastActivity(boardId: string, activity: any): void {
+    this.broadcastUpdate("ACTIVITY_EVENT", boardId, { activity });
+  }
+
+  /**
    * Enables sharing on an existing board, generating an invite code and setting the current user as Owner.
    */
   public async enableBoardSharing(
@@ -459,12 +466,28 @@ export class CollaborationService {
    */
   public async syncSharedBoardData(
     board: Board,
-    tasks: Task[]
+    tasks: Task[],
+    newActivity?: any
   ): Promise<void> {
     if (!board.isShared) return;
 
     const boardTasks = tasks.filter((t) => t.boardId === board.id);
     const now = new Date().toISOString();
+
+    let existingActivities: any[] = [];
+    const cachedBoardRaw = safeGetItem(`vk_shared_board_${board.id}`);
+    if (cachedBoardRaw) {
+      try {
+        const parsed = JSON.parse(cachedBoardRaw);
+        if (Array.isArray(parsed.recentActivities)) {
+          existingActivities = parsed.recentActivities;
+        }
+      } catch {}
+    }
+
+    if (newActivity) {
+      existingActivities = [newActivity, ...existingActivities.filter((a) => a.id !== newActivity.id)].slice(0, 30);
+    }
 
     // 1. LocalStorage / Memory cache
     safeSetItem(
@@ -472,6 +495,7 @@ export class CollaborationService {
       JSON.stringify({
         ...board,
         tasks: serializeTasks(boardTasks),
+        recentActivities: existingActivities,
         updatedAt: now,
       })
     );
@@ -480,7 +504,12 @@ export class CollaborationService {
     this.broadcastUpdate("BOARD_UPDATED", board.id, {
       board,
       tasks: boardTasks,
+      recentActivities: existingActivities,
     });
+
+    if (newActivity) {
+      this.broadcastActivity(board.id, newActivity);
+    }
 
     // 3. Firestore
     if (isFirebaseConfigured() && typeof navigator !== "undefined" && navigator.onLine) {
@@ -497,6 +526,7 @@ export class CollaborationService {
             ownerId: board.ownerId,
             members: board.members || [],
             tasks: serializeTasks(boardTasks),
+            recentActivities: existingActivities,
             updatedAt: now,
           }), { merge: true });
         }
@@ -511,7 +541,7 @@ export class CollaborationService {
    */
   public subscribeToSharedBoard(
     boardId: string,
-    onUpdate: (data: { board: Board; tasks: Task[] }) => void
+    onUpdate: (data: { board: Board; tasks: Task[]; recentActivities?: any[] }) => void
   ): () => void {
     // Unsubscribe existing
     const existing = this.activeSubscriptions.get(boardId);
@@ -540,7 +570,11 @@ export class CollaborationService {
                 ownerId: data.ownerId,
                 members: data.members || [],
               };
-              onUpdate({ board, tasks });
+              onUpdate({
+                board,
+                tasks,
+                recentActivities: Array.isArray(data.recentActivities) ? data.recentActivities : [],
+              });
             }
           }, (err) => {
             console.warn("Firestore shared board subscription error:", err);

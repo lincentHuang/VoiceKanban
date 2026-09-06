@@ -116,6 +116,13 @@ src/
   - **畫布滑鼠抓取平移**：桌機環境下，使用者可在看板空白畫布、欄位間隙或非互動空白區域按住滑鼠左鍵自由水平拖曳（Drag to Scroll / Pan），畫面流暢 1:1 跟隨滑鼠位移，放開時帶有自然慣性滑行（Momentum Gliding）。
   - **智慧防衝突隔離**：自動識別互動元素與拖曳目標（卡片拖曳、欄位標頭拖曳、按鈕、輸入框、選單與下拉彈窗），點擊/拖曳卡片或標頭時正常觸發 DnD 排序，絕不干擾既有操作；滑鼠微移（< 3px）精準判定為靜態點擊，超過 3px 啟動平移並自動阻止誤觸點擊。
   - **動態游標反饋**：常態懸停於畫布空白區域顯示 `cursor-grab`（抓取手勢），拖曳平移期間即時切換為 `cursor-grabbing`（握拳手勢）並啟用 `select-none` 防文字反白。
+- **看板多看板切換、編輯（改名/更換圖示）與安全刪除防呆 (Board Management, Rename, Icon & Safe Deletion)**：
+  - **看板下拉選單直覺操作 (Board Dropdown Quick Actions)**：在頂部 `BoardSwitcherMenu` 看板切換選單中，各看板項目均提供專屬編輯（✏️）與刪除（🗑️）按鈕。
+  - **專屬看板編輯視窗 (Edit Board Modal)**：支援自訂看板名稱、選取 Emoji 圖示（或設定純文字）與看板描述，修改即時生效並自動同步至雲端與本機存儲。
+  - **全方位看板安全刪除防呆 (Safe Board Deletion Guard & Cascade Clean)**：
+    - **最後看板保護機制**：系統強制限制當僅存最後 1 個看板時不可刪除，並顯示防呆提示，確保系統核心資料結構穩定。
+    - **刪除確認視窗 (Board Delete Confirmation Modal)**：點擊刪除看板時彈出防呆確認視窗，明確提示看板名稱、包含之任務數量及刪除後不可復原之警示。
+    - **自動平滑切換**：刪除當前啟用中（Active）看板時，系統自動將視圖無縫切換至剩餘看板中的第一個，並同步清理該看板關聯任務與通知雲端同步。
 - **手機端看板欄位底部與浮動 Dock 安全避讓 (Mobile Column Bottom Dock Clearance & Safe Area)**：
   - **精準避讓浮動控制列**：手機版視窗下（`< sm`），看板主畫布底部容器與收件匣內容區統一配置 `pb-[54px]` 精準避讓間距，徹底解決無效 CSS 類別導致欄位卡片底部、已完成折疊列與「+ 新增卡片」按鈕被底部浮動 Dock (`BottomDock`)、語音按鈕 (`VoiceFAB`) 或 Next.js 開發標籤遮擋重疊之問題。
   - **直覺透視背景**：欄位卡片與內容滾動至最底部時精準停止於 Dock 上方，保持乾淨呼吸感，Dock 背後僅透出看板專屬紫紅漸層畫布，互動零衝突、按鈕 100% 可視且易於點擊。
@@ -192,16 +199,18 @@ src/
   - 應用識別碼 (App ID / Bundle ID)：`com.voicekanban.app`，中文應用顯示名稱：**「聲動看板」**。
   - 混合容錯雙軌架構：建立完整 `capacitor.config.ts`，支援本地靜態包裝與生產伺服器 API 容錯代理，解決 Next.js Route Handlers（語音辨識、BYOK 驗證）於原生端運行之需要。
   - 原生權限與設備適配：配置 iOS `Info.plist`（`NSMicrophoneUsageDescription`）與 Android `AndroidManifest.xml`（`RECORD_AUDIO`, `INTERNET`），確保語音輸入無縫啟用；適配行動裝置 Safe Area Insets（動態島與底部 Home Bar 避讓）。
-- **全規格 Progressive Web App (PWA) 支援**：
+- **全規格 Progressive Web App (PWA) 與電腦桌面獨立應用 (Desktop Standalone App)**：
   - 標準 Web App Manifest（`manifest.webmanifest`）：包含繁中完整名稱、短名稱、主題色標（`#f97316` 橘色與白底）、192x192 / 512x512 高解析度圖示與 Maskable 圖示，支援 `standalone` 獨立全螢幕運行模式。
   - 輕量強健 Service Worker 快取（`public/sw.js`）：離線快取關鍵資源、網路優先降級策略，提供斷網狀態下的平滑快取展示。
   - 完整 iOS Web App Meta Tags：支援 `apple-mobile-web-app-capable`、`apple-mobile-web-app-status-bar-style`、動態主題色與 Apple Touch Icons。
-- **頭像設定選單整合「在手機安裝應用」按鈕 (Install PWA Call-to-Action)**：
-  - **位置與入口**：位於頂部 Navbar 點擊使用者頭像後的下拉選單（設定區塊），提供直觀的「在手機安裝應用」選項（手機圖示與 PWA 標籤）。
-  - **智慧環境狀態偵測 (自動隱藏)**：當偵測到使用者已在獨立 PWA 模式（`display-mode: standalone`）或 Capacitor 原生 App 容器內執行時，自動隱藏該按鈕，維持選單純淨。
-  - **雙軌平台安裝體驗 (Dual-Platform Flow)**：
-    - **Android / 桌面 Chrome / Edge**：攔截並保存 `beforeinstallprompt` 事件，點擊按鈕直接觸發系統原生「安裝應用程式」視窗。
-    - **iOS Safari**：針對 Safari 無法自動觸發安裝之系統限制，點擊後彈出精緻 3 步驟圖文導引彈窗（`IosInstallGuideModal`），圖示化指引使用者點擊底部「分享 ⎋」➔ 滑動點擊「加入主畫面 ➕」➔ 右上角「新增」。
+- **雙軌安裝入口（Navbar 專屬「💻 安裝電腦版」+ 頭像選單）與智慧隱藏**：
+  - **頂部 Navbar 專屬安裝按鈕**：桌機瀏覽器環境下，Navbar 右側顯示「💻 安裝電腦版」膠囊按鈕；點擊後若支援原生 prompt 即刻彈窗安裝，若為 macOS Safari 則彈出專屬「加入 Dock」圖文教學彈窗。
+  - **頭像設定選單整合**：選單動態適配設備環境（桌機顯示「💻 安裝為電腦桌面應用」、手機顯示「📱 在手機安裝應用」）。
+  - **智慧環境狀態偵測 (自動隱藏)**：當偵測到使用者已在獨立 PWA 模式（`display-mode: standalone`）或 Capacitor 原生 App 容器內執行時，自動隱藏所有安裝按鈕，維持介面純淨。
+  - **跨瀏覽器桌面安裝體驗 (Multi-Browser Desktop Flow)**：
+    - **桌面 Chrome / Edge / Brave / Android**：攔截並保存 `beforeinstallprompt` 事件，點擊按鈕直接觸發系統原生「安裝應用程式」視窗。
+    - **macOS Safari (Sonoma 14+)**：彈出專屬圖文導引視窗（`DesktopInstallGuideModal`），指引「檔案 ➔ 加入 Dock...」，秒級建立 Mac 獨立 App。
+    - **iOS Safari**：彈出 3 步驟圖文導引彈窗（`IosInstallGuideModal`），指引「分享 ⎋ ➔ 加入主畫面 ➕」。
 
 ### 3.11 🚀 展開與聚合工作流 (Expand & Aggregate Feature)
 - **任務卡片展開為獨立狀態欄位 (Expand Task to Column)**：
@@ -262,6 +271,25 @@ src/
   - **雙軌即時同步引擎**：在線時即時監聽 Firestore `shared_boards` 集合，並在同瀏覽器跨分頁環境下藉由 `BroadcastChannel` 達成 0 延遲同步；一人拖曳或編輯，所有成員畫面秒級無縫更新。
   - **協作者頭像堆疊 (Collaborator Avatars)**：看板頂部直觀展示所有參與成員頭像堆疊與身份徽章（👑 擁有者、✏️ 編輯者、👁️ 檢視者），點擊可展開檢視成員清單或由 Owner 管理。
   - **最後寫入生效 (Last-Write-Wins)**：卡片變更採樂觀更新配合最後寫入時間戳記（`updatedAt`）自動裁決，確保多人同時編輯時資料一致性。
+
+### 3.15 🔔 群組協作即時通知中心 (Collaborative Notifications Feature)
+- **多維度即時通知入口與未讀計數 (Notification UI & Unread Badge)**：
+  - **Navbar 鈴鐺與紅點徽章**：頂部導覽列配置 `NotificationBell`，即時呈現未讀通知計數標籤（紅點微光 Badge），未讀數大於 0 時動態顯示數字。
+  - **通知中心下拉抽屜 (NotificationPopover)**：點擊鈴鐺展開通知中心面板，支援「全部標為已讀」、「一鍵清空所有通知」、以及「瀏覽器桌面推播開關」。
+  - **即時浮動快訊 (Live Floating Toast)**：當協同群組有其他成員進行操作時，畫面右上角即時滑出 4 秒自動淡出之浮動卡片，提示操作者頭像、動作與影響卡片。
+- **全方位協同事件觸發與格式化動態 (Event Triggers & Human-Readable Alerts)**：
+  - ➕ **新增任務**（例：「*Alex 在 [進行中] 新增了任務『重構 API』*」）
+  - 🔄 **移動任務欄位**（例：「*Sarah 將『首頁改版』移至 [已完成]*」）
+  - ✅ **完成/取消完成任務**（例：「*Alex 完成了『修正登入 Bug』*」）
+  - 🗑️ **刪除任務**（例：「*Sarah 刪除了任務『舊版文案』*」）
+  - 👥 **新成員加入**（例：「*Ken 加入了看板協作*」）
+- **操作者自我過濾原則 (Self-Action Exclusion Guard)**：
+  - 系統強制過濾使用者自身的本機操作，絕不跳出提示打擾自己；僅接收「同看板其他協作成員」的操作動態。
+- **Web Notification 桌面系統推播整合 (Browser Web Push Integration)**：
+  - 支援 Web Notification API。使用者可在通知中心面板中點擊「開啟桌面推播」按鈕取得瀏覽器授權。當使用者切換分頁或視窗位於背景時，系統自動發送原生系統通知橫幅，點擊通知自動切換聚焦回應用視窗。
+- **雙軌資料持久化與點擊聚焦跳轉 (Persistence & Interactive Focus Navigation)**：
+  - 通知即時同步至本機 LocalStorage（上限保留最新 50 筆）與雲端 Firestore，支援在線跨分頁 BroadcastChannel 同步。
+  - 點擊通知清單中之項目，系統自動定位至對應看板並短暫高亮聚焦該任務卡片。
 
 ---
 
@@ -333,6 +361,17 @@ src/
   - 支援未登入訪客（Guest）免註冊輸入暱稱極速加入協同，自動產生協作者身分，登入時無縫綁定。
   - 支援三級角色權限（Owner 擁有者、Editor 編輯者、Viewer 檢視者），Owner 可動態切換成員角色與移出成員；Viewer 模式自動限制卡片新增、編輯與拖曳，並顯示專屬唯讀提示。
   - 支援 Firestore 與跨分頁 BroadcastChannel 雙軌即時同步，頂部即時呈現協作者頭像堆疊（Collaborator Avatars）與在線狀態。
+- [x] **MAC-29 (群組協作即時通知中心與他人動態推播)**：
+  - 頂部 Navbar 整合 `NotificationBell`，即時呈現未讀數紅點 Badge；點擊展開 `NotificationPopover` 通知中心面板，實作 UI 5 態、全部已讀、一鍵清空與 Web Notification 桌面推播授權切換。
+  - 支援即時右上角 4 秒浮動 Toast 卡片（`NotificationToastContainer`），展示操作者頭像與活動詳情。
+  - 支援全方位協同事件（新增任務、移動欄位、完成/取消任務、刪除任務、新成員加入）即時廣播與 Firestore 同步。
+  - 具備嚴格的操作者自我過濾機制（Self-Action Exclusion），絕不對自身的操作發出打擾通知。
+- [x] **MAC-30 (電腦桌面獨立應用程式與跨瀏覽器安裝體驗)**：
+  - 頂部 Navbar 於桌機瀏覽環境下顯示「💻 安裝電腦版」專屬膠囊按鈕；使用者頭像選單動態適配「💻 安裝為電腦桌面應用」。
+  - 支援 Chrome / Edge 原生秒級 prompt 安裝與 macOS Safari (Sonoma 14+)「加入 Dock」圖文導引視窗（`DesktopInstallGuideModal`）。
+  - 當應用程式以獨立桌面視窗模式（`display-mode: standalone`）執行時，系統自動隱藏安裝按鈕，提供無網址列、無瀏覽器標籤頁干擾之沉浸式看板體驗。
+
+
 
 
 

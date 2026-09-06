@@ -21,6 +21,7 @@ export interface SharedBoardData {
   members: BoardMember[];
   columns: any[];
   tasks: Record<string, any>;
+  recentActivities?: any[];
   updatedAt: string;
 }
 

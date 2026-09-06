@@ -1,44 +1,36 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import React from "react";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
-import {
-  X,
-  KeyRound,
-  ShieldCheck,
-  ExternalLink,
-  Sparkles,
-  CheckCircle2,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Loader2,
-  BrainCircuit,
-  RotateCcw,
-  BookOpen,
-  Check,
-} from "lucide-react";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { ManualOfflineToggle } from "@/features/offline";
-import { WifiOff, Cloud } from "lucide-react";
+import { useSettingsModal } from "./modal/useSettingsModal";
+import { SettingsModalHeader } from "./modal/SettingsModalHeader";
+import { SettingsTabNav } from "./modal/SettingsTabNav";
+import { SettingsByokTab } from "./modal/SettingsByokTab";
+import { SettingsOfflineTab } from "./modal/SettingsOfflineTab";
+import { SettingsLearningTab } from "./modal/SettingsLearningTab";
 
 export const SettingsModal: React.FC = () => {
   const {
     isSettingsModalOpen,
     setIsSettingsModalOpen,
-    byokConfig,
-    updateBYOKConfig,
+    activeTab,
+    setActiveTab,
+    inputKey,
+    setInputKey,
+    selectedModel,
+    setSelectedModel,
+    defaultBoard,
+    setDefaultBoard,
+    showPassword,
+    setShowPassword,
+    isTesting,
+    testStatus,
+    learningStats,
+    resetSuccess,
     boards,
-    getLearningStats,
-    resetLearningModel,
-  } = useKanbanStore();
+    handleTestAndSave,
+    handleResetLearning,
+  } = useSettingsModal();
 
   useEscapeKey(() => {
     if (isSettingsModalOpen) {
@@ -46,87 +38,7 @@ export const SettingsModal: React.FC = () => {
     }
   }, isSettingsModalOpen);
 
-  const [activeTab, setActiveTab] = useState<"api" | "offline" | "learning">("api");
-  const [inputKey, setInputKey] = useState(byokConfig.apiKey || "");
-  const [selectedModel, setSelectedModel] = useState(byokConfig.model || "gemini-2.0-flash");
-  const [defaultBoard, setDefaultBoard] = useState(byokConfig.defaultBoardId || "board-work");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testStatus, setTestStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-
-  // Learning Stats
-  const [learningStats, setLearningStats] = useState({
-    totalLearnedWords: 0,
-    totalFeedbackCount: 0,
-    zhFeedbackCount: 0,
-    enFeedbackCount: 0,
-    lastUpdated: null as string | null,
-  });
-  const [resetSuccess, setResetSuccess] = useState(false);
-
-  useEffect(() => {
-    if (isSettingsModalOpen) {
-      setLearningStats(getLearningStats());
-      setResetSuccess(false);
-    }
-  }, [isSettingsModalOpen, getLearningStats]);
-
   if (!isSettingsModalOpen) return null;
-
-  const handleTestAndSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTestStatus(null);
-
-    if (!inputKey.trim()) {
-      updateBYOKConfig({
-        apiKey: "",
-        isCustomKeyActive: false,
-        model: selectedModel,
-        defaultBoardId: defaultBoard,
-      });
-      setTestStatus({ type: "success", msg: "已清除自備 Key，系統將以離線半自動學習模式運作。" });
-      return;
-    }
-
-    setIsTesting(true);
-
-    try {
-      const res = await fetch("/api/user/key", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: inputKey.trim(), model: selectedModel }),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        updateBYOKConfig({
-          apiKey: inputKey.trim(),
-          isCustomKeyActive: true,
-          model: selectedModel,
-          defaultBoardId: defaultBoard,
-          isEncrypted: true,
-          lastTestedAt: new Date().toISOString(),
-        });
-        setTestStatus({ type: "success", msg: "🎉 Gemini API Key 驗證成功！已啟用 AES-256 加密代理。" });
-      } else {
-        setTestStatus({ type: "error", msg: data.error || "驗證失敗，請檢查 Key 是否正確。" });
-      }
-    } catch (err: any) {
-      setTestStatus({ type: "error", msg: err.message || "連線測試失敗" });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
-  const handleResetLearning = () => {
-    if (confirm("確定要重設本地半自動學習記憶庫嗎？這將會清除歷史詞彙加權與修正關聯。")) {
-      resetLearningModel();
-      setLearningStats(getLearningStats());
-      setResetSuccess(true);
-      setTimeout(() => setResetSuccess(false), 3000);
-    }
-  };
 
   return (
     <div
@@ -137,315 +49,43 @@ export const SettingsModal: React.FC = () => {
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-white/80 dark:border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-7 relative overflow-hidden"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600">
-              <KeyRound className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                系統設定 &amp; AI / 離線模式
-              </h3>
-              <p className="text-xs text-slate-500">管理 Gemini API Key、離線模式與本地半自動學習詞庫</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsSettingsModalOpen(false)}
-            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        <SettingsModalHeader onClose={() => setIsSettingsModalOpen(false)} />
+        <SettingsTabNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 mt-4 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab("api")}
-            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === "api"
-                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-            <span>Gemini BYOK</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("offline")}
-            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === "offline"
-                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <WifiOff className="w-3.5 h-3.5 text-amber-500" />
-            <span>離線與同步</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("learning")}
-            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === "learning"
-                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <BrainCircuit className="w-3.5 h-3.5 text-lime-600" />
-            <span>半自動學習</span>
-          </button>
-        </div>
-
-        {/* Tab Content Body */}
         <div className="flex-1 overflow-y-auto custom-scrollbar mt-4 pr-0.5">
-          {/* Tab 1: BYOK Gemini Settings */}
           {activeTab === "api" && (
-            <form onSubmit={handleTestAndSave} className="space-y-4">
-            <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-                  Google AI Studio API Key
-                </label>
+            <SettingsByokTab
+              inputKey={inputKey}
+              setInputKey={setInputKey}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              selectedModel={selectedModel}
+              setSelectedModel={setSelectedModel}
+              defaultBoard={defaultBoard}
+              setDefaultBoard={setDefaultBoard}
+              boards={boards}
+              testStatus={testStatus}
+              isTesting={isTesting}
+              handleTestAndSave={handleTestAndSave}
+              onClose={() => setIsSettingsModalOpen(false)}
+            />
+          )}
 
-                <a
-                  href="https://aistudio.google.com/app/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-orange-600 hover:text-orange-700 font-semibold flex items-center gap-1 hover:underline"
-                >
-                  <span>取得免費 Key</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
+          {activeTab === "offline" && (
+            <SettingsOfflineTab onClose={() => setIsSettingsModalOpen(false)} />
+          )}
 
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={inputKey}
-                  onChange={(e) => setInputKey(e.target.value)}
-                  placeholder="貼上 AIzaSy... 開頭的 API Key (留空則使用離線學習模式)"
-                  className="w-full pr-10 pl-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-orange-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-
-              {/* Encryption badge */}
-              <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-200/60 dark:border-emerald-800">
-                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                <span>端到端隱私：AES-256 加密代理，音訊分析完畢立即銷毀。</span>
-              </div>
-            </div>
-
-            {/* Model Selection */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  多模態模型
-                </label>
-                <Select
-                  value={selectedModel}
-                  onValueChange={(val) => setSelectedModel(val as any)}
-                >
-                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini-2.0-flash">gemini-2.0-flash (推薦 - 極速)</SelectItem>
-                    <SelectItem value="gemini-1.5-pro">gemini-1.5-pro (深度語義)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  預設注入看板
-                </label>
-                <Select
-                  value={defaultBoard}
-                  onValueChange={(val) => setDefaultBoard(val)}
-                >
-                  <SelectTrigger className="w-full h-9 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {boards.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.icon} {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Feedback Status Alert */}
-            {testStatus && (
-              <div
-                className={`p-3 rounded-2xl flex items-center gap-2 text-xs font-medium ${
-                  testStatus.type === "success"
-                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                    : "bg-rose-50 text-rose-800 border border-rose-200"
-                }`}
-              >
-                {testStatus.type === "success" ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                )}
-                <span>{testStatus.msg}</span>
-              </div>
-            )}
-
-            {/* Footer Actions */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsSettingsModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                關閉
-              </button>
-              <button
-                type="submit"
-                disabled={isTesting}
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-base44-orange hover:bg-base44-orangeHover text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-              >
-                {isTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{isTesting ? "連線測試中..." : "測試連線並儲存"}</span>
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Tab 2: Offline & Resilient Sync Settings */}
-        {activeTab === "offline" && (
-          <div className="mt-4 space-y-4">
-            <ManualOfflineToggle variant="settings" />
-
-            <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/60 space-y-2">
-              <div className="flex items-center gap-2">
-                <WifiOff className="w-4 h-4 text-amber-600" />
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  Local-First 本機優先架構
-                </h4>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                即使處於完全無網路（飛航模式、地下室）或手動離線狀態下，您仍可自由建立、拖曳排序、編輯與刪除任何看板任務。所有操作均會即時儲存至本地快取，並在網路恢復時自動無縫同步至雲端。
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <Cloud className="w-4 h-4 text-slate-400" />
-                <span className="text-slate-600 dark:text-slate-300 font-medium">PWA Service Worker 快取</span>
-              </div>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
-                <Check className="w-3 h-3" />
-                <span>已就緒 (v2)</span>
-              </span>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => setIsSettingsModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                完成
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Semi-Automatic Learning Model Stats & Controls */}
-        {activeTab === "learning" && (
-          <div className="mt-4 space-y-4">
-            <div className="p-4 rounded-2xl bg-lime-50/60 dark:bg-lime-950/20 border border-lime-200/60 dark:border-lime-900/60 space-y-2">
-              <div className="flex items-center gap-2">
-                <BrainCircuit className="w-4 h-4 text-lime-600" />
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  純前端半自動學習 (Active Correction Feedback)
-                </h4>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                每次您在預覽確認卡片中調整看板、欄位、標籤或優先級時，系統會自動在本地瀏覽器強化對應詞彙的貝氏權重，越用越精準，<strong>完全無須連接雲端 AI API</strong>。
-              </p>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-center">
-                <span className="text-[10px] font-semibold text-slate-400 block mb-1">已學習詞彙</span>
-                <span className="text-lg font-black text-slate-800 dark:text-slate-100 font-mono">
-                  {learningStats.totalLearnedWords}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-center">
-                <span className="text-[10px] font-semibold text-slate-400 block mb-1">總修正回饋次數</span>
-                <span className="text-lg font-black text-lime-600 font-mono">
-                  {learningStats.totalFeedbackCount}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-center">
-                <span className="text-[10px] font-semibold text-slate-400 block mb-1">🇹🇼 中文樣本</span>
-                <span className="text-lg font-black text-slate-800 dark:text-slate-100 font-mono">
-                  {learningStats.zhFeedbackCount}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-center">
-                <span className="text-[10px] font-semibold text-slate-400 block mb-1">🇺🇸 英文樣本</span>
-                <span className="text-lg font-black text-slate-800 dark:text-slate-100 font-mono">
-                  {learningStats.enFeedbackCount}
-                </span>
-              </div>
-            </div>
-
-            {/* Reset Alert / Status */}
-            {resetSuccess && (
-              <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-medium flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span>學習記憶庫已重設為初始乾淨狀態！</span>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={handleResetLearning}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900 transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>重設學習記憶庫</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsSettingsModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                完成
-              </button>
-            </div>
-          </div>
-        )}
+          {activeTab === "learning" && (
+            <SettingsLearningTab
+              learningStats={learningStats}
+              resetSuccess={resetSuccess}
+              handleResetLearning={handleResetLearning}
+              onClose={() => setIsSettingsModalOpen(false)}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 };
+export default SettingsModal;
