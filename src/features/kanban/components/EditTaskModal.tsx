@@ -32,7 +32,7 @@ export const EditTaskModal: React.FC = () => {
   const [isDeleteConfirm, setIsDeleteConfirm] = useState(false);
   const [isExpandConfirm, setIsExpandConfirm] = useState(false);
 
-  const gesture = useDrawerGesture(() => setEditingTaskId(null));
+  const gesture = useDrawerGesture(() => setEditingTaskId(null), editingTaskId);
   const form = useEditTaskForm(task);
 
   useEscapeKey(() => {

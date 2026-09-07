@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-export function useDrawerGesture(onClose: () => void) {
+export function useDrawerGesture(onClose: () => void, openKey?: string | null) {
   const [isMobile, setIsMobile] = useState(false);
   const [drawerDragY, setDrawerDragY] = useState(0);
   const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
@@ -17,6 +17,16 @@ export function useDrawerGesture(onClose: () => void) {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // The modal component stays mounted (renders null) when closed, so closing
+  // state from the previous open would otherwise leak into the next one.
+  useEffect(() => {
+    if (openKey) {
+      setIsClosingDrawer(false);
+      setDrawerDragY(0);
+      setIsDraggingDrawer(false);
+    }
+  }, [openKey]);
 
   const handleCloseDrawer = () => {
     if (isMobile) {

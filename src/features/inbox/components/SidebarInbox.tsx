@@ -63,7 +63,7 @@ export const SidebarInbox: React.FC = () => {
       onTouchEnd={handleTouchEnd}
       className={`shrink-0 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden transition-all duration-300 ease-in-out ${
         isMobile
-          ? `h-auto absolute inset-x-2.5 top-2.5 bottom-[calc(0.625rem+env(safe-area-inset-bottom,0px))] z-20 p-3 sm:p-3.5 border border-slate-200/80 dark:border-slate-800 ${
+          ? `h-auto absolute inset-x-2.5 top-0 bottom-[calc(0.625rem+env(safe-area-inset-bottom,0px))] z-20 p-3  sm:p-3.5 border border-slate-200/80 dark:border-slate-800 ${
               isInboxSidebarOpen
                 ? "translate-x-0 opacity-100 pointer-events-auto shadow-2xl"
                 : "-translate-x-[calc(100%+1.5rem)] opacity-0 pointer-events-none shadow-none"
