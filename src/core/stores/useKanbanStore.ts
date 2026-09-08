@@ -71,6 +71,10 @@ interface KanbanStoreState {
   clearPendingOfflineChanges: () => void;
   isOfflineBannerDismissed: boolean;
   setIsOfflineBannerDismissed: (dismissed: boolean) => void;
+  // Tombstones for tasks/boards deleted locally but not yet confirmed removed from
+  // the cloud, so a merge-based sync doesn't resurrect them from a stale remote copy
+  pendingDeletedTaskIds: Record<string, string>;
+  pendingDeletedBoardIds: Record<string, string>;
 
   // View Mode (Kanban / Table / List / Calendar)
   viewMode: ViewMode;
@@ -553,6 +557,8 @@ export const useKanbanStore = create<KanbanStoreState>()(
       clearPendingOfflineChanges: () => set({ pendingOfflineChanges: 0 }),
       isOfflineBannerDismissed: false,
       setIsOfflineBannerDismissed: (isOfflineBannerDismissed) => set({ isOfflineBannerDismissed }),
+      pendingDeletedTaskIds: {},
+      pendingDeletedBoardIds: {},
 
       triggerSync: async () => {
         const user = get().userSession;
@@ -581,17 +587,29 @@ export const useKanbanStore = create<KanbanStoreState>()(
           user.id,
           get().tasks,
           get().boards,
-          get().activeBoardId
+          get().activeBoardId,
+          get().pendingDeletedTaskIds,
+          get().pendingDeletedBoardIds
         );
-        set({
-          pendingOfflineChanges: result.status === "synced" ? 0 : get().pendingOfflineChanges,
+        set((state) => ({
+          // Adopt the server-merged result so any newer data pulled in during
+          // the merge (e.g. tasks/boards written by another device) is reflected
+          // locally too, instead of only living in Firestore until the next fetch.
+          tasks: result.tasks || state.tasks,
+          boards: result.boards && result.boards.length > 0 ? result.boards : state.boards,
+          activeBoardId: result.activeBoardId || state.activeBoardId,
+          pendingOfflineChanges: result.status === "synced" ? 0 : state.pendingOfflineChanges,
+          // Once synced, the deletions are recorded in the cloud's own tombstone
+          // list, so this device no longer needs to remember them locally.
+          pendingDeletedTaskIds: result.status === "synced" ? {} : state.pendingDeletedTaskIds,
+          pendingDeletedBoardIds: result.status === "synced" ? {} : state.pendingDeletedBoardIds,
           syncState: {
             status: result.status,
             lastSyncedAt: result.syncedAt,
             errorMessage: result.errorMessage,
             isCloudConnected: result.isCloudConnected,
           },
-        });
+        }));
       },
 
       // View Mode
@@ -672,14 +690,21 @@ export const useKanbanStore = create<KanbanStoreState>()(
 
         const remainingBoards = boards.filter((b) => b.id !== boardId);
         const newActiveBoardId = activeBoardId === boardId ? remainingBoards[0].id : activeBoardId;
+        const removedTasks = tasks.filter((t) => t.boardId === boardId);
         const remainingTasks = tasks.filter((t) => t.boardId !== boardId);
+        const now = new Date().toISOString();
 
-        set({
+        set((state) => ({
           boards: remainingBoards,
           activeBoardId: newActiveBoardId,
           tasks: remainingTasks,
           selectedTaskIds: [],
-        });
+          pendingDeletedBoardIds: { ...state.pendingDeletedBoardIds, [boardId]: now },
+          pendingDeletedTaskIds: removedTasks.reduce(
+            (acc, t) => ({ ...acc, [t.id]: now }),
+            state.pendingDeletedTaskIds
+          ),
+        }));
         get().triggerSync();
       },
 
@@ -1269,6 +1294,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           tasks: state.tasks.filter((t) => t.id !== id),
           selectedTaskIds: state.selectedTaskIds.filter((taskId) => taskId !== id),
           editingTaskId: state.editingTaskId === id ? null : state.editingTaskId,
+          pendingDeletedTaskIds: { ...state.pendingDeletedTaskIds, [id]: new Date().toISOString() },
         }));
         get().triggerSync();
       },
@@ -1588,11 +1614,16 @@ export const useKanbanStore = create<KanbanStoreState>()(
       batchDeleteTasks: () => {
         const { selectedTaskIds, tasks } = get();
         if (selectedTaskIds.length === 0) return;
+        const now = new Date().toISOString();
 
-        set({
+        set((state) => ({
           tasks: tasks.filter((t) => !selectedTaskIds.includes(t.id)),
           selectedTaskIds: [],
-        });
+          pendingDeletedTaskIds: selectedTaskIds.reduce(
+            (acc, id) => ({ ...acc, [id]: now }),
+            state.pendingDeletedTaskIds
+          ),
+        }));
         get().triggerSync();
       },
 
@@ -1715,6 +1746,8 @@ export const useKanbanStore = create<KanbanStoreState>()(
         userSession: state.userSession,
         viewMode: state.viewMode,
         isInboxSidebarOpen: state.isInboxSidebarOpen,
+        pendingDeletedTaskIds: state.pendingDeletedTaskIds,
+        pendingDeletedBoardIds: state.pendingDeletedBoardIds,
       }),
     }
   )

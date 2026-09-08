@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, onSnapshot, Unsubscribe } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, runTransaction, Unsubscribe } from "firebase/firestore";
 import { Task, Board } from "../types/task";
 import { SyncStatus } from "../types/auth";
 import { getFirebaseDb, isFirebaseConfigured } from "./firebase";
@@ -8,6 +8,9 @@ export interface SyncResult {
   syncedAt: string;
   errorMessage?: string;
   isCloudConnected: boolean;
+  boards?: Board[];
+  tasks?: Task[];
+  activeBoardId?: string;
 }
 
 /**
@@ -95,6 +98,41 @@ export function sanitizeForFirestore<T>(data: T): T {
   return result as T;
 }
 
+/**
+ * Merges two task lists by ID, keeping whichever copy of each task has the
+ * newer `updatedAt` timestamp. Tasks that only exist on one side are kept as-is.
+ */
+export function mergeTasksByUpdatedAt(remoteTasks: Task[], localTasks: Task[]): Task[] {
+  const taskMap = new Map<string, Task>();
+  remoteTasks.forEach((t) => taskMap.set(t.id, t));
+  localTasks.forEach((localTask) => {
+    const existing = taskMap.get(localTask.id);
+    if (!existing) {
+      taskMap.set(localTask.id, localTask);
+    } else {
+      const remoteTime = new Date(existing.updatedAt || 0).getTime();
+      const localTime = new Date(localTask.updatedAt || 0).getTime();
+      if (localTime >= remoteTime) {
+        taskMap.set(localTask.id, localTask);
+      }
+    }
+  });
+  return Array.from(taskMap.values());
+}
+
+/**
+ * Merges two board lists by ID for a regular (non-bind) sync push. Boards have
+ * no `updatedAt` field, so we can't tell which copy is newer — the local copy is
+ * assumed authoritative since it reflects the edits the active device just made,
+ * and any remote-only boards (e.g. created on another device) are kept too.
+ */
+export function mergeBoardsPreferLocal(remoteBoards: Board[], localBoards: Board[]): Board[] {
+  const boardMap = new Map<string, Board>();
+  remoteBoards.forEach((b) => boardMap.set(b.id, b));
+  localBoards.forEach((b) => boardMap.set(b.id, b));
+  return Array.from(boardMap.values());
+}
+
 export class DatabaseSyncEngine {
 
   private static instance: DatabaseSyncEngine;
@@ -141,7 +179,9 @@ export class DatabaseSyncEngine {
     userId: string,
     tasks: Task[],
     boards: Board[],
-    activeBoardId?: string
+    activeBoardId?: string,
+    deletedTaskIds: Record<string, string> = {},
+    deletedBoardIds: Record<string, string> = {}
   ): Promise<SyncResult> {
     const isCloud = isFirebaseConfigured();
     const now = new Date().toISOString();
@@ -180,23 +220,56 @@ export class DatabaseSyncEngine {
       }
 
       const userDocRef = doc(db, "users", userId);
-      await setDoc(
-        userDocRef,
-        sanitizeForFirestore({
-          userId,
-          boards: serializeBoards(boards),
-          tasks: serializeTasks(tasks),
-          activeBoardId: activeBoardId || "board-work",
-          updatedAt: now,
-        })
-      );
+
+      // Read-merge-write inside a transaction: a blind setDoc here would let a
+      // stale local snapshot (e.g. reloaded from an old localStorage cache right
+      // as the device reconnects) clobber newer data another device already
+      // wrote to Firestore. Merging by per-task `updatedAt` keeps whichever
+      // copy is actually newest instead of unconditionally trusting local state.
+      const merged = await runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(userDocRef);
+        const remoteData = snapshot.exists() ? snapshot.data() : null;
+        const remoteBoards = remoteData ? deserializeBoards(remoteData.boards) : [];
+        const remoteTasks = remoteData ? deserializeTasks(remoteData.tasks) : [];
+
+        // Tombstones from both sides: a task/board absent from `tasks`/`boards`
+        // just means this device doesn't know about it (could be new from
+        // another device) unless its ID is tombstoned here, in which case it was
+        // deliberately deleted and must not be resurrected by the ID union below.
+        const mergedDeletedTaskIds = { ...(remoteData?.deletedTaskIds || {}), ...deletedTaskIds };
+        const mergedDeletedBoardIds = { ...(remoteData?.deletedBoardIds || {}), ...deletedBoardIds };
+
+        const mergedTasks = mergeTasksByUpdatedAt(remoteTasks, tasks).filter(
+          (t) => !mergedDeletedTaskIds[t.id]
+        );
+        const mergedBoards = mergeBoardsPreferLocal(remoteBoards, boards).filter(
+          (b) => !mergedDeletedBoardIds[b.id]
+        );
+        const mergedActiveBoardId =
+          activeBoardId || remoteData?.activeBoardId || mergedBoards[0]?.id || "board-work";
+
+        transaction.set(
+          userDocRef,
+          sanitizeForFirestore({
+            userId,
+            boards: serializeBoards(mergedBoards),
+            tasks: serializeTasks(mergedTasks),
+            activeBoardId: mergedActiveBoardId,
+            deletedTaskIds: mergedDeletedTaskIds,
+            deletedBoardIds: mergedDeletedBoardIds,
+            updatedAt: now,
+          })
+        );
+
+        return { boards: mergedBoards, tasks: mergedTasks, activeBoardId: mergedActiveBoardId };
+      });
 
       // Also update local cloud cache
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(
             `vk_cloud_user_${userId}`,
-            JSON.stringify({ userId, boards, tasks, activeBoardId, updatedAt: now })
+            JSON.stringify({ userId, ...merged, updatedAt: now })
           );
         } catch {}
       }
@@ -205,6 +278,9 @@ export class DatabaseSyncEngine {
         status: "synced",
         syncedAt: now,
         isCloudConnected: true,
+        boards: merged.boards,
+        tasks: merged.tasks,
+        activeBoardId: merged.activeBoardId,
       };
     } catch (error: any) {
       console.error("Firestore sync error:", error);
@@ -333,21 +409,7 @@ export class DatabaseSyncEngine {
       const mergedBoards = Array.from(boardMap.values());
 
       // Merge Tasks by ID (latest updatedAt wins)
-      const taskMap = new Map<string, Task>();
-      remoteTasks.forEach((t) => taskMap.set(t.id, t));
-      localTasks.forEach((localTask) => {
-        const existing = taskMap.get(localTask.id);
-        if (!existing) {
-          taskMap.set(localTask.id, localTask);
-        } else {
-          const remoteTime = new Date(existing.updatedAt || 0).getTime();
-          const localTime = new Date(localTask.updatedAt || 0).getTime();
-          if (localTime >= remoteTime) {
-            taskMap.set(localTask.id, localTask);
-          }
-        }
-      });
-      const mergedTasks = Array.from(taskMap.values());
+      const mergedTasks = mergeTasksByUpdatedAt(remoteTasks, localTasks);
 
       const activeBoardId =
         remoteData.activeBoardId || localActiveBoardId || mergedBoards[0]?.id || "board-work";
