@@ -32,7 +32,7 @@ export const NotificationToastContainer: React.FC = () => {
   return (
     <div
       aria-live="polite"
-      className="fixed top-3 right-3 sm:top-5 sm:right-5 z-[99999] flex flex-col gap-2.5 pointer-events-none max-w-[calc(100vw-24px)]"
+      className="fixed top-[calc(0.75rem+env(safe-area-inset-top,0px))] right-3 sm:top-[calc(1.25rem+env(safe-area-inset-top,0px))] sm:right-5 z-[99999] flex flex-col gap-2.5 pointer-events-none max-w-[calc(100vw-24px)]"
     >
       {activeToasts.slice(0, 3).map((item) => (
         <div key={item.id} className="pointer-events-auto">

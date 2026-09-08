@@ -40,7 +40,7 @@ export const Navbar: React.FC = () => {
   const isGuest = userSession.isGuest || userSession.provider === "guest";
 
   return (
-    <header className="w-full h-12 bg-transparent sm:pt-3 px-3 sm:px-5 flex items-center justify-between gap-3 shrink-0 z-30">
+    <header className="w-full min-h-12 bg-transparent pt-[env(safe-area-inset-top,0px)] sm:pt-[calc(0.75rem+env(safe-area-inset-top,0px))] px-3 sm:px-5 flex items-center justify-between gap-3 shrink-0 z-30">
       <NavbarBrandSection isGuest={isGuest} />
 
       <NavbarSearchBar

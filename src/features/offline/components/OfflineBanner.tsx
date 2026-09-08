@@ -34,7 +34,7 @@ export const OfflineBanner: React.FC = () => {
     <div
       role="status"
       aria-live="polite"
-      className="w-full bg-gradient-to-r from-amber-500/90 via-orange-500/90 to-amber-600/90 dark:from-amber-900/90 dark:via-orange-950/90 dark:to-amber-950/90 backdrop-blur-md text-white px-3 sm:px-4 py-2 shadow-sm border-b border-white/20 transition-all duration-300 ease-in-out z-40 relative flex items-center justify-between gap-3 text-xs"
+      className="w-full bg-gradient-to-r from-amber-500/90 via-orange-500/90 to-amber-600/90 dark:from-amber-900/90 dark:via-orange-950/90 dark:to-amber-950/90 backdrop-blur-md text-white px-3 sm:px-4 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] pb-2 shadow-sm border-b border-white/20 transition-all duration-300 ease-in-out z-40 relative flex items-center justify-between gap-3 text-xs"
     >
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <div className="p-1 rounded-lg bg-white/20 dark:bg-black/20 shrink-0">
