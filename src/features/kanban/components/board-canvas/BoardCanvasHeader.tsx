@@ -5,6 +5,7 @@ import { BoardSwitcherMenu } from "./BoardSwitcherMenu";
 import { ViewModeMenu } from "./ViewModeMenu";
 import { BoardCanvasWideControls } from "./BoardCanvasWideControls";
 import { BoardCanvasCompactControls } from "./BoardCanvasCompactControls";
+import { PasteLinkButton } from "@/features/bookmarks";
 
 interface Props {
   boards: Board[];
@@ -24,13 +25,18 @@ interface Props {
   onSetTagFilter: (tag: string) => void;
   onTogglePriorityFilter: () => void;
   onToggleMultiSelect: () => void;
-  onOpenColumnManager: () => void;
+  onOpenBoardManager: () => void;
+  /** Shows the clipboard "貼上連結" button (on the 收藏 board). */
+  showPasteLink?: boolean;
+  /** Offered in the board switcher only while no 收藏 board exists. */
+  onOpenCollection?: () => void;
 }
 
 export const BoardCanvasHeader: React.FC<Props> = ({
   boards, activeBoard, isCompact, viewMode, tagFilter, priorityFilter, isMultiSelectMode,
   selectedTaskCount, allTags, totalTaskCount, onSelectBoard, onCreateBoard, onOpenJoinModal,
-  onSetViewMode, onSetTagFilter, onTogglePriorityFilter, onToggleMultiSelect, onOpenColumnManager,
+  onSetViewMode, onSetTagFilter, onTogglePriorityFilter, onToggleMultiSelect, onOpenBoardManager,
+  showPasteLink = false, onOpenCollection,
 }) => {
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -48,13 +54,16 @@ export const BoardCanvasHeader: React.FC<Props> = ({
         <BoardSwitcherMenu
           boards={boards} activeBoard={activeBoard} isOpen={isBoardOpen}
           onToggle={() => { const s = isBoardOpen; closeAll(); setIsBoardOpen(!s); }}
+          onClose={() => setIsBoardOpen(false)}
           onSelectBoard={(id) => { onSelectBoard(id); setIsBoardOpen(false); }}
           onCreateBoard={onCreateBoard} onOpenJoinModal={onOpenJoinModal}
+          onOpenCollection={onOpenCollection ? () => { onOpenCollection(); setIsBoardOpen(false); } : undefined}
         />
         {!isCompact && (
           <ViewModeMenu
             viewMode={viewMode} isOpen={isViewOpen}
             onToggle={() => { const s = isViewOpen; closeAll(); setIsViewOpen(!s); }}
+            onClose={() => setIsViewOpen(false)}
             onSelectViewMode={(m) => { onSetViewMode(m); setIsViewOpen(false); }}
           />
         )}
@@ -63,13 +72,15 @@ export const BoardCanvasHeader: React.FC<Props> = ({
       <CollaboratorAvatars compact={isCompact} />
 
       <div className="flex items-center gap-1.5">
+        {showPasteLink && <PasteLinkButton compact={isCompact} />}
         {!isCompact ? (
           <BoardCanvasWideControls
             tagFilter={tagFilter} priorityFilter={priorityFilter} isMultiSelectMode={isMultiSelectMode}
             selectedTaskCount={selectedTaskCount} allTags={allTags} totalTaskCount={totalTaskCount}
             isTagMenuOpen={isTagOpen} onToggleTagMenu={() => { const s = isTagOpen; closeAll(); setIsTagOpen(!s); }}
+            onCloseTagMenu={() => setIsTagOpen(false)}
             onSetTagFilter={(t) => { onSetTagFilter(t); setIsTagOpen(false); }}
-            onTogglePriorityFilter={onTogglePriorityFilter} onToggleMultiSelect={onToggleMultiSelect} onOpenColumnManager={onOpenColumnManager}
+            onTogglePriorityFilter={onTogglePriorityFilter} onToggleMultiSelect={onToggleMultiSelect} onOpenBoardManager={onOpenBoardManager}
           />
         ) : (
           <BoardCanvasCompactControls
@@ -78,9 +89,10 @@ export const BoardCanvasHeader: React.FC<Props> = ({
             isMoreMenuOpen={isMoreOpen} onToggleMultiSelect={onToggleMultiSelect}
             onToggleFilterMenu={() => { const s = isFilterOpen; closeAll(); setIsFilterOpen(!s); }}
             onToggleMoreMenu={() => { const s = isMoreOpen; closeAll(); setIsMoreOpen(!s); }}
+            onCloseFilterMenu={() => setIsFilterOpen(false)} onCloseMoreMenu={() => setIsMoreOpen(false)}
             onSetTagFilter={(t) => { onSetTagFilter(t); setIsFilterOpen(false); }}
             onTogglePriorityFilter={onTogglePriorityFilter} onSetViewMode={(m) => { onSetViewMode(m); setIsMoreOpen(false); }}
-            onOpenColumnManager={onOpenColumnManager}
+            onOpenBoardManager={onOpenBoardManager}
           />
         )}
       </div>

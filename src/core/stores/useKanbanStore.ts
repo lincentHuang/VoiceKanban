@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
-import { Board, Column, ColumnId, Priority, Task, ViewMode, DEFAULT_COLUMNS, ChecklistItem, TaskAttachment, BoardMember, CollaboratorRole } from "../types/task";
+import { Board, Column, ColumnId, Priority, Task, TaskLink, ViewMode, DEFAULT_COLUMNS, ChecklistItem, TaskAttachment, BoardMember, CollaboratorRole } from "../types/task";
 import { VoiceExtractResult, VoiceState, VoiceLanguage, VoiceMode, CorrectionFeedbackPayload, LearningStats } from "../types/voice";
 import { BYOKConfig } from "../types/user";
 import { UserSession, SyncState, AuthProvider } from "../types/auth";
@@ -12,6 +12,9 @@ import { learningEngine } from "../services/learningEngine";
 import { collaborationService } from "@/features/collaboration/services/collaborationService";
 import { NotificationItem, ActivityPayload, NotificationActionType } from "@/features/notifications/types";
 import { notificationService } from "@/features/notifications/services/notificationService";
+import { SharedLinkDraft } from "@/features/bookmarks/types";
+import { PLATFORM_META, createCollectionBoard, findCollectionBoard } from "@/features/bookmarks/constants";
+import { savePendingShare } from "@/features/bookmarks/services/pendingShareStorage";
 
 interface KanbanStoreState {
   // Notifications
@@ -94,10 +97,8 @@ interface KanbanStoreState {
   activeBoardId: string;
   setActiveBoardId: (id: string) => void;
   createBoard: (name: string, icon?: string, description?: string) => void;
-  updateBoard: (boardId: string, partial: Partial<Pick<Board, "name" | "icon" | "description">>) => void;
+  updateBoard: (boardId: string, partial: Partial<Pick<Board, "name" | "icon" | "description" | "background">>) => void;
   deleteBoard: (boardId: string) => void;
-  editingBoardId: string | null;
-  setEditingBoardId: (id: string | null) => void;
   deletingBoardId: string | null;
   setDeletingBoardId: (id: string | null) => void;
   getActiveBoardColumns: () => Column[];
@@ -112,9 +113,16 @@ interface KanbanStoreState {
   expandTaskToColumn: (taskId: string) => void;
   aggregateColumnToTask: (columnId: string) => void;
 
-  // Column Manager Modal
-  isColumnManagerOpen: boolean;
-  setIsColumnManagerOpen: (open: boolean) => void;
+  // Bookmarks (收藏): links shared in from IG / YouTube / Threads
+  pendingShare: SharedLinkDraft | null;
+  setPendingShare: (draft: SharedLinkDraft | null) => void;
+  ensureCollectionBoard: () => Board;
+  openCollectionBoard: () => void;
+  saveLinkToCollection: (input: { title: string; note?: string; link: TaskLink }) => Task;
+
+  // Board Manager Modal (workflow columns, general info, sharing, appearance tabs)
+  isBoardManagerOpen: boolean;
+  setIsBoardManagerOpen: (open: boolean) => void;
 
   // Collaboration
   isShareBoardModalOpen: boolean;
@@ -677,6 +685,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
                   name: partial.name !== undefined && partial.name.trim() ? partial.name.trim() : b.name,
                   icon: partial.icon !== undefined ? partial.icon : b.icon,
                   description: partial.description !== undefined ? partial.description : b.description,
+                  background: partial.background !== undefined ? partial.background : b.background,
                 }
               : b
           ),
@@ -707,9 +716,6 @@ export const useKanbanStore = create<KanbanStoreState>()(
         }));
         get().triggerSync();
       },
-
-      editingBoardId: null,
-      setEditingBoardId: (editingBoardId) => set({ editingBoardId }),
 
       deletingBoardId: null,
       setDeletingBoardId: (deletingBoardId) => set({ deletingBoardId }),
@@ -992,9 +998,49 @@ export const useKanbanStore = create<KanbanStoreState>()(
         get().triggerSync();
       },
 
-      // Column Manager Modal
-      isColumnManagerOpen: false,
-      setIsColumnManagerOpen: (isColumnManagerOpen) => set({ isColumnManagerOpen }),
+      // Bookmarks (收藏)
+      pendingShare: null,
+      setPendingShare: (pendingShare) => {
+        savePendingShare(pendingShare);
+        set({ pendingShare });
+      },
+      ensureCollectionBoard: () => {
+        const existing = findCollectionBoard(get().boards);
+        if (existing) return existing;
+        // Fresh id each time: a previously deleted collection board's id stays tombstoned in the cloud
+        const board = createCollectionBoard(`board-collection-${Date.now()}`);
+        set((state) => ({ boards: [...state.boards, board] }));
+        return board;
+      },
+      openCollectionBoard: () => {
+        const board = get().ensureCollectionBoard();
+        get().setActiveBoardId(board.id);
+        get().triggerSync();
+      },
+      saveLinkToCollection: ({ title, note, link }) => {
+        const board = get().ensureCollectionBoard();
+        const visibleColumns = (board.columns && board.columns.length > 0 ? board.columns : DEFAULT_COLUMNS).filter(
+          (c) => !c.isArchived && c.id !== "inbox"
+        );
+        const targetColumn =
+          visibleColumns.find((c) => c.id === PLATFORM_META[link.platform].columnId) ||
+          visibleColumns[0] ||
+          DEFAULT_COLUMNS[0];
+        return get().addTask({
+          title,
+          description: note || "",
+          boardId: board.id,
+          columnId: targetColumn.id,
+          tags: [],
+          dueDate: null,
+          completed: false,
+          link,
+        });
+      },
+
+      // Board Manager Modal
+      isBoardManagerOpen: false,
+      setIsBoardManagerOpen: (isBoardManagerOpen) => set({ isBoardManagerOpen }),
 
       // Collaboration
       isShareBoardModalOpen: false,
@@ -1249,6 +1295,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           checklist: taskData.checklist || [],
           coverColor: taskData.coverColor || null,
           attachmentsCount: taskData.attachmentsCount || 0,
+          link: taskData.link || null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -1724,7 +1771,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
       byokConfig: {
         apiKey: "",
         isCustomKeyActive: false,
-        model: "gemini-2.0-flash",
+        model: "gemini-3.6-flash",
         defaultBoardId: "board-work",
         isEncrypted: false,
         lastTestedAt: null,

@@ -28,6 +28,20 @@ export interface TaskActivity {
 
 export type CoverAspectRatio = "banner" | "1:1" | "3:4" | "9:16" | "bar";
 
+export type LinkPlatform = "youtube" | "instagram" | "threads" | "other";
+
+/** A saved social/web link (收藏) — set on tasks created from the share sheet or pasted links. */
+export interface TaskLink {
+  url: string;
+  platform: LinkPlatform;
+  title?: string | null;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+  author?: string | null;
+  siteName?: string | null;
+  savedAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -49,6 +63,7 @@ export interface Task {
   attachmentsCount?: number;
   activities?: TaskActivity[];
   isArchived?: boolean;
+  link?: TaskLink | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -87,6 +102,10 @@ export interface Board {
   inviteCode?: string;
   ownerId?: string;
   members?: BoardMember[];
+  /** Preset id from BOARD_BACKGROUND_PRESETS controlling the board canvas background. */
+  background?: string;
+  /** Special-purpose board; "collection" is the 收藏 board that receives shared links. */
+  kind?: "collection";
 }
 
 export interface BatchActionPayload {

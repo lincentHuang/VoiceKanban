@@ -13,6 +13,7 @@ import { TaskCardHeader } from "./task-card/TaskCardHeader";
 import { TaskCardTags } from "./task-card/TaskCardTags";
 import { TaskCardBadges } from "./task-card/TaskCardBadges";
 import { TaskCardSubtasksAccordion } from "./task-card/TaskCardSubtasksAccordion";
+import { TaskCardLinkCover, TaskCardLinkMeta } from "@/features/bookmarks";
 
 interface TaskCardProps {
   task: Task;
@@ -66,9 +67,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, variant = "card", inbo
 
   return (
     <div ref={setNodeRef} style={style} data-task-card="true" {...attributes} {...listeners} onClick={handleCardClick} className={`group relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover border transition-all select-none cursor-grab active:cursor-grabbing ${isSelected ? "border-2 border-orange-500 bg-orange-50/40" : "border-slate-100 dark:border-slate-700/80 hover:border-slate-300"} ${isDragging ? "opacity-25" : ""} ${task.completed ? "opacity-65 bg-slate-50/80" : ""}`}>
-      <TaskCardCover coverColor={task.coverColor} coverAspectRatio={task.coverAspectRatio} />
+      {task.link && !task.coverColor ? <TaskCardLinkCover link={task.link} /> : <TaskCardCover coverColor={task.coverColor} coverAspectRatio={task.coverAspectRatio} />}
       <div className="p-3 sm:p-3.5">
         <TaskCardHeader title={task.title} completed={task.completed} isSelected={isSelected} isMultiSelectMode={isMultiSelectMode} onSelect={() => toggleTaskSelection(task.id)} onToggleComplete={handleToggleComplete} />
+        {task.link && <TaskCardLinkMeta link={task.link} />}
         <TaskCardTags tags={task.tags} dueDateStatus={dueDateStatus} completed={task.completed} />
         <TaskCardBadges isStarred={task.isStarred} hasDescription={Boolean(task.description)} totalAttachments={totalAttachments} totalChecklist={totalChecklist} completedChecklist={completedChecklist} isChecklistAllDone={isChecklistAllDone} isSubtasksExpanded={isSubtasksExpanded} dueDateStatus={dueDateStatus} onToggleSubtasksExpand={(e) => { e.stopPropagation(); setIsSubtasksExpanded(!isSubtasksExpanded); }} />
         <TaskCardSubtasksAccordion isSubtasksExpanded={isSubtasksExpanded} totalChecklist={totalChecklist} completedChecklist={completedChecklist} isChecklistAllDone={isChecklistAllDone} checklist={task.checklist} onSubtaskToggle={(e, id, cur) => { e.stopPropagation(); if (!cur && completedChecklist + 1 === totalChecklist) { try { confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors: ["#10B981", "#3B82F6", "#F59E0B"] }); } catch {} } toggleChecklistItem(task.id, id); }} />

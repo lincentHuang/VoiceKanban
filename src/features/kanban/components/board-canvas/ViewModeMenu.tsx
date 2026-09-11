@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useRef } from "react";
 import { ChevronDown, Check, Columns, Calendar } from "lucide-react";
 import { ViewMode } from "@/core/types/task";
+import { useClickOutside } from "@/core/hooks/useClickOutside";
 
 export const VIEW_CONFIG: Record<ViewMode, { label: string; icon: React.ReactNode }> = {
   kanban: { label: "看板", icon: <Columns className="w-3.5 h-3.5" /> },
@@ -11,14 +12,18 @@ interface Props {
   viewMode: ViewMode;
   isOpen: boolean;
   onToggle: () => void;
+  onClose: () => void;
   onSelectViewMode: (mode: ViewMode) => void;
 }
 
 export const ViewModeMenu: React.FC<Props> = ({
-  viewMode, isOpen, onToggle, onSelectViewMode,
+  viewMode, isOpen, onToggle, onClose, onSelectViewMode,
 }) => {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useClickOutside(rootRef, onClose, isOpen);
+
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
         onClick={onToggle}
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 text-xs font-semibold transition-colors cursor-pointer"

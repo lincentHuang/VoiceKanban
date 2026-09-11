@@ -11,8 +11,8 @@ import {
 import { Board } from "@/core/types/task";
 
 interface ByokModelSelectSectionProps {
-  selectedModel: "gemini-2.0-flash" | "gemini-1.5-pro";
-  setSelectedModel: (v: "gemini-2.0-flash" | "gemini-1.5-pro") => void;
+  selectedModel: "gemini-3.6-flash" | "gemini-3.1-pro-preview";
+  setSelectedModel: (v: "gemini-3.6-flash" | "gemini-3.1-pro-preview") => void;
   defaultBoard: string;
   setDefaultBoard: (v: string) => void;
   boards: Board[];
@@ -39,8 +39,8 @@ export const ByokModelSelectSection: React.FC<ByokModelSelectSectionProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="gemini-2.0-flash">gemini-2.0-flash (推薦 - 極速)</SelectItem>
-            <SelectItem value="gemini-1.5-pro">gemini-1.5-pro (深度語義)</SelectItem>
+            <SelectItem value="gemini-3.6-flash">gemini-3.6-flash (推薦 - 免費方案可用)</SelectItem>
+            <SelectItem value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (深度語義 - 需付費方案)</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -1,14 +1,16 @@
 import { useState, useRef } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId, Priority, DEFAULT_COLUMNS } from "@/core/types/task";
+import { VoiceExtractResult } from "@/core/types/voice";
 import { webSpeechService } from "@/core/services/webSpeechService";
+import { audioRecorderService } from "@/core/services/audioRecorderService";
 import { learningEngine } from "@/core/services/learningEngine";
 import { detectLanguage } from "@/core/services/localNlpParser";
 import confetti from "canvas-confetti";
 
 export function useVoiceCapture() {
   const store = useKanbanStore();
-  const { isVoiceOverlayOpen, setIsVoiceOverlayOpen, voiceState, setVoiceState, voiceLanguage, extractedTask, setExtractedTask, boards, activeBoardId, addTask, recordLearningFeedback, voiceTargetColumnId, setVoiceTargetColumnId } = store;
+  const { isVoiceOverlayOpen, setIsVoiceOverlayOpen, voiceState, setVoiceState, voiceLanguage, extractedTask, setExtractedTask, boards, activeBoardId, addTask, recordLearningFeedback, voiceTargetColumnId, setVoiceTargetColumnId, byokConfig } = store;
 
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [interimTranscript, setInterimTranscript] = useState("");
@@ -27,11 +29,13 @@ export function useVoiceCapture() {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasReceivedSpeechRef = useRef(false);
+  const cloudRecordingActiveRef = useRef(false);
 
   const stopRecordingCleanup = () => {
     if (timerIntervalRef.current) { clearInterval(timerIntervalRef.current); timerIntervalRef.current = null; }
     if (silenceTimeoutRef.current) { clearTimeout(silenceTimeoutRef.current); silenceTimeoutRef.current = null; }
     webSpeechService.stop();
+    if (cloudRecordingActiveRef.current) { audioRecorderService.stop(); cloudRecordingActiveRef.current = false; }
   };
 
   const startRecording = async () => {
@@ -46,27 +50,71 @@ export function useVoiceCapture() {
         onError: (err) => { if (err.includes("存取權限") || err.includes("異常")) { setErrorMessage(err); setVoiceState("error"); } },
       }, voiceLanguage);
     }
+
+    // When the user has an active Gemini key, also capture raw audio so the
+    // final transcript/extraction can go through cloud multimodal reasoning
+    // instead of the local browser recognizer, which is what "更好的雲端語音辨識" needs.
+    if (byokConfig.isCustomKeyActive && byokConfig.apiKey && audioRecorderService.isSupported()) {
+      cloudRecordingActiveRef.current = await audioRecorderService.start();
+    } else {
+      cloudRecordingActiveRef.current = false;
+    }
+
     setRecordingDuration(0);
     timerIntervalRef.current = setInterval(() => setRecordingDuration((p) => p + 1), 1000);
   };
 
-  const handleStopAndProcess = () => {
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    const text = (interimTranscript || webSpeechService.stop()).trim();
-    setVoiceState("processing");
+  const applyExtractedResult = (res: VoiceExtractResult) => {
+    setExtractedTask(res);
+    setEditTitle(res.title);
+    setEditBoardId(boards.some((b) => b.id === res.targetBoardId) ? res.targetBoardId : activeBoardId || boards[0]?.id || "board-work");
+    setEditColumnId((res.targetColumnId && res.targetColumnId !== "inbox" ? res.targetColumnId : voiceTargetColumnId || "inbox") as ColumnId);
+    setPriority(res.priority || "medium");
+    setEditDueDate(res.dueDate || "");
+    setEditTags(res.tags || []);
+    setVoiceState("preview");
+  };
+
+  const runLocalExtraction = (text: string) => {
     setTimeout(() => {
       const activeBoard = boards.find((b) => b.id === activeBoardId);
       const context = { boards: boards.map((b) => ({ id: b.id, name: b.name })), activeBoardId: activeBoardId || boards[0]?.id || "board-work", columns: (activeBoard?.columns || DEFAULT_COLUMNS).map((c) => ({ id: c.id, title: c.title })) };
       const res = learningEngine.extractWithLearning(text || "語音待辦任務", context);
-      setExtractedTask(res);
-      setEditTitle(res.title);
-      setEditBoardId(boards.some((b) => b.id === res.targetBoardId) ? res.targetBoardId : activeBoardId || boards[0]?.id || "board-work");
-      setEditColumnId((res.targetColumnId && res.targetColumnId !== "inbox" ? res.targetColumnId : voiceTargetColumnId || "inbox") as ColumnId);
-      setPriority(res.priority || "medium");
-      setEditDueDate(res.dueDate || "");
-      setEditTags(res.tags || []);
-      setVoiceState("preview");
+      applyExtractedResult(res);
     }, 300);
+  };
+
+  const handleStopAndProcess = async () => {
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    const text = (interimTranscript || webSpeechService.stop()).trim();
+    const wasCloudRecording = cloudRecordingActiveRef.current;
+    cloudRecordingActiveRef.current = false;
+    setVoiceState("processing");
+
+    const audioBlob = wasCloudRecording ? await audioRecorderService.stop() : null;
+
+    if (audioBlob && byokConfig.apiKey) {
+      try {
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "voice-input.webm");
+        formData.append("currentTimestamp", new Date().toISOString());
+        formData.append("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Taipei");
+        formData.append("availableBoards", JSON.stringify(boards.map((b) => ({ id: b.id, name: b.name }))));
+        formData.append("customApiKey", byokConfig.apiKey);
+
+        const response = await fetch("/api/voice/extract", { method: "POST", body: formData });
+        const json = await response.json();
+        if (json.success && json.data) {
+          applyExtractedResult(json.data as VoiceExtractResult);
+          return;
+        }
+        console.warn("Cloud voice extraction returned no data, falling back to local parser:", json.error);
+      } catch (e) {
+        console.warn("Cloud voice extraction failed, falling back to local parser:", e);
+      }
+    }
+
+    runLocalExtraction(text);
   };
 
   const handleConfirmAdd = () => {

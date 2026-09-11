@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { useShareIntake } from "@/features/bookmarks/hooks/useShareIntake";
 
 export function useAppInit() {
   const [isMounted, setIsMounted] = useState(false);
+  useShareIntake();
   const initAuthAndSync = useKanbanStore((state) => state.initAuthAndSync);
   const userSession = useKanbanStore((state) => state.userSession);
   const loginAsGuest = useKanbanStore((state) => state.loginAsGuest);

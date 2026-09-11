@@ -19,7 +19,7 @@ export const ColumnActionBasicItems: React.FC<ColumnActionBasicItemsProps> = ({
   onStartRename,
   onCloseMenu,
 }) => {
-  const { archiveColumn, aggregateColumnToTask, setIsColumnManagerOpen } = useKanbanStore();
+  const { archiveColumn, aggregateColumnToTask, setIsBoardManagerOpen } = useKanbanStore();
 
   const handleAggregate = () => {
     try {
@@ -73,12 +73,12 @@ export const ColumnActionBasicItems: React.FC<ColumnActionBasicItemsProps> = ({
       <DropdownMenuItem
         onClick={() => {
           onCloseMenu();
-          setIsColumnManagerOpen(true);
+          setIsBoardManagerOpen(true);
         }}
         className="flex items-center gap-2 font-medium cursor-pointer text-slate-700 dark:text-slate-200"
       >
         <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
-        <span>管理所有欄位流程...</span>
+        <span>看板管理...</span>
       </DropdownMenuItem>
 
       <DropdownMenuItem

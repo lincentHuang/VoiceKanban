@@ -11,8 +11,8 @@ interface SettingsByokTabProps {
   setInputKey: (v: string) => void;
   showPassword: boolean;
   setShowPassword: (v: boolean) => void;
-  selectedModel: "gemini-2.0-flash" | "gemini-1.5-pro";
-  setSelectedModel: (v: "gemini-2.0-flash" | "gemini-1.5-pro") => void;
+  selectedModel: "gemini-3.6-flash" | "gemini-3.1-pro-preview";
+  setSelectedModel: (v: "gemini-3.6-flash" | "gemini-3.1-pro-preview") => void;
   defaultBoard: string;
   setDefaultBoard: (v: string) => void;
   boards: Board[];

@@ -1,4 +1,5 @@
 import { VoiceLanguage } from "../types/voice";
+import { toTraditionalChinese } from "../utils/chineseConvert";
 
 export interface SpeechRecognitionHandlers {
   onInterim?: (transcript: string) => void;
@@ -64,7 +65,9 @@ export class WebSpeechService {
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           const result = event.results[i];
-          const transcriptChunk = result[0]?.transcript || "";
+          const rawChunk = result[0]?.transcript || "";
+          const transcriptChunk =
+            this.currentLanguage === "en-US" ? rawChunk : toTraditionalChinese(rawChunk);
 
           if (result.isFinal) {
             accumulatedFinal += transcriptChunk;

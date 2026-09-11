@@ -17,7 +17,7 @@ export const NavbarMenuItems: React.FC<NavbarMenuItemsProps> = ({ isGuest }) => 
   const {
     byokConfig,
     setIsSettingsModalOpen,
-    setIsColumnManagerOpen,
+    setIsBoardManagerOpen,
     setIsJoinBoardModalOpen,
     logout,
   } = useKanbanStore();
@@ -35,11 +35,11 @@ export const NavbarMenuItems: React.FC<NavbarMenuItemsProps> = ({ isGuest }) => 
       </DropdownMenuItem>
 
       <DropdownMenuItem
-        onClick={() => setIsColumnManagerOpen(true)}
+        onClick={() => setIsBoardManagerOpen(true)}
         className="flex items-center gap-2 cursor-pointer"
       >
         <SlidersHorizontal className="w-4 h-4 text-slate-400" />
-        <span>狀態流程管理 (Workflow)</span>
+        <span>看板管理</span>
       </DropdownMenuItem>
 
       <DropdownMenuItem

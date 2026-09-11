@@ -19,6 +19,7 @@ import { EditTaskTagsSection } from "./edit-task/EditTaskTagsSection";
 import { EditTaskCommentsSection } from "./edit-task/EditTaskCommentsSection";
 import { EditTaskExpandModal } from "./edit-task/EditTaskExpandModal";
 import { EditTaskDeleteModal } from "./edit-task/EditTaskDeleteModal";
+import { EditTaskLinkSection } from "@/features/bookmarks";
 
 export const EditTaskModal: React.FC = () => {
   const store = useKanbanStore();
@@ -77,6 +78,7 @@ export const EditTaskModal: React.FC = () => {
             <EditTaskHeaderControls completed={task.completed} isStarred={form.isStarred} coverColor={form.coverColor} coverAspectRatio={form.coverAspectRatio} columnId={form.columnId} allTargetColumns={allTargetColumns} isMovePopoverOpen={isMovePopoverOpen} isCoverModalOpen={isCoverModalOpen} onToggleComplete={handleToggleComplete} onToggleStar={() => { form.setIsStarred(!form.isStarred); store.updateTask(task.id, { isStarred: !form.isStarred }); }} onToggleMovePopover={() => { setIsMovePopoverOpen(!isMovePopoverOpen); setIsCoverModalOpen(false); }} onToggleCoverModal={() => { setIsCoverModalOpen(!isCoverModalOpen); setIsMovePopoverOpen(false); }} onSelectRatio={(r) => { form.setCoverAspectRatio(r); store.updateTask(task.id, { coverAspectRatio: r }); }} onApplyCover={(c) => form.handleApplyCover(c)} onRemoveCover={() => { form.setCoverColor(""); store.updateTask(task.id, { coverColor: "" }); }} onMoveColumn={handleMoveColumn} onOpenExpandConfirm={() => setIsExpandConfirm(true)} onOpenDeleteConfirm={() => setIsDeleteConfirm(true)} onClose={gesture.handleCloseDrawer} />
             <EditTaskTitleInput title={form.title} onChange={form.setTitle} onBlur={() => form.handleSave()} />
             <div className="pt-0.5"><DateTimePicker value={form.dueDate} startDate={form.startDate} isAllDay={form.isAllDay} onChange={(d) => { form.setStartDate(d.startDate || null); form.setDueDate(d.dueDate); form.setIsAllDay(d.isAllDay); store.updateTask(task.id, { startDate: d.startDate || null, dueDate: d.dueDate, isAllDay: d.isAllDay }); }} align="left" placeholder="+ 設定到期日或活動時段" /></div>
+            {task.link && <div className="pt-1"><EditTaskLinkSection link={task.link} /></div>}
           </div>
           {form.saveToast && <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-2 animate-in fade-in"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><span>變更已即時自動儲存！</span></div>}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">

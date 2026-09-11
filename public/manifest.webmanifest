@@ -10,7 +10,10 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "zh-TW",
-  "categories": ["productivity", "utilities"],
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -31,5 +34,14 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": []
+  "screenshots": [],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "share_title",
+      "text": "share_text",
+      "url": "share_url"
+    }
+  }
 }

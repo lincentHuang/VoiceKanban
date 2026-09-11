@@ -13,7 +13,7 @@ export const SubHeaderToolbar: React.FC = () => {
     activeBoardId,
     tagFilter,
     setTagFilter,
-    setIsColumnManagerOpen,
+    setIsBoardManagerOpen,
     openAddTaskModal,
     isInboxSidebarOpen,
     setIsInboxSidebarOpen,
@@ -36,7 +36,7 @@ export const SubHeaderToolbar: React.FC = () => {
           viewMode={viewMode}
           onSelectViewMode={setViewMode}
           canEdit={canEdit}
-          onOpenColumnManager={() => setIsColumnManagerOpen(true)}
+          onOpenColumnManager={() => setIsBoardManagerOpen(true)}
           onOpenAddTask={openAddTaskModal}
         />
 

@@ -1,7 +1,7 @@
 export interface BYOKConfig {
   apiKey: string;
   isCustomKeyActive: boolean;
-  model: "gemini-2.0-flash" | "gemini-1.5-pro";
+  model: "gemini-3.6-flash" | "gemini-3.1-pro-preview";
   defaultBoardId: string;
   isEncrypted: boolean;
   lastTestedAt?: string | null;

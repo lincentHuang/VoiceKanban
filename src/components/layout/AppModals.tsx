@@ -7,12 +7,12 @@ import { SettingsModal } from "@/features/settings";
 import {
   AddTaskModal,
   EditTaskModal,
-  ColumnManagerModal,
-  EditBoardModal,
+  BoardManagerModal,
   DeleteBoardConfirmModal,
 } from "@/features/kanban";
 import { AuthModal, BindAccountModal } from "@/features/auth";
 import { ShareBoardModal, JoinBoardModal } from "@/features/collaboration";
+import { ShareSaveSheet } from "@/features/bookmarks";
 
 export const AppModals: React.FC = () => {
   return (
@@ -24,11 +24,11 @@ export const AppModals: React.FC = () => {
       <EditTaskModal />
       <AuthModal />
       <BindAccountModal />
-      <ColumnManagerModal />
-      <EditBoardModal />
+      <BoardManagerModal />
       <DeleteBoardConfirmModal />
       <ShareBoardModal />
       <JoinBoardModal />
+      <ShareSaveSheet />
     </>
   );
 };

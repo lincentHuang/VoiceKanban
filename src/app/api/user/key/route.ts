@@ -5,7 +5,7 @@ import { encryptData } from "@/core/utils/crypto";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { apiKey, model = "gemini-2.0-flash" } = body;
+    const { apiKey, model = "gemini-3.6-flash" } = body;
 
     if (!apiKey || typeof apiKey !== "string" || apiKey.trim() === "") {
       return NextResponse.json({ success: false, error: "請輸入有效的 Gemini API Key" }, { status: 400 });
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       const ai = new GoogleGenAI({ apiKey: cleanKey });
       // Run a lightweight test ping
       const response = await ai.models.generateContent({
-        model: model || "gemini-2.0-flash",
+        model: model || "gemini-3.6-flash",
         contents: "Hello, reply with 'OK' if you receive this test.",
       });
 

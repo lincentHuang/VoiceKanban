@@ -3,20 +3,29 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { Column } from "@/core/types/task";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
+import { DEFAULT_BOARD_BACKGROUND_ID } from "../../utils/boardBackgrounds";
 
-export function useColumnManagerModal() {
+export type BoardManagerTabId = "columns" | "general" | "sharing" | "appearance";
+
+export function useBoardManagerModal() {
   const {
-    isColumnManagerOpen,
-    setIsColumnManagerOpen,
+    isBoardManagerOpen,
+    setIsBoardManagerOpen,
     getActiveBoardColumns,
     deleteColumnFromActiveBoard,
     reorderBoardColumns,
+    updateBoard,
+    setDeletingBoardId,
+    setIsShareBoardModalOpen,
     boards,
     activeBoardId,
   } = useKanbanStore();
 
   const activeBoard = boards.find((b) => b.id === activeBoardId);
 
+  const [activeTab, setActiveTab] = useState<BoardManagerTabId>("columns");
+
+  // Columns tab state
   const [localColumns, setLocalColumns] = useState<Column[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [newIcon, setNewIcon] = useState("✨");
@@ -24,14 +33,28 @@ export function useColumnManagerModal() {
   const [editTitle, setEditTitle] = useState("");
   const [editIcon, setEditIcon] = useState("✨");
 
+  // General tab state
+  const [name, setName] = useState("");
+  const [icon, setIcon] = useState("📌");
+  const [description, setDescription] = useState("");
+
+  // Appearance tab state
+  const [background, setBackground] = useState(DEFAULT_BOARD_BACKGROUND_ID);
+
   useEffect(() => {
-    if (isColumnManagerOpen) {
+    if (isBoardManagerOpen) {
+      setActiveTab("columns");
       setLocalColumns(getActiveBoardColumns());
       setEditingColId(null);
       setNewTitle("");
       setNewIcon("✨");
+      setName(activeBoard?.name || "");
+      setIcon(activeBoard?.icon || "📌");
+      setDescription(activeBoard?.description || "");
+      setBackground(activeBoard?.background || DEFAULT_BOARD_BACKGROUND_ID);
     }
-  }, [isColumnManagerOpen, activeBoardId, getActiveBoardColumns]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBoardManagerOpen, activeBoardId]);
 
   const handleAddColumn = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,18 +72,16 @@ export function useColumnManagerModal() {
     setNewIcon("✨");
   };
 
-  const handleStartEdit = (colId: string, title: string, icon: string) => {
+  const handleStartEdit = (colId: string, title: string, colIcon: string) => {
     setEditingColId(colId);
     setEditTitle(title);
-    setEditIcon(icon || "");
+    setEditIcon(colIcon || "");
   };
 
   const handleSaveEdit = (colId: string) => {
     if (!editTitle.trim()) return;
     setLocalColumns((prev) =>
-      prev.map((c) =>
-        c.id === colId ? { ...c, title: editTitle.trim(), icon: editIcon } : c
-      )
+      prev.map((c) => (c.id === colId ? { ...c, title: editTitle.trim(), icon: editIcon } : c))
     );
     setEditingColId(null);
   };
@@ -81,24 +102,48 @@ export function useColumnManagerModal() {
     }
   };
 
+  const handleClose = () => setIsBoardManagerOpen(false);
+
   const handleConfirmFinish = () => {
+    if (!activeBoard) {
+      setIsBoardManagerOpen(false);
+      return;
+    }
+
     const currentStoreCols = getActiveBoardColumns();
     const deletedColIds = currentStoreCols
       .map((c) => c.id)
       .filter((id) => !localColumns.some((lc) => lc.id === id));
+    deletedColIds.forEach((id) => deleteColumnFromActiveBoard(id));
+    reorderBoardColumns(activeBoardId, localColumns);
 
-    deletedColIds.forEach((id) => {
-      deleteColumnFromActiveBoard(id);
+    updateBoard(activeBoard.id, {
+      name: name.trim() || activeBoard.name,
+      icon,
+      description: description.trim(),
+      background,
     });
 
-    reorderBoardColumns(activeBoardId, localColumns);
-    setIsColumnManagerOpen(false);
+    setIsBoardManagerOpen(false);
+  };
+
+  const handleOpenDelete = () => {
+    if (!activeBoard) return;
+    setIsBoardManagerOpen(false);
+    setDeletingBoardId(activeBoard.id);
+  };
+
+  const handleOpenSharing = () => {
+    setIsBoardManagerOpen(false);
+    setIsShareBoardModalOpen(true);
   };
 
   return {
-    isColumnManagerOpen,
-    setIsColumnManagerOpen,
+    isBoardManagerOpen,
     activeBoard,
+    activeTab,
+    setActiveTab,
+
     localColumns,
     newTitle,
     setNewTitle,
@@ -115,6 +160,22 @@ export function useColumnManagerModal() {
     handleSaveEdit,
     handleDeleteColumn,
     handleDragEnd,
+
+    name,
+    setName,
+    icon,
+    setIcon,
+    description,
+    setDescription,
+
+    background,
+    setBackground,
+
+    canDeleteBoard: boards.length > 1,
+    handleOpenDelete,
+    handleOpenSharing,
+
+    handleClose,
     handleConfirmFinish,
   };
 }

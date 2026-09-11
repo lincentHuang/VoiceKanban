@@ -1,6 +1,7 @@
-import React from "react";
-import { CheckSquare, Filter, MoreHorizontal, Star, Check, SlidersHorizontal } from "lucide-react";
+import React, { useRef } from "react";
+import { CheckSquare, Filter, MoreHorizontal, Star, Check, LayoutGrid } from "lucide-react";
 import { ViewMode } from "@/core/types/task";
+import { useClickOutside } from "@/core/hooks/useClickOutside";
 import { VIEW_CONFIG } from "./ViewModeMenu";
 
 interface Props {
@@ -15,17 +16,24 @@ interface Props {
   onToggleMultiSelect: () => void;
   onToggleFilterMenu: () => void;
   onToggleMoreMenu: () => void;
+  onCloseFilterMenu: () => void;
+  onCloseMoreMenu: () => void;
   onSetTagFilter: (tag: string) => void;
   onTogglePriorityFilter: () => void;
   onSetViewMode: (mode: ViewMode) => void;
-  onOpenColumnManager: () => void;
+  onOpenBoardManager: () => void;
 }
 
 export const BoardCanvasCompactControls: React.FC<Props> = ({
   isMultiSelectMode, selectedTaskCount, tagFilter, priorityFilter, allTags, viewMode,
   isFilterMenuOpen, isMoreMenuOpen, onToggleMultiSelect, onToggleFilterMenu, onToggleMoreMenu,
-  onSetTagFilter, onTogglePriorityFilter, onSetViewMode, onOpenColumnManager,
+  onCloseFilterMenu, onCloseMoreMenu, onSetTagFilter, onTogglePriorityFilter, onSetViewMode, onOpenBoardManager,
 }) => {
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(filterMenuRef, onCloseFilterMenu, isFilterMenuOpen);
+  useClickOutside(moreMenuRef, onCloseMoreMenu, isMoreMenuOpen);
+
   return (
     <div className="flex items-center gap-1">
       <button onClick={onToggleMultiSelect} className={`px-2 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${isMultiSelectMode ? "bg-orange-500 text-white font-bold" : "bg-white/10 hover:bg-white/20 text-white/90"}`} title="多選模式">
@@ -33,7 +41,7 @@ export const BoardCanvasCompactControls: React.FC<Props> = ({
         {selectedTaskCount > 0 && <span className="w-4 h-4 rounded-full bg-white text-orange-600 text-[10px] font-black flex items-center justify-center ml-0.5">{selectedTaskCount}</span>}
       </button>
 
-      <div className="relative">
+      <div ref={filterMenuRef} className="relative">
         <button onClick={onToggleFilterMenu} className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${tagFilter !== "all" || priorityFilter === "high" ? "bg-orange-500 text-white font-bold" : "bg-white/10 hover:bg-white/20 text-white/90"}`} title="篩選器">
           <Filter className="w-3.5 h-3.5" />{(tagFilter !== "all" || priorityFilter === "high") && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
         </button>
@@ -55,7 +63,7 @@ export const BoardCanvasCompactControls: React.FC<Props> = ({
         )}
       </div>
 
-      <div className="relative">
+      <div ref={moreMenuRef} className="relative">
         <button onClick={onToggleMoreMenu} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 transition-colors" title="選單"><MoreHorizontal className="w-3.5 h-3.5" /></button>
         {isMoreMenuOpen && (
           <div className="absolute right-0 top-full mt-1.5 w-52 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
@@ -66,7 +74,7 @@ export const BoardCanvasCompactControls: React.FC<Props> = ({
               </button>
             ))}
             <div className="border-t border-slate-100 my-1 pt-1">
-              <button onClick={onOpenColumnManager} className="w-full text-left px-2.5 py-1.5 rounded-xl flex items-center gap-2 text-xs hover:bg-slate-100"><SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" /><span>自訂流程欄位</span></button>
+              <button onClick={onOpenBoardManager} className="w-full text-left px-2.5 py-1.5 rounded-xl flex items-center gap-2 text-xs hover:bg-slate-100"><LayoutGrid className="w-3.5 h-3.5 text-slate-400" /><span>看板管理</span></button>
             </div>
           </div>
         )}

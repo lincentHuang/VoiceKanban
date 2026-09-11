@@ -24,7 +24,7 @@
      - **選單動作整合**：`ColumnActionMenu` 新增「✏️ 重新命名列表」直接啟動該欄位行內編輯，並新增「⚙️ 管理所有欄位流程...」直通流程管理視窗。
    - **Popover 圖示選擇器 (`ColumnIconPicker`)**：點擊欄位標頭圖示或流程管理彈窗內圖示按鈕，即刻展開精緻 Popover 面板，支援直覺挑選 Emoji 或設為「無圖示 (純文字)」；更換圖示與名稱相互獨立保留不覆蓋。
    - **手勢防衝突隔離**：行內輸入框、編輯按鈕與圖示按鈕全面阻斷指標事件（`onPointerDown` stopPropagation），保證編輯打字時絕不誤觸發欄位 DnD 水平排序。
-   - 狀態流程管理視窗 (`ColumnManagerModal`) 支援按住左側 `⋮⋮` 把手進行**垂直拖曳（Drag & Drop）直覺排序**，即時預覽並持久化。
+   - 欄位管理收斂於「看板管理」彈窗 (`BoardManagerModal`) 的「欄位流程」分頁，支援按住左側 `⋮⋮` 把手進行**垂直拖曳（Drag & Drop）直覺排序**，即時預覽並持久化。
    - 變更全欄位柔和淺色主題（清新淺綠、溫暖淺黃、晨曦淺橘、恬靜淺紫、柔霧淺藍、浪漫淺粉等）。
    - 支援刪除欄位與設定 WIP (Work-In-Progress) 數量上限，超過時呈現視覺警示。
 6. **任務全屬性 CRUD (Task CRUD & Modals)**：
@@ -77,9 +77,15 @@ src/features/kanban/
 
 ---
 
-12. **看板編輯（改名與圖示）與安全刪除防呆 (Board Edit, Rename, Icon Picker & Safe Deletion)**：
-    - **看板切換選單動作整合 (`BoardSwitcherMenu`)**：在下拉選單各看板項目提供懸停/常態「✏️ 編輯」與「🗑️ 刪除」快捷入口，並支援開啟看板編輯視窗。
-    - **專屬編輯看板彈窗 (`EditBoardModal`)**：支援就地自訂看板名稱、選取 Emoji 圖示（或設定純文字）與自訂描述，點擊儲存即時更新並同步至 Store 與 Firestore 雲端。
+12. **看板管理彈窗與安全刪除防呆 (Board Manager Modal & Safe Deletion)**：
+    - **統一看板管理入口 (`BoardManagerModal`)**：原「狀態流程管理」彈窗擴充為「看板管理」，以分頁 (Tabs) 整合四大區塊：
+      1. **欄位流程**：沿用原欄位拖曳排序、增減與命名。
+      2. **一般設定**：看板名稱、Emoji 圖示（或純文字）與描述，並內建「危險區域」刪除看板入口。
+      3. **共享協作**：顯示目前共享狀態與協作成員預覽，並可一鍵開啟 `ShareBoardModal` 管理邀請代碼與成員角色。
+      4. **背景外觀**：提供 6 組預設漸層背景色（極光紫、深海藍、暮色橘、森林綠、極夜黑、糖果粉）套用於看板畫布，選擇後同步至 Store 與 Firestore。
+      彈窗標頭同時顯示看板圖示、名稱與是否共享中徽章，切換分頁不遺失未儲存的編輯內容，點擊「完成」統一提交所有分頁的變更。
+    - **精簡看板切換選單 (`BoardSwitcherMenu`)**：下拉選單移除逐項「✏️ 編輯」「🗑️ 刪除」快捷鍵與獨立編輯鉛筆按鈕，僅保留看板清單（含共享徽章）、切換、新增看板與加入協作入口；編輯與刪除統一收斂至「看板管理」彈窗處理。
+    - **精簡看板 Header**：移除獨立的「編輯看板」與「自訂流程欄位」按鈕，合併為單一「看板管理」入口（桌機寬版工具列圖示 / 手機版更多選單）。
     - **看板刪除安全防呆 (`DeleteBoardConfirmModal`)**：
       - 當系統僅剩最後 1 個看板時，刪除按鈕自動停用或提示不可刪除，確保核心看板資料完整。
       - 刪除前提示明確之確認 Modal（含看板名稱、涵蓋之任務數量、不可復原警告）。
@@ -97,12 +103,12 @@ src/features/kanban/
 │   ├── TaskCard.tsx                 # 單一任務卡片 (支援優先級、標籤、封面、子任務進度、到期狀態)
 │   ├── AddTaskModal.tsx             # 新增任務彈窗
 │   ├── EditTaskModal.tsx            # 編輯任務彈窗 (完整屬性編輯、子任務排序、展開為獨立欄位)
-│   ├── EditBoardModal.tsx           # 編輯看板彈窗 (自訂名稱、Emoji 圖示挑選與描述)
 │   ├── DeleteBoardConfirmModal.tsx  # 看板刪除確認彈窗 (包含任務計數警告與最後看板保護)
 │   ├── BatchActionBar.tsx           # 多選批次操作懸浮列
 │   ├── ColumnIconPicker.tsx         # 獨立欄位圖示 Popover 選擇器 (支援 Emoji 與純文字)
 │   ├── ColumnActionMenu.tsx         # 欄位下拉選單 (重新命名、淺色選色器、排序、聚合為單一任務卡、管理流程)
-│   └── ColumnManagerModal.tsx       # 欄位管理與自訂彈窗 (含 Popover 圖示選擇器、無圖示支援、垂直拖曳排序)
+│   ├── BoardManagerModal.tsx        # 看板管理彈窗 (取代原狀態流程管理，含分頁：欄位流程／一般設定／共享協作／背景外觀)
+│   └── board-manager/               # 看板管理彈窗子元件 (Header、Tabs、各分頁內容、useBoardManagerModal Hook)
 ├── index.ts                         # 模組統一出口
 └── feature.md                       # 功能規格與驗收標準文檔
 ```
@@ -145,9 +151,10 @@ src/features/kanban/
 - [x] **AC-KANBAN-17**：**手機端欄位底部與浮動 Dock 安全避讓 (Mobile Column Bottom Dock Clearance & Safe Area)**：
   - 看板主畫布視圖容器與收件匣內容區配置 `pb-[54px] sm:pb-16`，修復先前無效類別導致手機端 0 邊距重疊之問題。
   - 欄位內部之最後一張卡片、已完成任務折疊條（`visibleCompletedTasks`）以及欄位底部「+ 新增卡片」按鈕在各手機尺寸下均 100% 完整露出於浮動 Dock 及語音 FAB 之上，零重疊、易點擊，背景自然透出漸層。
-- [ ] **AC-KANBAN-18**：**看板編輯（改名、圖示、說明）與安全刪除防呆 (Board Edit & Safe Deletion)**：
-  - `BoardSwitcherMenu` 下拉選單中支援對各看板進行「編輯」與「刪除」操作。
-  - `EditBoardModal` 支援修改看板名稱、Emoji 圖示（Popover 挑選或純文字）與描述，儲存後即時生效並同步。
+- [x] **AC-KANBAN-18**：**統一看板管理彈窗與精簡入口 (Unified Board Manager Modal & Simplified Entry Points)**：
+  - 原「狀態流程管理」彈窗更名為「看板管理」(`BoardManagerModal`)，並以分頁整合欄位流程、一般設定（名稱/圖示/描述）、共享協作（狀態、成員預覽、開啟 `ShareBoardModal`）與背景外觀（6 組預設漸層）。
+  - 彈窗標頭顯示看板圖示、名稱與共享中徽章；一般設定分頁內建「危險區域」刪除看板入口，觸發 `DeleteBoardConfirmModal`。
+  - `BoardSwitcherMenu` 移除逐項編輯／刪除快捷鍵與獨立編輯鉛筆按鈕，看板 Header 移除獨立「編輯看板」與「自訂流程欄位」按鈕，統一收斂為單一「看板管理」入口。
   - `DeleteBoardConfirmModal` 具備刪除防呆（顯示任務數量警告），最後 1 個看板禁用刪除，刪除啟用中看板自動切換至剩餘第一個看板並清理關聯任務與雲端同步。
 
 

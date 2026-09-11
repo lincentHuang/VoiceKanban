@@ -1,4 +1,5 @@
 import { Board, Task, DEFAULT_COLUMNS } from "../types/task";
+import { createCollectionBoard } from "@/features/bookmarks/constants";
 
 export const INITIAL_BOARDS: Board[] = [
   {
@@ -23,6 +24,7 @@ export const INITIAL_BOARDS: Board[] = [
     description: "長期里程碑與 Feature 規劃",
     columns: DEFAULT_COLUMNS,
   },
+  createCollectionBoard("board-collection"),
 ];
 
 export const INITIAL_TASKS: Task[] = [

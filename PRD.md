@@ -291,6 +291,15 @@ src/
   - 通知即時同步至本機 LocalStorage（上限保留最新 50 筆）與雲端 Firestore，支援在線跨分頁 BroadcastChannel 同步。
   - 點擊通知清單中之項目，系統自動定位至對應看板並短暫高亮聚焦該任務卡片。
 
+### 3.16 🔖 社群內容收藏看板 (Bookmarks Feature)
+- **手機一鍵收藏 IG / YouTube / Threads**：
+  - **Android**：PWA manifest 宣告 Web Share Target，安裝後「聲動看板」出現在各 App 的系統分享選單，選擇即開啟「儲存到收藏」面板。
+  - **iOS**：主畫面 Web App 無法成為分享目標，改以「複製連結 → 收藏看板『貼上連結』」完成收藏；剪貼簿無連結時提供手動輸入框。
+  - 未登入時收到的分享暫存於 sessionStorage，登入後自動接續。
+- **專屬「收藏」看板**：以 `Board.kind = "collection"` 辨識，預設欄位 ▶️ YouTube / 📸 Instagram / 🧵 Threads / 🔗 其他連結，依平台自動分流；新帳號預設建立，既有使用者可從看板切換選單建立或於首次分享時自動建立。
+- **連結預覽 API (`/api/link/preview`)**：YouTube 走 oEmbed 並使用長效縮圖；IG / Threads / 一般網頁解析 Open Graph 取得貼文文字、作者與縮圖；具 SSRF 防護（僅 http(s)、拒絕私有網段、逐跳驗證轉址）、逾時與大小上限。
+- **卡片呈現**：`Task.link` 卡片顯示縮圖封面、平台徽章、作者與「開啟原文」按鈕；縮圖過期時顯示平台漸層底圖；已看內容可勾選完成，沿用「已完成 (N)」折疊。詳見 `src/features/bookmarks/feature.md`。
+
 ---
 
 ## 4. UI 5 種狀態處理規範 (5 UI States Standard)
@@ -375,3 +384,7 @@ src/
 
 
 
+- [ ] **MAC-31 (社群內容收藏看板與手機分享收藏)**：
+  - Android 安裝 PWA 後可從 IG / YouTube / Threads 系統分享選單直接存入「收藏」看板；iOS 以「貼上連結」完成收藏。
+  - 收藏卡片依平台自動分欄，顯示縮圖、平台徽章、作者與開啟原文按鈕，並同步至雲端。
+  - 預覽失敗、離線或私人帳號時仍可儲存連結；重複收藏時提示。

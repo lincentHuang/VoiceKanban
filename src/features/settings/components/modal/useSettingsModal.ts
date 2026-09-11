@@ -14,7 +14,7 @@ export function useSettingsModal() {
 
   const [activeTab, setActiveTab] = useState<"api" | "offline" | "learning">("api");
   const [inputKey, setInputKey] = useState(byokConfig.apiKey || "");
-  const [selectedModel, setSelectedModel] = useState(byokConfig.model || "gemini-2.0-flash");
+  const [selectedModel, setSelectedModel] = useState(byokConfig.model || "gemini-3.6-flash");
   const [defaultBoard, setDefaultBoard] = useState(byokConfig.defaultBoardId || "board-work");
   const [showPassword, setShowPassword] = useState(false);
   const [isTesting, setIsTesting] = useState(false);

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Inbox, MoreHorizontal, ChevronLeft, CheckSquare } from "lucide-react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { useClickOutside } from "@/core/hooks/useClickOutside";
 import { InboxHeaderMenu } from "./InboxHeaderMenu";
 
 interface InboxHeaderProps {
@@ -25,6 +26,8 @@ export const InboxHeader: React.FC<InboxHeaderProps> = ({
   } = useKanbanStore();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, () => setIsMenuOpen(false), isMenuOpen);
 
   return (
     <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
@@ -61,7 +64,7 @@ export const InboxHeader: React.FC<InboxHeaderProps> = ({
           )}
         </button>
 
-        <div className="relative">
+        <div ref={menuRef} className="relative">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"

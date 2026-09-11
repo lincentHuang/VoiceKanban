@@ -3,7 +3,7 @@
  * 支援全功能離線作業、離線快取、靜態資源加速與斷網容錯降級
  */
 
-const CACHE_NAME = "voice-kanban-v2";
+const CACHE_NAME = "voice-kanban-v3";
 
 const PRECACHE_ASSETS = [
   "/",
