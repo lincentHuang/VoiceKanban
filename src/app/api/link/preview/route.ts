@@ -7,6 +7,9 @@ export const runtime = "nodejs";
 
 const FETCH_TIMEOUT_MS = 6000;
 const MAX_HTML_BYTES = 800_000;
+// The full video description sits ~1.2MB into a YouTube watch page
+const YOUTUBE_MAX_HTML_BYTES = 2_500_000;
+const MAX_DESCRIPTION_LENGTH = 5000;
 const MAX_REDIRECTS = 3;
 // Meta serves Open Graph tags to its own link-preview crawler even for login-walled IG/Threads pages
 const CRAWLER_UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
@@ -64,12 +67,12 @@ async function fetchPublic(target: URL): Promise<{ res: Response; finalUrl: URL 
   return null;
 }
 
-async function readLimitedText(res: Response): Promise<string> {
+async function readLimitedText(res: Response, maxBytes = MAX_HTML_BYTES): Promise<string> {
   if (!res.body) return "";
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
-  while (total < MAX_HTML_BYTES) {
+  while (total < maxBytes) {
     const { done, value } = await reader.read();
     if (done) break;
     chunks.push(value);
@@ -155,28 +158,54 @@ function shapePreview(platform: LinkPlatform, meta: Record<string, string>, base
   };
 }
 
+async function fetchYouTubeOEmbed(
+  watchUrl: string
+): Promise<{ title?: string; author_name?: string; thumbnail_url?: string } | null> {
+  try {
+    const res = await fetch(
+      `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`,
+      { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+    );
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** oEmbed has no description; the full text is `shortDescription` in the watch page's player JSON. */
+async function fetchYouTubeDescription(videoId: string): Promise<string | null> {
+  try {
+    const fetched = await fetchPublic(new URL(`https://www.youtube.com/watch?v=${videoId}`));
+    if (!fetched || !fetched.res.ok) return null;
+    const html = await readLimitedText(fetched.res, YOUTUBE_MAX_HTML_BYTES);
+    const match = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
+    if (match) {
+      try {
+        return JSON.parse(`"${match[1]}"`) || null;
+      } catch {}
+    }
+    return parseMetaTags(html)["og:description"] || null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchYouTubePreview(url: string): Promise<LinkPreview> {
   const videoId = getYouTubeVideoId(url);
   // i.ytimg.com thumbnails are stable, unlike the signed IG/Threads CDN URLs
   const stableThumb = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null;
-  const oembedTarget = videoId ? `https://www.youtube.com/watch?v=${videoId}` : url;
-  try {
-    const res = await fetch(
-      `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(oembedTarget)}`,
-      { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      return {
-        title: data.title ?? null,
-        description: null,
-        thumbnailUrl: stableThumb || data.thumbnail_url || null,
-        author: data.author_name ?? null,
-        siteName: "YouTube",
-      };
-    }
-  } catch {}
-  return { title: null, description: null, thumbnailUrl: stableThumb, author: null, siteName: "YouTube" };
+  const watchUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : url;
+  const [oembed, description] = await Promise.all([
+    fetchYouTubeOEmbed(watchUrl),
+    videoId ? fetchYouTubeDescription(videoId) : Promise.resolve(null),
+  ]);
+  return {
+    title: oembed?.title ?? null,
+    description,
+    thumbnailUrl: stableThumb || oembed?.thumbnail_url || null,
+    author: oembed?.author_name ?? null,
+    siteName: "YouTube",
+  };
 }
 
 async function fetchOpenGraphPreview(target: URL, platform: LinkPlatform): Promise<LinkPreview | null> {
@@ -216,6 +245,9 @@ export async function GET(req: NextRequest) {
 
     if (!preview) {
       return NextResponse.json({ success: false, error: "無法取得連結預覽" }, { status: 502 });
+    }
+    if (preview.description && preview.description.length > MAX_DESCRIPTION_LENGTH) {
+      preview.description = `${preview.description.slice(0, MAX_DESCRIPTION_LENGTH).trimEnd()}…`;
     }
     return NextResponse.json(
       { success: true, preview },

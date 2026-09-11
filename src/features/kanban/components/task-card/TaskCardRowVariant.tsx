@@ -2,9 +2,11 @@ import React from "react";
 import { CheckSquare, Square, Star, CheckSquare2, Calendar, CheckCircle2 } from "lucide-react";
 import { Task } from "@/core/types/task";
 import { getDueDateStatus } from "@/core/utils/dateUtils";
+import { LinkEnrichingHint } from "@/features/bookmarks";
 
 interface Props {
   task: Task;
+  isEnrichingLink?: boolean;
   isSelected: boolean;
   isMultiSelectMode: boolean;
   inboxWidth: number;
@@ -13,7 +15,7 @@ interface Props {
 }
 
 export const TaskCardRowVariant: React.FC<Props> = ({
-  task, isSelected, isMultiSelectMode, inboxWidth, onSelect, onToggleComplete,
+  task, isEnrichingLink = false, isSelected, isMultiSelectMode, inboxWidth, onSelect, onToggleComplete,
 }) => {
   const isSmallRow = inboxWidth < 520;
   const isMediumRow = inboxWidth >= 520 && inboxWidth < 650;
@@ -39,6 +41,7 @@ export const TaskCardRowVariant: React.FC<Props> = ({
 
       <div className="flex items-center gap-2 min-w-0 flex-1">
         {task.isStarred && <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" />}
+        {isEnrichingLink && <LinkEnrichingHint compact />}
         <h4 style={{ minWidth: "100px" }} className={`text-[16px] sm:text-xs font-semibold text-slate-800 dark:text-slate-100 truncate flex-1 min-w-[100px] ${task.completed ? "line-through text-slate-400 dark:text-slate-500" : ""}`}>
           {task.title}
         </h4>

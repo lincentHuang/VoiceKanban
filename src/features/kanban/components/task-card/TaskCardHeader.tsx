@@ -1,5 +1,6 @@
 import React from "react";
 import { CheckSquare, Square, CheckCircle2 } from "lucide-react";
+import { isBareUrl } from "@/features/bookmarks/utils/linkParser";
 
 interface Props {
   title: string;
@@ -13,6 +14,8 @@ interface Props {
 export const TaskCardHeader: React.FC<Props> = ({
   title, completed, isSelected, isMultiSelectMode, onSelect, onToggleComplete,
 }) => {
+  const isUrlTitle = isBareUrl(title);
+
   return (
     <div className="flex items-start justify-between gap-2 min-h-[25px]">
       {isMultiSelectMode && (
@@ -27,7 +30,12 @@ export const TaskCardHeader: React.FC<Props> = ({
       )}
 
       <div className="flex-1 min-w-0 flex items-center min-h-[25px]">
-        <h4 style={{ minWidth: "100px" }} className={`text-[16px] sm:text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug break-words flex items-center min-h-[25px] ${completed ? "line-through text-slate-400 dark:text-slate-500" : ""}`}>
+        {/* Bare URLs have no break points, so they'd overflow under the check button; clip them to one line instead. */}
+        <h4
+          style={{ minWidth: "100px" }}
+          title={isUrlTitle ? title : undefined}
+          className={`text-[16px] sm:text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug min-h-[25px] ${isUrlTitle ? "block w-full truncate leading-[25px]" : "break-words flex items-center"} ${completed ? "line-through text-slate-400 dark:text-slate-500" : ""}`}
+        >
           {title}
         </h4>
       </div>

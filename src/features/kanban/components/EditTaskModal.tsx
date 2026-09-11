@@ -21,7 +21,7 @@ import { EditTaskExpandModal } from "./edit-task/EditTaskExpandModal";
 import { EditTaskDeleteModal } from "./edit-task/EditTaskDeleteModal";
 import { EditTaskLinkSection } from "@/features/bookmarks";
 
-export const EditTaskModal: React.FC = () => {
+const EditTaskModalContent: React.FC = () => {
   const store = useKanbanStore();
   const { editingTaskId, setEditingTaskId, tasks, getActiveBoardColumns, activeBoardId } = store;
   const task = tasks.find((t) => t.id === editingTaskId);
@@ -95,7 +95,16 @@ export const EditTaskModal: React.FC = () => {
           </div>
         </div>
       </div>
-      <EditTaskDeleteModal isOpen={isDeleteConfirm} taskTitle={form.title || task.title} onClose={() => setIsDeleteConfirm(false)} onConfirmDelete={() => { store.deleteTask(task.id); setEditingTaskId(null); }} />
+      <EditTaskDeleteModal isOpen={isDeleteConfirm} taskTitle={form.title || task.title} onClose={() => setIsDeleteConfirm(false)} onConfirmDelete={() => { setIsDeleteConfirm(false); store.deleteTask(task.id); setEditingTaskId(null); }} />
     </div>
   );
+};
+
+export const EditTaskModal: React.FC = () => {
+  const editingTaskId = useKanbanStore((s) => s.editingTaskId);
+  const hasTask = useKanbanStore((s) => s.tasks.some((t) => t.id === s.editingTaskId));
+  if (!editingTaskId || !hasTask) return null;
+  // Keyed per task so the delete confirm, cover picker, move popover and expand confirm start
+  // closed for every card instead of leaking from the previous one (e.g. after a delete).
+  return <EditTaskModalContent key={editingTaskId} />;
 };

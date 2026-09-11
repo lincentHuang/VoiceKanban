@@ -1,6 +1,9 @@
 import { Board, Column, LinkPlatform } from "@/core/types/task";
 
 export const COLLECTION_BOARD_NAME = "收藏";
+
+/** Meta's image CDNs sign URLs with a short expiry, so these thumbnails get copied into R2. */
+export const THUMBNAIL_REHOST_HOST_PATTERN = /(^|\.)(cdninstagram\.com|fbcdn\.net)$/i;
 export const COLLECTION_BOARD_ICON = "🔖";
 
 interface PlatformMeta {

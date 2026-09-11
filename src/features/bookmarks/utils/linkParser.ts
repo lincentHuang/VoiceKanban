@@ -16,6 +16,11 @@ export function extractFirstUrl(...candidates: (string | null | undefined)[]): s
   return null;
 }
 
+/** True when the text is nothing but a single http(s) URL, e.g. a link pasted as a card title. */
+export function isBareUrl(text: string | null | undefined): boolean {
+  return /^https?:\/\/\S+$/i.test((text || "").trim());
+}
+
 export function normalizeSharedUrl(raw: string): string {
   try {
     const url = new URL(raw);

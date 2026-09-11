@@ -24,9 +24,6 @@ export const EditTaskLinkSection: React.FC<{ link: TaskLink }> = ({ link }) => (
           {link.author || getDisplayHost(link.url)}
         </span>
       </div>
-      {link.description && (
-        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 whitespace-pre-line">{link.description}</p>
-      )}
       <span className="mt-auto inline-flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 group-hover:underline">
         開啟原文 <ExternalLink className="w-3 h-3" />
       </span>

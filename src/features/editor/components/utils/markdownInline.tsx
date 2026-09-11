@@ -9,14 +9,16 @@ export const renderTextDecorations = (str: string, key?: string | number): React
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/__(.*?)__/g, "<strong>$1</strong>")
     .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/_(.*?)_/g, "<em>$1</em>")
+    // Word-boundary underscores only, so handles like @nat_geo_travel aren't italicised
+    .replace(/(^|[^A-Za-z0-9_])_([^_\n]+?)_(?![A-Za-z0-9_])/g, "$1<em>$2</em>")
     .replace(/~~(.*?)~~/g, "<del>$1</del>")
     .replace(/`([^`]+)`/g, "<code class='px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-orange-600 dark:text-orange-400 font-mono text-[11px] font-semibold'>$1</code>");
   return <span key={key} dangerouslySetInnerHTML={{ __html: formatted }} />;
 };
 
 export const formatInlineMarkdown = (text: string): React.ReactNode => {
-  const linkRegex = /\[(.*?)\]\((https?:\/\/[^\s)]+|[^\s)]+)\)/g;
+  // `[label](href)` or a bare http(s) URL (trailing punctuation left out of the link)
+  const linkRegex = /\[(.*?)\]\((https?:\/\/[^\s)]+|[^\s)]+)\)|(https?:\/\/[^\s<>"]+[^\s<>".,;:!?)\]'」』，。！？])/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match;
@@ -26,8 +28,9 @@ export const formatInlineMarkdown = (text: string): React.ReactNode => {
     if (matchIndex > lastIndex) {
       parts.push(renderTextDecorations(text.substring(lastIndex, matchIndex), `text-${matchIndex}`));
     }
-    const linkLabel = match[1] || match[2];
-    const linkHref = match[2];
+    const bareUrl = match[3];
+    const linkLabel = bareUrl || match[1] || match[2];
+    const linkHref = bareUrl || match[2];
     parts.push(
       <a
         key={`link-${matchIndex}`}
@@ -37,7 +40,7 @@ export const formatInlineMarkdown = (text: string): React.ReactNode => {
         onClick={(e) => e.stopPropagation()}
         className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-semibold underline inline-flex items-center gap-0.5 mx-0.5 transition-colors"
       >
-        <span>{linkLabel}</span>
+        <span className={bareUrl ? "break-all" : undefined}>{linkLabel}</span>
         <ExternalLink className="w-3 h-3 inline shrink-0 opacity-70" />
       </a>
     );

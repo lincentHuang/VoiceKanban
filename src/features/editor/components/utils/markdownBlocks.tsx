@@ -62,7 +62,8 @@ export const renderMarkdownBlocks = (text: string, onStartEdit: () => void): Rea
       continue;
     }
 
-    if (trimmed.startsWith("#")) {
+    // Require a space after the #s so hashtag lines (`#travel #food`) in saved captions stay plain text
+    if (/^#{1,6}\s/.test(trimmed)) {
       const level = trimmed.match(/^#+/)?.[0].length || 1;
       const cls = level === 1 ? "text-lg font-bold border-b pb-1" : level === 2 ? "text-base font-bold border-b pb-1" : level === 3 ? "text-sm font-bold" : "text-xs font-bold";
       blocks.push(<div key={`h-${i}`} className={`${cls} text-slate-900 dark:text-white pt-1`}>{formatInlineMarkdown(trimmed.replace(/^#+\s*/, ""))}</div>);

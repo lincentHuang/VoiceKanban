@@ -19,9 +19,14 @@ export const EditTaskDeleteModal: React.FC<EditTaskDeleteModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={onClose}
+      // Rendered inside the task drawer's backdrop: without stopPropagation, dismissing the
+      // confirm would also bubble up and close the whole task.
+      onClick={(e) => { e.stopPropagation(); onClose(); }}
     >
       <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-label="確定刪除此任務？"
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 rounded-2xl shadow-2xl p-5 space-y-3 animate-in zoom-in-95 duration-150 text-slate-800 dark:text-slate-100"
       >
@@ -44,6 +49,7 @@ export const EditTaskDeleteModal: React.FC<EditTaskDeleteModalProps> = ({
           </button>
           <button
             type="button"
+            autoFocus
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-98 transition-all cursor-pointer"
           >

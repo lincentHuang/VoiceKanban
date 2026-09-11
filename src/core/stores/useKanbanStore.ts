@@ -7,7 +7,7 @@ import { UserSession, SyncState, AuthProvider } from "../types/auth";
 import { INITIAL_BOARDS, INITIAL_TASKS } from "../services/mockData";
 import { generateOrderKeyBetween, initialOrderKey } from "../utils/lexorank";
 import { GUEST_USER, createGuestSession, loginWithProvider, logoutUser, subscribeToAuthState } from "../services/authService";
-import { syncEngine } from "../services/syncService";
+import { syncEngine, reconcileSyncedTasks, reconcileSyncedBoards, withoutSyncedTombstones } from "../services/syncService";
 import { learningEngine } from "../services/learningEngine";
 import { collaborationService } from "@/features/collaboration/services/collaborationService";
 import { NotificationItem, ActivityPayload, NotificationActionType } from "@/features/notifications/types";
@@ -15,6 +15,9 @@ import { notificationService } from "@/features/notifications/services/notificat
 import { SharedLinkDraft } from "@/features/bookmarks/types";
 import { PLATFORM_META, createCollectionBoard, findCollectionBoard } from "@/features/bookmarks/constants";
 import { savePendingShare } from "@/features/bookmarks/services/pendingShareStorage";
+import { fetchLinkPreview, needsThumbnailRehost, persistThumbnail } from "@/features/bookmarks/services/linkPreviewService";
+import { detectPlatform, isBareUrl, normalizeSharedUrl, toCardTitle } from "@/features/bookmarks/utils/linkParser";
+import { buildLinkDescription } from "@/features/bookmarks/utils/linkDescription";
 
 interface KanbanStoreState {
   // Notifications
@@ -119,6 +122,10 @@ interface KanbanStoreState {
   ensureCollectionBoard: () => Board;
   openCollectionBoard: () => void;
   saveLinkToCollection: (input: { title: string; note?: string; link: TaskLink }) => Task;
+  /** Tasks whose URL title is being expanded into title / image / content (not persisted). */
+  enrichingTaskIds: Record<string, true>;
+  enrichTaskFromLink: (taskId: string) => Promise<void>;
+  rehostTaskThumbnail: (taskId: string) => Promise<void>;
 
   // Board Manager Modal (workflow columns, general info, sharing, appearance tabs)
   isBoardManagerOpen: boolean;
@@ -257,6 +264,26 @@ const safeLocalStorage: StateStorage = {
     } catch {}
   },
 };
+
+/** Resolves once the task is in the store, or undefined after the timeout (e.g. it was deleted). */
+function waitForTask(taskId: string, timeoutMs = 15000): Promise<Task | undefined> {
+  const existing = useKanbanStore.getState().tasks.find((t) => t.id === taskId);
+  if (existing) return Promise.resolve(existing);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      unsubscribe();
+      resolve(undefined);
+    }, timeoutMs);
+    const unsubscribe = useKanbanStore.subscribe((state) => {
+      const task = state.tasks.find((t) => t.id === taskId);
+      if (task) {
+        clearTimeout(timer);
+        unsubscribe();
+        resolve(task);
+      }
+    });
+  });
+}
 
 export const useKanbanStore = create<KanbanStoreState>()(
   persist(
@@ -591,26 +618,43 @@ export const useKanbanStore = create<KanbanStoreState>()(
           collaborationService.syncSharedBoardData(currentActiveBoard, get().tasks);
         }
 
+        // Capture exactly what this sync sends, so edits made while it's in flight (e.g. a link
+        // card's preview landing a second later) aren't overwritten when the result comes back.
+        const sentTasks = get().tasks;
+        const sentBoards = get().boards;
+        const sentDeletedTaskIds = get().pendingDeletedTaskIds;
+        const sentDeletedBoardIds = get().pendingDeletedBoardIds;
         const result = await syncEngine.syncTasksToCloud(
           user.id,
-          get().tasks,
-          get().boards,
+          sentTasks,
+          sentBoards,
           get().activeBoardId,
-          get().pendingDeletedTaskIds,
-          get().pendingDeletedBoardIds
+          sentDeletedTaskIds,
+          sentDeletedBoardIds
         );
         set((state) => ({
           // Adopt the server-merged result so any newer data pulled in during
           // the merge (e.g. tasks/boards written by another device) is reflected
           // locally too, instead of only living in Firestore until the next fetch.
-          tasks: result.tasks || state.tasks,
-          boards: result.boards && result.boards.length > 0 ? result.boards : state.boards,
+          tasks: result.tasks
+            ? reconcileSyncedTasks(result.tasks, sentTasks, state.tasks, state.pendingDeletedTaskIds)
+            : state.tasks,
+          boards:
+            result.boards && result.boards.length > 0
+              ? reconcileSyncedBoards(result.boards, sentBoards, state.boards, state.pendingDeletedBoardIds)
+              : state.boards,
           activeBoardId: result.activeBoardId || state.activeBoardId,
           pendingOfflineChanges: result.status === "synced" ? 0 : state.pendingOfflineChanges,
-          // Once synced, the deletions are recorded in the cloud's own tombstone
-          // list, so this device no longer needs to remember them locally.
-          pendingDeletedTaskIds: result.status === "synced" ? {} : state.pendingDeletedTaskIds,
-          pendingDeletedBoardIds: result.status === "synced" ? {} : state.pendingDeletedBoardIds,
+          // Once synced, the sent deletions are recorded in the cloud's own tombstone list, so this
+          // device no longer needs them — but deletions made during the sync still have to go out.
+          pendingDeletedTaskIds:
+            result.status === "synced"
+              ? withoutSyncedTombstones(state.pendingDeletedTaskIds, sentDeletedTaskIds)
+              : state.pendingDeletedTaskIds,
+          pendingDeletedBoardIds:
+            result.status === "synced"
+              ? withoutSyncedTombstones(state.pendingDeletedBoardIds, sentDeletedBoardIds)
+              : state.pendingDeletedBoardIds,
           syncState: {
             status: result.status,
             lastSyncedAt: result.syncedAt,
@@ -1026,15 +1070,68 @@ export const useKanbanStore = create<KanbanStoreState>()(
           visibleColumns.find((c) => c.id === PLATFORM_META[link.platform].columnId) ||
           visibleColumns[0] ||
           DEFAULT_COLUMNS[0];
-        return get().addTask({
+        const task = get().addTask({
           title,
-          description: note || "",
+          description: buildLinkDescription(link, note),
           boardId: board.id,
           columnId: targetColumn.id,
           tags: [],
           dueDate: null,
           completed: false,
           link,
+        });
+        if (needsThumbnailRehost(link.thumbnailUrl)) void get().rehostTaskThumbnail(task.id);
+        return task;
+      },
+
+      enrichingTaskIds: {},
+      enrichTaskFromLink: async (taskId) => {
+        const task = get().tasks.find((t) => t.id === taskId);
+        if (!task || !isBareUrl(task.title) || get().enrichingTaskIds[taskId]) return;
+
+        const sourceTitle = task.title.trim();
+        const url = normalizeSharedUrl(sourceTitle);
+        set((state) => ({ enrichingTaskIds: { ...state.enrichingTaskIds, [taskId]: true } }));
+        try {
+          const preview = await fetchLinkPreview(url);
+          const thumbnailUrl = preview?.thumbnailUrl ? await persistThumbnail(preview.thumbnailUrl) : null;
+          // A cloud snapshot written just before this card existed can briefly drop it from local
+          // state; wait for it to come back instead of silently skipping the expansion.
+          const current = await waitForTask(taskId);
+          if (!current) return;
+
+          const link: TaskLink = {
+            url,
+            platform: detectPlatform(url),
+            title: preview?.title ?? null,
+            description: preview?.description ?? null,
+            thumbnailUrl,
+            author: preview?.author ?? null,
+            siteName: preview?.siteName ?? null,
+            savedAt: new Date().toISOString(),
+          };
+          const existing = (current.description || "").trim();
+          const description = [buildLinkDescription(link), existing].filter(Boolean).join("\n\n---\n\n");
+          // Don't clobber a title the user retyped while the preview was loading
+          const cardTitle = current.title.trim() === sourceTitle ? toCardTitle(preview?.title) : "";
+
+          get().updateTask(taskId, { link, description, ...(cardTitle ? { title: cardTitle } : {}) });
+        } finally {
+          set((state) => {
+            const { [taskId]: _done, ...rest } = state.enrichingTaskIds;
+            return { enrichingTaskIds: rest };
+          });
+        }
+      },
+      rehostTaskThumbnail: async (taskId) => {
+        const original = get().tasks.find((t) => t.id === taskId)?.link?.thumbnailUrl;
+        if (!original || !needsThumbnailRehost(original)) return;
+        const stable = await persistThumbnail(original);
+        const current = get().tasks.find((t) => t.id === taskId);
+        if (stable === original || !current?.link) return;
+        get().updateTask(taskId, {
+          link: { ...current.link, thumbnailUrl: stable },
+          description: (current.description || "").split(original).join(stable),
         });
       },
 
@@ -1315,16 +1412,22 @@ export const useKanbanStore = create<KanbanStoreState>()(
         }
 
         get().triggerSync();
+        // A card titled with just a link gets its real title, image and content pulled in
+        if (isBareUrl(newTask.title)) void get().enrichTaskFromLink(newTask.id);
         return newTask;
       },
 
       updateTask: (id, partial) => {
+        const previousTitle = get().tasks.find((t) => t.id === id)?.title.trim();
         set((state) => ({
           tasks: state.tasks.map((t) =>
             t.id === id ? { ...t, ...partial, updatedAt: new Date().toISOString() } : t
           ),
         }));
         get().triggerSync();
+        if (partial.title !== undefined && isBareUrl(partial.title) && partial.title.trim() !== previousTitle) {
+          void get().enrichTaskFromLink(id);
+        }
       },
 
       deleteTask: (id) => {

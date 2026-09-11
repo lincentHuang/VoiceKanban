@@ -298,7 +298,8 @@ src/
   - 未登入時收到的分享暫存於 sessionStorage，登入後自動接續。
 - **專屬「收藏」看板**：以 `Board.kind = "collection"` 辨識，預設欄位 ▶️ YouTube / 📸 Instagram / 🧵 Threads / 🔗 其他連結，依平台自動分流；新帳號預設建立，既有使用者可從看板切換選單建立或於首次分享時自動建立。
 - **連結預覽 API (`/api/link/preview`)**：YouTube 走 oEmbed 並使用長效縮圖；IG / Threads / 一般網頁解析 Open Graph 取得貼文文字、作者與縮圖；具 SSRF 防護（僅 http(s)、拒絕私有網段、逐跳驗證轉址）、逾時與大小上限。
-- **卡片呈現**：`Task.link` 卡片顯示縮圖封面、平台徽章、作者與「開啟原文」按鈕；縮圖過期時顯示平台漸層底圖；已看內容可勾選完成，沿用「已完成 (N)」折疊。詳見 `src/features/bookmarks/feature.md`。
+- **卡片呈現**：`Task.link` 卡片顯示縮圖封面、平台徽章、作者與「開啟原文」按鈕；縮圖過期時顯示平台漸層底圖；已看內容可勾選完成，沿用「已完成 (N)」折疊。
+- **標題貼連結自動展開**：任何卡片標題只輸入一個網址時，自動換成真正標題並寫入縮圖；詳細內容依序為圖片、標題與內容（連結由頂部預覽卡「開啟原文」提供）（YouTube 完整影片說明、IG / Threads 貼文文字）。IG / Threads 縮圖自動轉存 R2 避免過期。詳見 `src/features/bookmarks/feature.md`。
 
 ---
 

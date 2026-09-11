@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { TaskLink } from "@/core/types/task";
 import { getDisplayHost } from "../utils/linkParser";
 import { LinkThumbnail } from "./LinkThumbnail";
@@ -12,6 +12,14 @@ export const TaskCardLinkCover: React.FC<{ link: TaskLink }> = ({ link }) => (
   <div className="relative w-full aspect-video max-h-40 overflow-hidden bg-slate-100 dark:bg-slate-800 pointer-events-none select-none">
     <LinkThumbnail thumbnailUrl={link.thumbnailUrl} platform={link.platform} className="absolute inset-0 w-full h-full" />
   </div>
+);
+
+/** Shown while a card titled with a bare URL is being expanded into title / image / content. */
+export const LinkEnrichingHint: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
+  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-orange-600 dark:text-orange-400 shrink-0" title="讀取連結內容中">
+    <Loader2 className="w-3 h-3 animate-spin" />
+    {!compact && <span>讀取連結內容…</span>}
+  </span>
 );
 
 export const TaskCardLinkMeta: React.FC<{ link: TaskLink }> = ({ link }) => (

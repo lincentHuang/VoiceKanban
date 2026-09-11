@@ -133,6 +133,51 @@ export function mergeBoardsPreferLocal(remoteBoards: Board[], localBoards: Board
   return Array.from(boardMap.values());
 }
 
+/**
+ * Applies a sync's server-merged `result` without losing local work done while that sync was in
+ * flight. `sent` is the exact array the sync pushed: any local task that isn't one of those objects
+ * was created or edited since (store updates always produce new objects) and is merged in by
+ * `updatedAt`; any sent task that's gone locally, or tombstoned, was deleted since and stays gone.
+ */
+export function reconcileSyncedTasks(
+  resultTasks: Task[],
+  sentTasks: Task[],
+  localTasks: Task[],
+  localDeletedIds: Record<string, string>
+): Task[] {
+  const sentRefs = new Set(sentTasks);
+  const sentIds = new Set(sentTasks.map((t) => t.id));
+  const localIds = new Set(localTasks.map((t) => t.id));
+  const fromResult = resultTasks.filter(
+    (t) => !localDeletedIds[t.id] && (localIds.has(t.id) || !sentIds.has(t.id))
+  );
+  return mergeTasksByUpdatedAt(fromResult, localTasks.filter((t) => !sentRefs.has(t)));
+}
+
+/** Board counterpart of reconcileSyncedTasks; boards have no `updatedAt`, so local edits win. */
+export function reconcileSyncedBoards(
+  resultBoards: Board[],
+  sentBoards: Board[],
+  localBoards: Board[],
+  localDeletedIds: Record<string, string>
+): Board[] {
+  const sentRefs = new Set(sentBoards);
+  const sentIds = new Set(sentBoards.map((b) => b.id));
+  const localIds = new Set(localBoards.map((b) => b.id));
+  const fromResult = resultBoards.filter(
+    (b) => !localDeletedIds[b.id] && (localIds.has(b.id) || !sentIds.has(b.id))
+  );
+  return mergeBoardsPreferLocal(fromResult, localBoards.filter((b) => !sentRefs.has(b)));
+}
+
+/** Drops only the tombstones a sync actually sent, keeping ones recorded while it was in flight. */
+export function withoutSyncedTombstones(
+  current: Record<string, string>,
+  sent: Record<string, string>
+): Record<string, string> {
+  return Object.fromEntries(Object.entries(current).filter(([id]) => !(id in sent)));
+}
+
 export class DatabaseSyncEngine {
 
   private static instance: DatabaseSyncEngine;
