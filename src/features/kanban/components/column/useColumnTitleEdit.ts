@@ -34,6 +34,8 @@ export function useColumnTitleEdit(columnId: string, initialTitle: string) {
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Enter that confirms an IME candidate must not commit the rename.
+    if (e.nativeEvent.isComposing || e.key === "Process") return;
     if (e.key === "Enter") {
       e.preventDefault(); e.stopPropagation(); handleSaveTitle();
     } else if (e.key === "Escape") {

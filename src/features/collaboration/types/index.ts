@@ -13,6 +13,8 @@ export interface BoardMember {
 
 export interface SharedBoardData {
   id: string;
+  /** Document id in `shared_boards`; absent on boards shared before this field existed. */
+  shareId?: string;
   name: string;
   description?: string;
   icon: string;

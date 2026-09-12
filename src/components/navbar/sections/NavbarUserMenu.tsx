@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { NavbarUserProfileHeader } from "./NavbarUserProfileHeader";
 import { NavbarGuestCallout } from "./NavbarGuestCallout";
 import { NavbarSyncStatusCard } from "./NavbarSyncStatusCard";
@@ -28,11 +28,12 @@ export const NavbarUserMenu: React.FC<NavbarUserMenuProps> = ({ currentTime }) =
           className="w-8 h-8 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800 flex items-center justify-center text-slate-700 hover:border-orange-500 transition-all overflow-hidden shadow-2xs cursor-pointer focus:outline-none focus:border-orange-500"
           aria-label="使用者選單"
         >
-          {userSession.avatarUrl ? (
-            <img src={userSession.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-          ) : (
-            <User className="w-4 h-4 text-slate-600" />
-          )}
+          <UserAvatar
+            src={userSession.avatarUrl}
+            name={userSession.name}
+            className="w-full h-full"
+            fallbackClassName="bg-transparent dark:bg-transparent"
+          />
         </button>
       </DropdownMenuTrigger>
 

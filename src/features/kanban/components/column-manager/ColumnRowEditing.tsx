@@ -29,6 +29,7 @@ export const ColumnRowEditing: React.FC<ColumnRowEditingProps> = ({
         value={editTitle}
         onChange={(e) => onEditTitleChange(e.target.value)}
         onKeyDown={(e) => {
+          if (e.nativeEvent.isComposing || e.key === "Process") return;
           if (e.key === "Enter") onSaveEdit();
           if (e.key === "Escape") onCancelEdit();
         }}

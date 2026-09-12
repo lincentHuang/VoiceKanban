@@ -99,6 +99,13 @@ export interface Board {
   isDefault?: boolean;
   columns?: Column[];
   isShared?: boolean;
+  /**
+   * Unguessable id of this board's document in the `shared_boards` collection. Kept separate
+   * from `id` because local board ids are predictable ("board-work") and would collide across
+   * users, letting one person's share overwrite another's. Absent on boards shared before
+   * this field existed, which still live under their local id.
+   */
+  shareId?: string;
   inviteCode?: string;
   ownerId?: string;
   members?: BoardMember[];

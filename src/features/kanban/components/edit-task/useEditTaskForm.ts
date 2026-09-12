@@ -36,7 +36,35 @@ export function useEditTaskForm(task: Task | undefined) {
       );
       setSaveToast(false);
     }
-  }, [task]);
+    // Hydrate per task, not per task object: every updateTask() replaces the task
+    // object, and re-running this on that would wipe a title the user is still typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task?.id]);
+
+  const flashSaveToast = () => {
+    setSaveToast(true);
+    setTimeout(() => setSaveToast(false), 1500);
+  };
+
+  const isTitleDirty = !!task && title.trim() !== task.title.trim();
+
+  /** Commits just the title. Used by the ✓ button, Enter, blur and every close path. */
+  const handleSaveTitle = () => {
+    if (!task) return;
+    const trimmed = title.trim();
+    if (!trimmed) {
+      setTitle(task.title);
+      return;
+    }
+    if (trimmed === task.title.trim()) return;
+    updateTask(task.id, { title: trimmed });
+    setTitle(trimmed);
+    flashSaveToast();
+  };
+
+  const handleRevertTitle = () => {
+    if (task) setTitle(task.title);
+  };
 
   const handleSave = (customDescOrEvent?: string | React.FormEvent) => {
     if (typeof customDescOrEvent === "object" && customDescOrEvent !== null && "preventDefault" in customDescOrEvent) {
@@ -52,8 +80,7 @@ export function useEditTaskForm(task: Task | undefined) {
       startDate: startDate || null, dueDate: dueDate || null, isAllDay, completed: task.completed,
     });
 
-    setSaveToast(true);
-    setTimeout(() => setSaveToast(false), 1500);
+    flashSaveToast();
   };
 
   const handleApplyCover = (val: string, ratio?: CoverAspectRatio) => {
@@ -68,6 +95,6 @@ export function useEditTaskForm(task: Task | undefined) {
     title, setTitle, description, setDescription, boardId, setBoardId, columnId, setColumnId,
     isStarred, setIsStarred, dueDate, setDueDate, startDate, setStartDate, isAllDay, setIsAllDay,
     tags, setTags, coverColor, setCoverColor, coverAspectRatio, setCoverAspectRatio, saveToast,
-    handleSave, handleApplyCover,
+    isTitleDirty, handleSaveTitle, handleRevertTitle, handleSave, handleApplyCover,
   };
 }

@@ -1,9 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { encryptData } from "@/core/utils/crypto";
+import { consumeQuota, getClientIp, ONE_HOUR_MS } from "@/core/utils/rateLimit";
+
+export const runtime = "nodejs";
+
+/**
+ * Each call spends a real Gemini request (on the caller's own key) plus server time, so the
+ * route is capped per IP. Without this it works as a free, unauthenticated key-checking
+ * oracle that anyone can point at a list of stolen keys.
+ */
+const VERIFICATIONS_PER_HOUR = 5;
+const MAX_KEY_LENGTH = 200;
 
 export async function POST(req: NextRequest) {
   try {
+    const limit = consumeQuota(`key-test:${getClientIp(req)}`, VERIFICATIONS_PER_HOUR, ONE_HOUR_MS);
+    if (!limit.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "API Key 測試次數過多，請稍後再試。",
+          code: "RATE_LIMITED",
+        },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } }
+      );
+    }
+
     const body = await req.json();
     const { apiKey, model = "gemini-3.6-flash" } = body;
 
@@ -12,6 +35,9 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanKey = apiKey.trim();
+    if (cleanKey.length > MAX_KEY_LENGTH) {
+      return NextResponse.json({ success: false, error: "API Key 格式不正確" }, { status: 400 });
+    }
 
     // Verify key with Gemini API
     try {

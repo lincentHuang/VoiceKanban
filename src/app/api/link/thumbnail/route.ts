@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isR2Configured, uploadToR2 } from "@/core/services/r2Storage";
 import { THUMBNAIL_REHOST_HOST_PATTERN } from "@/features/bookmarks/constants";
+import { getBearerToken, verifyFirebaseIdToken } from "@/core/services/verifyIdToken";
+import { consumeQuota, ONE_DAY_MS, ONE_MINUTE_MS } from "@/core/utils/rateLimit";
 
 export const runtime = "nodejs";
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+// This route writes into R2, the one billable service in the stack, so it is gated on a
+// signed-in account and capped exactly like /api/upload.
+const DAILY_REHOSTS = 50;
+const BURST_REHOSTS = 10;
+
 const EXTENSION_BY_TYPE: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -22,6 +29,24 @@ const EXTENSION_BY_TYPE: Record<string, string> = {
 export async function POST(req: NextRequest) {
   if (!isR2Configured()) {
     return NextResponse.json({ success: false, code: "R2_NOT_CONFIGURED" }, { status: 503 });
+  }
+
+  const user = await verifyFirebaseIdToken(getBearerToken(req));
+  if (!user || user.signInProvider === "anonymous") {
+    return NextResponse.json(
+      { success: false, error: "請先登入才能轉存圖片。", code: "AUTH_REQUIRED" },
+      { status: 401 }
+    );
+  }
+
+  const burst = consumeQuota(`thumb:burst:${user.uid}`, BURST_REHOSTS, ONE_MINUTE_MS);
+  const daily = burst.ok ? consumeQuota(`thumb:day:${user.uid}`, DAILY_REHOSTS, ONE_DAY_MS) : burst;
+  if (!burst.ok || !daily.ok) {
+    const retryAfter = burst.ok ? daily.retryAfterSec : burst.retryAfterSec;
+    return NextResponse.json(
+      { success: false, error: "圖片轉存過於頻繁，請稍候再試。", code: "RATE_LIMITED" },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
   }
 
   let target: URL;
@@ -51,7 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "圖片過大" }, { status: 413 });
     }
 
-    const uploaded = await uploadToR2(buffer, `thumbnail.${extension}`, contentType, "link-thumbnails");
+    const uploaded = await uploadToR2(buffer, `thumbnail.${extension}`, contentType, `link-thumbnails/${user.uid}`);
     return NextResponse.json({ success: true, url: uploaded.url });
   } catch (error: any) {
     console.warn("Thumbnail rehost failed:", target.hostname, error?.message);

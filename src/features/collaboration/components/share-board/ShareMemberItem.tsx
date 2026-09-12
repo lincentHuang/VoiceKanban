@@ -4,6 +4,7 @@ import React from "react";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/core/utils/cn";
 import { CollaboratorRole, BoardMember } from "@/core/types/task";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { ShareMemberRoleBadge } from "./ShareMemberRoleBadge";
 
 interface ShareMemberItemProps {
@@ -33,15 +34,15 @@ export const ShareMemberItem: React.FC<ShareMemberItemProps> = ({
       )}
     >
       <div className="flex items-center gap-2.5 min-w-0">
-        <img
+        <UserAvatar
           src={
             member.avatarUrl ||
             `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(
               member.name || member.uid
             )}`
           }
-          alt={member.name}
-          className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shrink-0 object-cover"
+          name={member.name}
+          className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 shrink-0"
         />
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">

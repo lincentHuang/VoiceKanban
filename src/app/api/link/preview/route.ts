@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { LinkPlatform } from "@/core/types/task";
 import { LinkPreview } from "@/features/bookmarks/types";
 import { detectPlatform, getYouTubeVideoId, normalizeSharedUrl } from "@/features/bookmarks/utils/linkParser";
+import { consumeQuota, getClientIp, ONE_HOUR_MS, ONE_MINUTE_MS } from "@/core/utils/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,13 @@ const MAX_HTML_BYTES = 800_000;
 const YOUTUBE_MAX_HTML_BYTES = 2_500_000;
 const MAX_DESCRIPTION_LENGTH = 5000;
 const MAX_REDIRECTS = 3;
+// This route fetches arbitrary remote pages on the caller's behalf, which makes it an
+// attractive free scraping proxy. The limits below keep that from burning the hosting
+// plan's function time and bandwidth allowance.
+const PREVIEWS_PER_MINUTE = 15;
+const PREVIEWS_PER_HOUR = 120;
+const CACHE_TTL_MS = 60 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 500;
 // Meta serves Open Graph tags to its own link-preview crawler even for login-walled IG/Threads pages
 const CRAWLER_UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 
@@ -220,6 +228,37 @@ async function fetchOpenGraphPreview(target: URL, platform: LinkPlatform): Promi
  * GET /api/link/preview?url=<shared link>
  * Best-effort title / thumbnail / author lookup for the 收藏 share sheet.
  */
+/**
+ * Successful previews are memoised per URL so repeat lookups of the same link (and repeated
+ * scraping attempts) do not each cost an outbound fetch.
+ */
+const previewCache = new Map<string, { preview: LinkPreview; expiresAt: number }>();
+
+function readCache(key: string): LinkPreview | null {
+  const hit = previewCache.get(key);
+  if (!hit) return null;
+  if (hit.expiresAt <= Date.now()) {
+    previewCache.delete(key);
+    return null;
+  }
+  return hit.preview;
+}
+
+function writeCache(key: string, preview: LinkPreview): void {
+  if (previewCache.size >= CACHE_MAX_ENTRIES) {
+    const now = Date.now();
+    for (const [k, v] of previewCache) {
+      if (v.expiresAt <= now) previewCache.delete(k);
+    }
+    // Still full of live entries: drop the oldest to bound memory.
+    if (previewCache.size >= CACHE_MAX_ENTRIES) {
+      const oldest = previewCache.keys().next().value;
+      if (oldest !== undefined) previewCache.delete(oldest);
+    }
+  }
+  previewCache.set(key, { preview, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 export async function GET(req: NextRequest) {
   const raw = req.nextUrl.searchParams.get("url");
   if (!raw) {
@@ -236,6 +275,28 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: "不支援的連結" }, { status: 400 });
   }
 
+  const cacheKey = target.toString();
+  const cached = readCache(cacheKey);
+  if (cached) {
+    return NextResponse.json(
+      { success: true, preview: cached, cached: true },
+      { headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800" } }
+    );
+  }
+
+  const ip = getClientIp(req);
+  const burst = consumeQuota(`preview:min:${ip}`, PREVIEWS_PER_MINUTE, ONE_MINUTE_MS);
+  const hourly = burst.ok
+    ? consumeQuota(`preview:hour:${ip}`, PREVIEWS_PER_HOUR, ONE_HOUR_MS)
+    : burst;
+  if (!burst.ok || !hourly.ok) {
+    const retryAfter = burst.ok ? hourly.retryAfterSec : burst.retryAfterSec;
+    return NextResponse.json(
+      { success: false, error: "連結預覽請求過於頻繁，請稍候再試。", code: "RATE_LIMITED" },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
   const platform = detectPlatform(target.toString());
   try {
     const preview =
@@ -249,6 +310,7 @@ export async function GET(req: NextRequest) {
     if (preview.description && preview.description.length > MAX_DESCRIPTION_LENGTH) {
       preview.description = `${preview.description.slice(0, MAX_DESCRIPTION_LENGTH).trimEnd()}…`;
     }
+    writeCache(cacheKey, preview);
     return NextResponse.json(
       { success: true, preview },
       { headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800" } }

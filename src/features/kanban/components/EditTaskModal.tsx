@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId, TaskAttachment } from "@/core/types/task";
 import { MarkdownEditor } from "@/features/editor";
@@ -33,8 +33,15 @@ const EditTaskModalContent: React.FC = () => {
   const [isDeleteConfirm, setIsDeleteConfirm] = useState(false);
   const [isExpandConfirm, setIsExpandConfirm] = useState(false);
 
-  const gesture = useDrawerGesture(() => setEditingTaskId(null), editingTaskId);
+  // Every close path (X button, backdrop, Escape, mobile swipe-down) runs through the
+  // gesture hook, so flush a pending title edit from here rather than from each caller.
+  const flushTitleRef = useRef<() => void>(() => {});
+  const gesture = useDrawerGesture(() => {
+    flushTitleRef.current();
+    setEditingTaskId(null);
+  }, editingTaskId);
   const form = useEditTaskForm(task);
+  flushTitleRef.current = form.handleSaveTitle;
 
   useEscapeKey(() => {
     if (isDeleteConfirm) setIsDeleteConfirm(false);
@@ -70,13 +77,13 @@ const EditTaskModalContent: React.FC = () => {
 
   return (
     <div onClick={gesture.handleCloseDrawer} className={`fixed inset-0 z-50 flex ${gesture.isMobile ? "items-end" : "items-center"} justify-center ${gesture.isMobile ? "p-0" : "p-3 sm:p-4"} bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200 overflow-hidden`}>
-      <div onClick={(e) => e.stopPropagation()} onTouchStart={gesture.handleTouchStart} onTouchMove={gesture.handleTouchMove} onTouchEnd={gesture.handleTouchEnd} style={{ transform: gesture.isMobile ? (gesture.isClosingDrawer ? "translateY(100%)" : `translateY(${gesture.drawerDragY}px)`) : undefined, transition: gesture.isDraggingDrawer ? "none" : "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)" }} className={`w-full ${gesture.isMobile ? "max-h-[88dvh] h-[88dvh] rounded-t-[2rem] rounded-b-none border-t border-x border-white/80 dark:border-slate-800" : "max-w-4xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] rounded-3xl border border-white/80 dark:border-slate-800"} flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 shadow-2xl relative text-slate-800 dark:text-slate-100 overflow-hidden`}>
+      <div onClick={(e) => e.stopPropagation()} onTouchStart={gesture.handleTouchStart} onTouchMove={gesture.handleTouchMove} onTouchEnd={gesture.handleTouchEnd} style={{ transform: gesture.isMobile ? (gesture.isClosingDrawer ? "translateY(100%)" : `translateY(${gesture.drawerDragY}px)`) : undefined, transition: gesture.isDraggingDrawer ? "none" : "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)" }} className={`w-full ${gesture.isMobile ? "max-h-[88dvh] h-[88dvh] rounded-t-[2rem] rounded-b-none border-t border-x border-white/80 dark:border-slate-800" : "max-w-4xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] rounded-3xl border border-white/80 dark:border-slate-800"} flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 shadow-2xl relative text-slate-800 dark:text-slate-100 overflow-hidden selectable-text`}>
         {gesture.isMobile && <div className="w-full flex items-center justify-center pt-2.5 pb-1 shrink-0 cursor-grab"><div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" /></div>}
         <EditTaskCoverBanner coverColor={form.coverColor} coverAspectRatio={form.coverAspectRatio} isMobile={gesture.isMobile} onOpenCoverModal={() => setIsCoverModalOpen(true)} onRemoveCover={() => { form.setCoverColor(""); store.updateTask(task.id, { coverColor: "" }); }} />
         <div ref={gesture.scrollContentRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-7 space-y-5">
           <div className="space-y-2">
             <EditTaskHeaderControls completed={task.completed} isStarred={form.isStarred} coverColor={form.coverColor} coverAspectRatio={form.coverAspectRatio} columnId={form.columnId} allTargetColumns={allTargetColumns} isMovePopoverOpen={isMovePopoverOpen} isCoverModalOpen={isCoverModalOpen} onToggleComplete={handleToggleComplete} onToggleStar={() => { form.setIsStarred(!form.isStarred); store.updateTask(task.id, { isStarred: !form.isStarred }); }} onToggleMovePopover={() => { setIsMovePopoverOpen(!isMovePopoverOpen); setIsCoverModalOpen(false); }} onToggleCoverModal={() => { setIsCoverModalOpen(!isCoverModalOpen); setIsMovePopoverOpen(false); }} onSelectRatio={(r) => { form.setCoverAspectRatio(r); store.updateTask(task.id, { coverAspectRatio: r }); }} onApplyCover={(c) => form.handleApplyCover(c)} onRemoveCover={() => { form.setCoverColor(""); store.updateTask(task.id, { coverColor: "" }); }} onMoveColumn={handleMoveColumn} onOpenExpandConfirm={() => setIsExpandConfirm(true)} onOpenDeleteConfirm={() => setIsDeleteConfirm(true)} onClose={gesture.handleCloseDrawer} />
-            <EditTaskTitleInput title={form.title} onChange={form.setTitle} onBlur={() => form.handleSave()} />
+            <EditTaskTitleInput title={form.title} isDirty={form.isTitleDirty} onChange={form.setTitle} onSave={form.handleSaveTitle} onRevert={form.handleRevertTitle} />
             <div className="pt-0.5"><DateTimePicker value={form.dueDate} startDate={form.startDate} isAllDay={form.isAllDay} onChange={(d) => { form.setStartDate(d.startDate || null); form.setDueDate(d.dueDate); form.setIsAllDay(d.isAllDay); store.updateTask(task.id, { startDate: d.startDate || null, dueDate: d.dueDate, isAllDay: d.isAllDay }); }} align="left" placeholder="+ 設定到期日或活動時段" /></div>
             {task.link && <div className="pt-1"><EditTaskLinkSection link={task.link} /></div>}
           </div>

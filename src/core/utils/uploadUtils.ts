@@ -1,4 +1,5 @@
 import { compressImage } from "./imageUtils";
+import { getIdToken } from "./authToken";
 
 export interface UploadResult {
   url: string;
@@ -22,33 +23,38 @@ export async function uploadFile(
   const type = fileOrBlob.type || "application/octet-stream";
   const size = fileOrBlob.size;
 
-  // 1. Try uploading to Cloudflare R2 API
-  try {
-    const formData = new FormData();
-    // If it's a raw Blob without name, wrap as a File with name
-    const uploadPayload = fileOrBlob instanceof File ? fileOrBlob : new File([fileOrBlob], name, { type });
-    formData.append("file", uploadPayload);
-    formData.append("folder", folder);
+  // 1. Try uploading to Cloudflare R2 API (signed-in accounts only)
+  const idToken = await getIdToken();
+  if (idToken) {
+    try {
+      const formData = new FormData();
+      // If it's a raw Blob without name, wrap as a File with name
+      const uploadPayload = fileOrBlob instanceof File ? fileOrBlob : new File([fileOrBlob], name, { type });
+      formData.append("file", uploadPayload);
+      formData.append("folder", folder);
 
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+        body: formData,
+      });
 
-    if (response.ok) {
-      const json = await response.json();
-      if (json.success && json.data?.url) {
-        return {
-          url: json.data.url,
-          name: json.data.name || name,
-          size: json.data.size || size,
-          type: json.data.type || type,
-          storage: "r2",
-        };
+      if (response.ok) {
+        const json = await response.json();
+        if (json.success && json.data?.url) {
+          return {
+            url: json.data.url,
+            name: json.data.name || name,
+            size: json.data.size || size,
+            type: json.data.type || type,
+            storage: "r2",
+          };
+        }
       }
+      // A 401/429 here is expected for guests and over-quota accounts; fall through to base64.
+    } catch (error) {
+      console.warn("R2 Cloudflare upload failed, falling back to local base64:", error);
     }
-  } catch (error) {
-    console.warn("R2 Cloudflare upload failed, falling back to local base64:", error);
   }
 
   // 2. Fallback: Base64 with compression for images

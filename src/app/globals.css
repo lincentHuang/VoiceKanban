@@ -73,3 +73,23 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+
+/* Selectable detail surfaces
+   The app root sets `select-none` so board dragging never highlights text, but
+   detail views (task drawer: 標題、說明、留言、連結) need to be copyable.
+   The class is doubled to outrank any nested `select-none` utility. */
+.selectable-text.selectable-text,
+.selectable-text.selectable-text * {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* …except dnd-kit drag handles inside them, which must stay drag-first
+   (e.g. sortable checklist rows — double-click still opens them for editing). */
+.selectable-text.selectable-text [aria-roledescription="sortable"],
+.selectable-text.selectable-text [aria-roledescription="sortable"] * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}

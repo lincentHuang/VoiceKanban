@@ -1,0 +1,70 @@
+rules_version = '2';
+
+// Security rules for voice-kanban / 聲動看板.
+//
+// Deploy: Firebase Console -> Firestore Database -> 規則 (Rules) -> paste -> 發布.
+// The default deny at the bottom means any collection added later is closed until a rule
+// is written for it, rather than silently world-readable.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // The personal sync document written by syncService. Strictly private to its owner.
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /shared_boards/{boardId} {
+
+      // memberIds is a denormalised copy of members[].uid, because rules cannot inspect
+      // fields of objects nested in an array. Documents written before that field existed
+      // fall back to an empty list instead of erroring the whole rule.
+      function memberIds() {
+        return resource.data.get('memberIds', []);
+      }
+
+      function isOwner() {
+        return isSignedIn() && resource.data.ownerId == request.auth.uid;
+      }
+
+      function isMember() {
+        return isSignedIn() && request.auth.uid in memberIds();
+      }
+
+      // Accepting an invite: the joiner is not a member yet, so they need a narrow write that
+      // may only add themselves. It may not touch board content and may not drop anyone else.
+      function isJoiningSelf() {
+        return isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['members', 'memberIds', 'updatedAt'])
+          && request.auth.uid in request.resource.data.memberIds
+          && request.resource.data.memberIds.hasAll(memberIds())
+          && request.resource.data.memberIds.removeAll([request.auth.uid]).hasOnly(memberIds());
+      }
+
+      // A joiner must read the board before they can add themselves to it, so reads are open
+      // to any signed-in caller who knows the board id. The board id is therefore the secret,
+      // which is why shared boards live under a random `shareId` rather than their local id.
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isOwner() || isMember() || isJoiningSelf();
+      allow delete: if isOwner();
+    }
+
+    match /invite_codes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

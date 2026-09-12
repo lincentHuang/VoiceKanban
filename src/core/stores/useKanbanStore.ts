@@ -6,7 +6,7 @@ import { BYOKConfig } from "../types/user";
 import { UserSession, SyncState, AuthProvider } from "../types/auth";
 import { INITIAL_BOARDS, INITIAL_TASKS } from "../services/mockData";
 import { generateOrderKeyBetween, initialOrderKey } from "../utils/lexorank";
-import { GUEST_USER, createGuestSession, loginWithProvider, logoutUser, subscribeToAuthState } from "../services/authService";
+import { GUEST_USER, loginWithProvider, logoutUser, signInAsGuest, subscribeToAuthState } from "../services/authService";
 import { syncEngine, reconcileSyncedTasks, reconcileSyncedBoards, withoutSyncedTombstones } from "../services/syncService";
 import { learningEngine } from "../services/learningEngine";
 import { collaborationService } from "@/features/collaboration/services/collaborationService";
@@ -47,7 +47,7 @@ interface KanbanStoreState {
   setIsAuthModalOpen: (open: boolean) => void;
   isBindModalOpen: boolean;
   setIsBindModalOpen: (open: boolean) => void;
-  loginAsGuest: () => void;
+  loginAsGuest: () => Promise<void>;
   bindGuestAccount: (
     provider: AuthProvider,
     email?: string,
@@ -294,10 +294,10 @@ export const useKanbanStore = create<KanbanStoreState>()(
       setIsAuthModalOpen: (isAuthModalOpen) => set({ isAuthModalOpen }),
       isBindModalOpen: false,
       setIsBindModalOpen: (isBindModalOpen) => set({ isBindModalOpen }),
-      loginAsGuest: () => {
+      loginAsGuest: async () => {
         const existing = get().userSession;
         const currentId = existing?.isGuest && existing?.id ? existing.id : undefined;
-        const guestSession = createGuestSession(currentId);
+        const guestSession = await signInAsGuest(currentId);
         set({ userSession: guestSession, isAuthModalOpen: false, isBindModalOpen: false });
       },
       bindGuestAccount: async (provider, email, password, displayName, isRegister) => {
@@ -694,7 +694,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
         set({ activeBoardId: id, selectedTaskIds: [] });
         const targetBoard = get().boards.find((b) => b.id === id);
         if (targetBoard?.isShared) {
-          collaborationService.subscribeToSharedBoard(id, ({ board, tasks: remoteTasks }) => {
+          collaborationService.subscribeToSharedBoard(targetBoard.shareId || id, ({ board, tasks: remoteTasks }) => {
             set((state) => ({
               boards: state.boards.map((b) => (b.id === id ? { ...b, ...board } : b)),
               tasks: [
@@ -1161,7 +1161,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
           boards: state.boards.map((b) => (b.id === activeBoardId ? updatedBoard : b)),
         }));
 
-        collaborationService.subscribeToSharedBoard(updatedBoard.id, ({ board, tasks: remoteTasks }) => {
+        collaborationService.subscribeToSharedBoard(updatedBoard.shareId || updatedBoard.id, ({ board, tasks: remoteTasks }) => {
           set((state) => ({
             boards: state.boards.map((b) => (b.id === updatedBoard.id ? { ...b, ...board } : b)),
             tasks: [
@@ -1205,7 +1205,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
             };
           });
 
-          collaborationService.subscribeToSharedBoard(joinedBoard.id, ({ board, tasks: remoteTasks, recentActivities }) => {
+          collaborationService.subscribeToSharedBoard(joinedBoard.shareId || joinedBoard.id, ({ board, tasks: remoteTasks, recentActivities }) => {
             set((state) => ({
               boards: state.boards.map((b) => (b.id === joinedBoard.id ? { ...b, ...board } : b)),
               tasks: [

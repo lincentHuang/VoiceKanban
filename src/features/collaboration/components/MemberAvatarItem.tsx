@@ -3,6 +3,7 @@
 import React from "react";
 import { Crown, Edit3, Eye } from "lucide-react";
 import { BoardMember } from "@/core/types/task";
+import { UserAvatar } from "@/components/common/UserAvatar";
 
 const roleIcons = {
   owner: <Crown className="w-2.5 h-2.5 text-amber-500" />,
@@ -39,10 +40,10 @@ export const MemberAvatarItem: React.FC<MemberAvatarItemProps> = ({
       onClick={onClick}
       title={`${member.name} (${roleLabels[member.role] || member.role})${isMe ? " - 您" : ""}`}
     >
-      <img
+      <UserAvatar
         src={avatarUrl}
-        alt={member.name}
-        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white dark:border-slate-800 bg-slate-100 dark:bg-slate-700 object-cover shadow-xs"
+        name={member.name}
+        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white dark:border-slate-800 shadow-xs"
       />
       <span className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-white dark:bg-slate-900 rounded-full shadow-2xs">
         {roleIcons[member.role] || roleIcons.editor}

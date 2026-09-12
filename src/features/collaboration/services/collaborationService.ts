@@ -58,16 +58,41 @@ export class CollaborationService {
   }
 
   /**
-   * Generates a 6-character clean uppercase invite code, prefixed with VK-
-   * e.g., VK-8X4B
+   * Flattens member uids into a plain string array.
+   *
+   * Firestore security rules cannot reach inside objects stored in an array, so `members`
+   * alone cannot express "is the caller a member of this board". This denormalised copy is
+   * what the rules check against; it must be written alongside every `members` update.
+   */
+  private toMemberIds(members: BoardMember[] | undefined | null): string[] {
+    return (members || []).map((m) => m.uid).filter((uid): uid is string => Boolean(uid));
+  }
+
+  /**
+   * Generates an invite code such as VK-8X4BQ2MP.
+   *
+   * Eight characters from a 32-symbol alphabet is ~1.1e12 combinations. The previous
+   * four-character code was only ~1.05 million, which a script can enumerate in hours to
+   * harvest every shared board, and Math.random() is not suitable for a secret.
    */
   public generateInviteCode(): string {
     const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // excludes 0, 1, I, O to prevent confusion
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
     let code = "";
-    for (let i = 0; i < 4; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    // 256 is a multiple of 32, so the modulo below is unbiased.
+    for (let i = 0; i < bytes.length; i++) {
+      code += chars.charAt(bytes[i] % chars.length);
     }
     return `VK-${code}`;
+  }
+
+  /**
+   * Resolves which `shared_boards` document a board lives in. Boards shared before `shareId`
+   * existed keep using their local id, so both old and new shares keep working.
+   */
+  private resolveShareId(board: Board): string {
+    return board.shareId || board.id;
   }
 
   /**
@@ -119,6 +144,9 @@ export class CollaborationService {
     existingTasks: Task[]
   ): Promise<{ inviteCode: string; board: Board }> {
     const inviteCode = board.inviteCode || this.generateInviteCode();
+    // A board keeps the same share document across re-shares, but a board that has never been
+    // shared gets a fresh unguessable id rather than reusing its predictable local id.
+    const shareId = board.shareId || crypto.randomUUID();
     const now = new Date().toISOString();
 
     const ownerMember: BoardMember = {
@@ -145,6 +173,7 @@ export class CollaborationService {
     const updatedBoard: Board = {
       ...board,
       isShared: true,
+      shareId,
       inviteCode,
       ownerId: board.ownerId || currentUser.id,
       members,
@@ -176,12 +205,13 @@ export class CollaborationService {
       try {
         const db = getFirebaseDb();
         if (db) {
-          const boardDocRef = doc(db, "shared_boards", board.id);
+          const boardDocRef = doc(db, "shared_boards", shareId);
           const inviteDocRef = doc(db, "invite_codes", inviteCode);
 
           await Promise.all([
             setDoc(boardDocRef, sanitizeForFirestore({
               id: updatedBoard.id,
+              shareId,
               name: updatedBoard.name,
               description: updatedBoard.description || "",
               icon: updatedBoard.icon || "💼",
@@ -189,11 +219,13 @@ export class CollaborationService {
               inviteCode,
               ownerId: updatedBoard.ownerId,
               members: updatedBoard.members,
+              memberIds: this.toMemberIds(updatedBoard.members),
               tasks: serializeTasks(boardTasks),
               updatedAt: now,
             })),
             setDoc(inviteDocRef, sanitizeForFirestore({
               code: inviteCode,
+              shareId,
               boardId: updatedBoard.id,
               ownerId: updatedBoard.ownerId,
               createdAt: now,
@@ -223,6 +255,7 @@ export class CollaborationService {
     }
 
     let boardId: string | null = null;
+    let shareId: string | null = null;
     let sharedData: SharedBoardData | null = null;
 
     // 1. Try Firestore lookup
@@ -232,8 +265,11 @@ export class CollaborationService {
         if (db) {
           const inviteDoc = await getDoc(doc(db, "invite_codes", code));
           if (inviteDoc.exists()) {
-            boardId = inviteDoc.data().boardId;
-            const boardDoc = await getDoc(doc(db, "shared_boards", boardId!));
+            const invite = inviteDoc.data();
+            boardId = invite.boardId;
+            // Invites issued before shareId existed point at the board's local id.
+            shareId = invite.shareId || invite.boardId;
+            const boardDoc = await getDoc(doc(db, "shared_boards", shareId!));
             if (boardDoc.exists()) {
               sharedData = boardDoc.data() as SharedBoardData;
             }
@@ -320,6 +356,7 @@ export class CollaborationService {
       icon: sharedData.icon || "💼",
       columns: sharedData.columns || [],
       isShared: true,
+      shareId: shareId || sharedData.shareId || boardId,
       inviteCode: sharedData.inviteCode,
       ownerId: sharedData.ownerId,
       members: existingMembers,
@@ -342,9 +379,10 @@ export class CollaborationService {
       try {
         const db = getFirebaseDb();
         if (db) {
-          const boardDocRef = doc(db, "shared_boards", boardId);
+          const boardDocRef = doc(db, "shared_boards", shareId || boardId);
           await updateDoc(boardDocRef, sanitizeForFirestore({
             members: existingMembers,
+            memberIds: this.toMemberIds(existingMembers),
             updatedAt: now,
           }));
         }
@@ -402,8 +440,9 @@ export class CollaborationService {
       try {
         const db = getFirebaseDb();
         if (db) {
-          await updateDoc(doc(db, "shared_boards", boardId), sanitizeForFirestore({
+          await updateDoc(doc(db, "shared_boards", this.resolveShareId(currentBoard)), sanitizeForFirestore({
             members: updatedMembers,
+            memberIds: this.toMemberIds(updatedMembers),
             updatedAt: now,
           }));
         }
@@ -447,8 +486,9 @@ export class CollaborationService {
       try {
         const db = getFirebaseDb();
         if (db) {
-          await updateDoc(doc(db, "shared_boards", boardId), sanitizeForFirestore({
+          await updateDoc(doc(db, "shared_boards", this.resolveShareId(currentBoard)), sanitizeForFirestore({
             members: updatedMembers,
+            memberIds: this.toMemberIds(updatedMembers),
             updatedAt: now,
           }));
         }
@@ -516,8 +556,9 @@ export class CollaborationService {
       try {
         const db = getFirebaseDb();
         if (db) {
-          await setDoc(doc(db, "shared_boards", board.id), sanitizeForFirestore({
+          await setDoc(doc(db, "shared_boards", this.resolveShareId(board)), sanitizeForFirestore({
             id: board.id,
+            shareId: this.resolveShareId(board),
             name: board.name,
             description: board.description || "",
             icon: board.icon || "💼",
@@ -525,6 +566,7 @@ export class CollaborationService {
             inviteCode: board.inviteCode,
             ownerId: board.ownerId,
             members: board.members || [],
+            memberIds: this.toMemberIds(board.members),
             tasks: serializeTasks(boardTasks),
             recentActivities: existingActivities,
             updatedAt: now,
@@ -539,10 +581,12 @@ export class CollaborationService {
   /**
    * Subscribe to real-time changes on a shared board
    */
+  /** @param shareId the `shared_boards` document id — use `board.shareId || board.id`. */
   public subscribeToSharedBoard(
-    boardId: string,
+    shareId: string,
     onUpdate: (data: { board: Board; tasks: Task[]; recentActivities?: any[] }) => void
   ): () => void {
+    const boardId = shareId;
     // Unsubscribe existing
     const existing = this.activeSubscriptions.get(boardId);
     if (existing) {

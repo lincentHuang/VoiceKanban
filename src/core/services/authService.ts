@@ -1,4 +1,5 @@
 import {
+  signInAnonymously,
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -29,6 +30,34 @@ export function createGuestSession(existingId?: string): UserSession {
     isGuest: true,
     createdAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Signs a guest in to Firebase anonymously so that guest sessions carry a real
+ * `request.auth.uid`.
+ *
+ * Firestore security rules can only identify a caller through `request.auth`; a purely local
+ * guest id is invisible to them, so guests would otherwise be locked out of shared boards
+ * entirely. Anonymous accounts are still refused by the R2 upload routes, which is where
+ * cheap throwaway identities would actually cost money.
+ *
+ * Falls back to a local-only guest session when Firebase is unavailable or anonymous sign-in
+ * has not been enabled in the Firebase console.
+ */
+export async function signInAsGuest(existingId?: string): Promise<UserSession> {
+  if (isFirebaseConfigured()) {
+    const auth = getFirebaseAuth();
+    if (auth) {
+      try {
+        const existingAnonymous = auth.currentUser?.isAnonymous ? auth.currentUser : null;
+        const user = existingAnonymous || (await signInAnonymously(auth)).user;
+        return createGuestSession(user.uid);
+      } catch (error) {
+        console.warn("Anonymous sign-in unavailable, falling back to a local guest:", error);
+      }
+    }
+  }
+  return createGuestSession(existingId);
 }
 
 export const GUEST_USER: UserSession = {
