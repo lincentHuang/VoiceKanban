@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Mic, Plus } from "lucide-react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { inputClass } from "@/components/ui/input";
 
 export const InboxQuickAddBar: React.FC = () => {
   const { addToInbox, setIsVoiceOverlayOpen, setVoiceState } = useKanbanStore();
@@ -28,7 +29,7 @@ export const InboxQuickAddBar: React.FC = () => {
           placeholder="記錄新想法（口述或輸入）..."
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
-          className="w-full pl-3 pr-16 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 text-xs border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-slate-850 focus:outline-none transition-all placeholder:text-slate-400"
+          className={inputClass("md", "pr-16 bg-slate-100/90 dark:bg-slate-800/90 border-transparent focus:border-blue-500 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-850")}
         />
 
         <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">

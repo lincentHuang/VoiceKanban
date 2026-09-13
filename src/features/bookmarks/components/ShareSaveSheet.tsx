@@ -7,6 +7,7 @@ import { useShareSaveSheet } from "./share-sheet/useShareSaveSheet";
 import { ShareLinkPreviewCard } from "./share-sheet/ShareLinkPreviewCard";
 import { ShareManualUrlForm } from "./share-sheet/ShareManualUrlForm";
 import { ShareSavedState } from "./share-sheet/ShareSavedState";
+import { inputClass } from "@/components/ui/input";
 
 /** Bottom sheet (mobile) / dialog (desktop) that saves a shared link into the 收藏 board. */
 export const ShareSaveSheet: React.FC = () => {
@@ -75,7 +76,7 @@ export const ShareSaveSheet: React.FC = () => {
                   value={sheet.title}
                   onChange={(e) => sheet.handleTitleChange(e.target.value)}
                   placeholder="幫這則收藏取個名字"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[16px] sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-400/60"
+                  className={inputClass("md", "bg-white dark:bg-slate-800 font-semibold")}
                 />
               </label>
 
@@ -86,7 +87,7 @@ export const ShareSaveSheet: React.FC = () => {
                   onChange={(e) => sheet.setNote(e.target.value)}
                   rows={2}
                   placeholder="為什麼想存這則？之後要做什麼？"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[16px] sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400/60"
+                  className={inputClass("md", "h-auto py-2.5 bg-white dark:bg-slate-800 resize-none leading-relaxed")}
                 />
               </label>
             </>

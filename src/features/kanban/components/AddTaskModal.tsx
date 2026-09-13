@@ -56,8 +56,11 @@ export const AddTaskModal: React.FC = () => {
             tagInput={form.tagInput}
             setTagInput={form.setTagInput}
             tags={form.tags}
+            allTags={form.allTags}
+            tagCounts={form.tagCounts}
             onAddTag={form.handleAddTag}
             onRemoveTag={form.handleRemoveTag}
+            onToggleTag={form.handleToggleTag}
           />
           <AddTaskModalFooter
             onClose={() => form.setIsAddTaskModalOpen(false)}

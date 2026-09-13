@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId } from "@/core/types/task";
 
@@ -10,7 +10,15 @@ export function useAddTaskForm() {
     activeBoardId,
     getActiveBoardColumns,
     addTask,
+    tasks,
   } = useKanbanStore();
+
+  // Tag vocabulary shared with the picker, so a new task can reuse existing tags.
+  const { allTags, tagCounts } = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tasks.forEach((t) => t.tags?.forEach((tag) => { if (tag) counts[tag] = (counts[tag] || 0) + 1; }));
+    return { allTags: Object.keys(counts), tagCounts: counts };
+  }, [tasks]);
 
   const columns = getActiveBoardColumns();
 
@@ -51,6 +59,10 @@ export function useAddTaskForm() {
 
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter((t) => t !== tagToRemove));
+  };
+
+  const handleToggleTag = (tag: string) => {
+    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -106,9 +118,12 @@ export function useAddTaskForm() {
     tagInput,
     setTagInput,
     tags,
+    allTags,
+    tagCounts,
     isSubmitting,
     handleAddTag,
     handleRemoveTag,
+    handleToggleTag,
     handleSubmit,
   };
 }

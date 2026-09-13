@@ -4,6 +4,7 @@ import { Board, ColumnId, Priority, DEFAULT_COLUMNS } from "@/core/types/task";
 import { VoiceExtractResult } from "@/core/types/voice";
 import { DateTimePicker } from "@/components/common/DateTimePicker";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { inputClass } from "@/components/ui/input";
 
 interface VoicePreviewFormProps {
   extractedTask: VoiceExtractResult | null;
@@ -45,7 +46,7 @@ export const VoicePreviewForm: React.FC<VoicePreviewFormProps> = ({
 
       <div>
         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">任務標題</label>
-        <input type="text" value={editTitle} onChange={(e) => onTitleChange(e.target.value)} className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-orange-500" />
+        <input type="text" value={editTitle} onChange={(e) => onTitleChange(e.target.value)} className={inputClass("md", "bg-white dark:bg-slate-800 font-semibold")} />
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-3">

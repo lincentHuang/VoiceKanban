@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Plus, UserPlus } from "lucide-react";
+import { inputClass } from "@/components/ui/input";
 
 interface Props {
   isPrompt: boolean;
@@ -35,7 +36,7 @@ export const BoardSwitcherAddForm: React.FC<Props> = ({
             value={newName}
             onChange={(e) => onSetNewName(e.target.value)}
             autoFocus
-            className="w-full text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-900 mb-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+            className={inputClass("sm", "bg-white dark:bg-slate-900 mb-1.5")}
           />
           <div className="flex gap-1 justify-end">
             <button

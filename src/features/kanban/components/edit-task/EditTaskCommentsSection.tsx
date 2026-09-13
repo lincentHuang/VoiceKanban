@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { TaskActivity } from "@/core/types/task";
+import { fieldButtonClass, inputClass } from "@/components/ui/input";
 
 interface EditTaskCommentsSectionProps {
   activities?: TaskActivity[];
@@ -37,12 +38,12 @@ export const EditTaskCommentsSection: React.FC<EditTaskCommentsSectionProps> = (
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="撰寫評論或進度筆記..."
-          className="flex-1 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+          className={inputClass("md")}
         />
         <button
           type="submit"
           disabled={!newComment.trim()}
-          className="px-3.5 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold shadow-xs disabled:opacity-40 hover:bg-orange-600 transition-colors"
+          className={fieldButtonClass("md", "bg-orange-500 text-white shadow-xs hover:bg-orange-600")}
         >
           送出
         </button>

@@ -4,6 +4,7 @@ import React from "react";
 import { LogIn, UserPlus, Loader2 } from "lucide-react";
 import { AuthProvider } from "@/core/types/auth";
 import { AuthPasswordField } from "./AuthPasswordField";
+import { inputClass } from "@/components/ui/input";
 
 interface AuthEmailFormProps {
   authMode: "login" | "register";
@@ -44,7 +45,7 @@ export const AuthEmailForm: React.FC<AuthEmailFormProps> = ({
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
             placeholder="例如：Alex Wang"
-            className="w-full px-3.5 py-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-orange-500"
+            className={inputClass("md")}
           />
         </div>
       )}
@@ -59,7 +60,7 @@ export const AuthEmailForm: React.FC<AuthEmailFormProps> = ({
           value={emailInput}
           onChange={(e) => setEmailInput(e.target.value)}
           placeholder="name@example.com"
-          className="w-full px-3.5 py-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-orange-500"
+          className={inputClass("md")}
         />
       </div>
 

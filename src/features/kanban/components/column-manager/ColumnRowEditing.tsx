@@ -3,6 +3,7 @@
 import React from "react";
 import { Check, X } from "lucide-react";
 import { ColumnIconPicker } from "../ColumnIconPicker";
+import { inputClass } from "@/components/ui/input";
 
 interface ColumnRowEditingProps {
   editTitle: string;
@@ -34,7 +35,7 @@ export const ColumnRowEditing: React.FC<ColumnRowEditingProps> = ({
           if (e.key === "Escape") onCancelEdit();
         }}
         placeholder="欄位名稱"
-        className="flex-1 min-w-0 text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 font-semibold focus:outline-none focus:border-orange-500"
+        className={inputClass("sm", "flex-1 min-w-0 bg-white dark:bg-slate-700 font-semibold")}
         autoFocus
       />
       <button

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Sparkles, ExternalLink, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { inputClass } from "@/components/ui/input";
 
 interface ByokKeyInputSectionProps {
   inputKey: string;
@@ -39,7 +40,7 @@ export const ByokKeyInputSection: React.FC<ByokKeyInputSectionProps> = ({
           value={inputKey}
           onChange={(e) => setInputKey(e.target.value)}
           placeholder="貼上 AIzaSy... 開頭的 API Key (留空則使用離線學習模式)"
-          className="w-full pr-10 pl-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-orange-500"
+          className={inputClass("md", "pr-10 bg-white dark:bg-slate-800 font-mono")}
         />
         <button
           type="button"

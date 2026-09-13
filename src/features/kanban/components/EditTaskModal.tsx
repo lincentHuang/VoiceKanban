@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId, TaskAttachment } from "@/core/types/task";
 import { MarkdownEditor } from "@/features/editor";
@@ -27,6 +27,14 @@ const EditTaskModalContent: React.FC = () => {
   const task = tasks.find((t) => t.id === editingTaskId);
   const columns = getActiveBoardColumns();
   const allTargetColumns = [{ id: "inbox" as ColumnId, title: "靈感收件匣", icon: "📥" }, ...columns];
+
+  // Tag vocabulary for the picker: every tag already used in the workspace, with
+  // usage counts so the most-used ones surface first.
+  const { allTags, tagCounts } = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tasks.forEach((t) => t.tags?.forEach((tag) => { if (tag) counts[tag] = (counts[tag] || 0) + 1; }));
+    return { allTags: Object.keys(counts), tagCounts: counts };
+  }, [tasks]);
 
   const [isMovePopoverOpen, setIsMovePopoverOpen] = useState(false);
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
@@ -94,7 +102,7 @@ const EditTaskModalContent: React.FC = () => {
               <MarkdownEditor value={form.description} onChange={(val) => { form.setDescription(val); store.updateTask(task.id, { description: val }); }} onSave={(val) => { form.setDescription(val); form.handleSave(val); }} title="說明 (Markdown & 圖片)" placeholder="輸入詳細說明，支援 Markdown 粗體、連結、清單..." />
             </div>
             <div className="lg:col-span-5 space-y-4">
-              <EditTaskTagsSection tags={form.tags} onAddTag={(t) => { const u = [...form.tags, t]; form.setTags(u); store.updateTask(task.id, { tags: u }); }} onRemoveTag={(t) => { const u = form.tags.filter((x) => x !== t); form.setTags(u); store.updateTask(task.id, { tags: u }); }} />
+              <EditTaskTagsSection tags={form.tags} allTags={allTags} tagCounts={tagCounts} onAddTag={(t) => { const u = [...form.tags, t]; form.setTags(u); store.updateTask(task.id, { tags: u }); }} onRemoveTag={(t) => { const u = form.tags.filter((x) => x !== t); form.setTags(u); store.updateTask(task.id, { tags: u }); }} />
               <EditTaskAttachmentsSection taskId={task.id} attachments={task.attachments} onAddAttachment={store.addAttachment} onRemoveAttachment={store.removeAttachment} onInsertToDescription={(att) => { const md = `\n![${att.name}](${att.url})\n`; const u = form.description ? `${form.description}\n${md}` : md; form.setDescription(u); store.updateTask(task.id, { description: u }); }} />
               <EditTaskCommentsSection activities={task.activities} userName={store.userSession.name} currentColumnTitle={currentColumn?.title} onAddComment={(text) => { const act = { id: `act-${Date.now()}`, user: store.userSession.name, text, createdAt: new Date().toISOString() }; store.updateTask(task.id, { activities: [...(task.activities || []), act] }); }} />
               <EditTaskExpandModal isExpandConfirm={isExpandConfirm} taskTitle={form.title || task.title} totalItems={task.checklist?.length || 0} onOpenConfirm={() => setIsExpandConfirm(true)} onCancelConfirm={() => setIsExpandConfirm(false)} onConfirmExpand={handleExpandToColumn} />

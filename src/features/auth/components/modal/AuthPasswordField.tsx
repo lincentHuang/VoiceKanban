@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { inputClass } from "@/components/ui/input";
 
 interface AuthPasswordFieldProps {
   value: string;
@@ -29,7 +30,7 @@ export const AuthPasswordField: React.FC<AuthPasswordFieldProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="••••••••"
-          className="w-full px-3.5 py-2 pr-10 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-orange-500"
+          className={inputClass("md", "pr-10")}
         />
         <button
           type="button"

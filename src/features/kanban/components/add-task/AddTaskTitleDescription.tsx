@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { inputClass } from "@/components/ui/input";
 
 interface AddTaskTitleDescriptionProps {
   title: string;
@@ -27,7 +28,7 @@ export const AddTaskTitleDescription: React.FC<AddTaskTitleDescriptionProps> = (
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="例如：完成季報分析、設計新版首頁..."
-          className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-orange-500 text-slate-800 dark:text-slate-100"
+          className={inputClass("md")}
         />
       </div>
 
@@ -40,7 +41,7 @@ export const AddTaskTitleDescription: React.FC<AddTaskTitleDescriptionProps> = (
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="補充詳細背景或交付標準..."
-          className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-orange-500 text-slate-800 dark:text-slate-100"
+          className={inputClass("md", "h-auto py-2.5 resize-none leading-relaxed")}
         />
       </div>
     </>

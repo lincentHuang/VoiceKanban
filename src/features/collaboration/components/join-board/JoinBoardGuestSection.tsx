@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Sparkles } from "lucide-react";
+import { inputClass } from "@/components/ui/input";
 
 interface JoinBoardGuestSectionProps {
   nickname: string;
@@ -41,7 +42,7 @@ export const JoinBoardGuestSection: React.FC<JoinBoardGuestSectionProps> = ({
             value={nickname}
             onChange={(e) => onNicknameChange(e.target.value)}
             maxLength={20}
-            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900/60 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:border-orange-500"
+            className={inputClass("md", "bg-white dark:bg-slate-800 border-orange-200 dark:border-orange-900/60")}
           />
         </div>
       </div>

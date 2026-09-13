@@ -4,6 +4,7 @@ import { DndContext, closestCenter, PointerSensor, TouchSensor, KeyboardSensor, 
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { ChecklistItem } from "@/core/types/task";
 import { SortableChecklistItem } from "../SortableChecklistItem";
+import { fieldButtonClass, inputClass } from "@/components/ui/input";
 
 interface EditTaskChecklistSectionProps {
   taskId: string;
@@ -91,8 +92,8 @@ export const EditTaskChecklistSection: React.FC<EditTaskChecklistSectionProps> =
       )}
 
       <form onSubmit={handleAdd} className="flex gap-2">
-        <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="+ 新增子任務項目..." className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200" />
-        <button type="submit" disabled={!newTitle.trim()} className="px-3 py-1.5 rounded-xl bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold disabled:opacity-40 hover:bg-slate-700 transition-colors">新增</button>
+        <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="+ 新增子任務項目..." className={inputClass("md")} />
+        <button type="submit" disabled={!newTitle.trim()} className={fieldButtonClass("md", "bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700")}>新增</button>
       </form>
     </div>
   );

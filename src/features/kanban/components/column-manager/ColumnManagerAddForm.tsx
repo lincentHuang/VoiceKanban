@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ColumnIconPicker } from "../ColumnIconPicker";
+import { fieldButtonClass, inputClass } from "@/components/ui/input";
 
 interface ColumnManagerAddFormProps {
   newTitle: string;
@@ -32,13 +33,13 @@ export const ColumnManagerAddForm: React.FC<ColumnManagerAddFormProps> = ({
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="輸入新欄位名稱 (例如：測試驗收、設計審查...)"
-          className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium focus:outline-none focus:border-orange-500"
+          className={inputClass("md", "flex-1 font-medium")}
         />
 
         <button
           type="submit"
           disabled={!newTitle.trim()}
-          className="px-4 py-2 rounded-xl bg-base44-orange hover:bg-base44-orangeHover text-white text-xs font-bold shadow-xs disabled:opacity-50 transition-all cursor-pointer"
+          className={fieldButtonClass("md", "bg-base44-orange hover:bg-base44-orangeHover text-white shadow-xs")}
         >
           新增
         </button>

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ColumnIconPicker } from "../ColumnIconPicker";
+import { inputClass } from "@/components/ui/input";
 
 interface Props {
   name: string;
@@ -39,7 +40,7 @@ export const EditBoardFields: React.FC<Props> = ({
             placeholder="例如：工作專案、個人生活、產品規劃..."
             autoFocus
             required
-            className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 text-slate-800 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all placeholder:text-slate-400"
+            className={inputClass("md", "flex-1 bg-white/60 dark:bg-slate-800/60")}
           />
         </div>
       </div>
@@ -53,7 +54,7 @@ export const EditBoardFields: React.FC<Props> = ({
           onChange={(e) => onSetDescription(e.target.value)}
           placeholder="簡要描述此看板的主要用途與分類目標..."
           rows={3}
-          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 text-slate-800 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all placeholder:text-slate-400 resize-none"
+          className={inputClass("md", "h-auto py-2.5 bg-white/60 dark:bg-slate-800/60 resize-none leading-relaxed")}
         />
       </div>
     </div>
