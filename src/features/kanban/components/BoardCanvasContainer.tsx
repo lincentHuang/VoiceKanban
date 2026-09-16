@@ -1,13 +1,19 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { getDueDateStatus } from "@/core/utils/dateUtils";
 import { KanbanContainer } from "./KanbanContainer";
-import { CalendarView } from "@/features/views";
-import { ReadOnlyBanner } from "@/features/collaboration";
+import { ReadOnlyBanner } from "@/features/collaboration/components/ReadOnlyBanner";
 import { BoardCanvasHeader } from "./board-canvas/BoardCanvasHeader";
 import { getBoardBackgroundClass } from "../utils/boardBackgrounds";
+
+// 只有切到行事曆模式才會用到，不該進首屏 bundle
+const CalendarView = dynamic(
+  () => import("@/features/views/components/CalendarView").then((m) => ({ default: m.CalendarView })),
+  { ssr: false }
+);
 
 export const BoardCanvasContainer: React.FC = () => {
   const store = useKanbanStore();

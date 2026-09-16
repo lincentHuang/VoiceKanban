@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Board, ViewMode } from "@/core/types/task";
-import { CollaboratorAvatars } from "@/features/collaboration";
+import { CollaboratorAvatars } from "@/features/collaboration/components/CollaboratorAvatars";
 import { BoardSwitcherMenu } from "./BoardSwitcherMenu";
 import { ViewModeMenu } from "./ViewModeMenu";
 import { BoardCanvasWideControls } from "./BoardCanvasWideControls";
 import { BoardCanvasCompactControls } from "./BoardCanvasCompactControls";
-import { PasteLinkButton } from "@/features/bookmarks";
+import { PasteLinkButton } from "@/features/bookmarks/components/PasteLinkButton";
 
 interface Props {
   boards: Board[];

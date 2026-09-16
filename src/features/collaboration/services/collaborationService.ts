@@ -6,6 +6,7 @@ import {
   onSnapshot,
   Unsubscribe,
 } from "firebase/firestore";
+import { getUserRole, canUserEdit } from "../utils/roles";
 import { getFirebaseDb, isFirebaseConfigured } from "@/core/services/firebase";
 import { Board, Task, BoardMember, CollaboratorRole } from "@/core/types/task";
 import { UserSession } from "@/core/types/auth";
@@ -642,20 +643,14 @@ export class CollaborationService {
    * Checks current user's role on the given board
    */
   public getUserRole(board?: Board, userId?: string): CollaboratorRole {
-    if (!board || !board.isShared) return "owner";
-    if (!userId) return "viewer";
-    if (board.ownerId === userId) return "owner";
-
-    const member = (board.members || []).find((m) => m.uid === userId);
-    return member?.role || "viewer";
+    return getUserRole(board, userId);
   }
 
   /**
    * Determines if the user can modify tasks/columns on the board
    */
   public canUserEdit(board?: Board, userId?: string): boolean {
-    const role = this.getUserRole(board, userId);
-    return role === "owner" || role === "editor";
+    return canUserEdit(board, userId);
   }
 }
 

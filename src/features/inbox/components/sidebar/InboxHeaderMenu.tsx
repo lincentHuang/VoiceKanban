@@ -15,7 +15,7 @@ export const InboxHeaderMenu: React.FC<InboxHeaderMenuProps> = ({
   setInboxSort,
   onClose,
 }) => {
-  const { setIsSettingsModalOpen } = useKanbanStore();
+const setIsSettingsModalOpen = useKanbanStore((s) => s.setIsSettingsModalOpen);
 
   return (
     <div className="absolute right-0 top-full mt-1.5 w-44 backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in">

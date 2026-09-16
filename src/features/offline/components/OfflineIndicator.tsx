@@ -2,13 +2,13 @@
 
 import React from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
-import { CloudOff, WifiOff, Cloud } from "lucide-react";
+import { CloudOff } from "lucide-react";
 
 export const OfflineIndicator: React.FC = () => {
-  const { isOnline, isManualOffline, pendingOfflineChanges, setIsOfflineBannerDismissed } =
+  const { isOnline, pendingOfflineChanges, setIsOfflineBannerDismissed } =
     useKanbanStore();
 
-  const isOffline = isManualOffline || !isOnline;
+  const isOffline = !isOnline;
 
   if (!isOffline) {
     return null;

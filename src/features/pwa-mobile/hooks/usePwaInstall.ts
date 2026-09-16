@@ -19,12 +19,11 @@ export function usePwaInstall() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // 1. 偵測是否已經在獨立模式 (Standalone PWA) 或 Capacitor 原生環境中
+    // 1. 偵測是否已經在獨立模式 (Standalone PWA) 中
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
-      document.referrer.includes("android-app://") ||
-      Boolean((window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
+      document.referrer.includes("android-app://");
 
     setIsInstalled(Boolean(isStandalone));
 

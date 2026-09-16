@@ -2,19 +2,21 @@
 
 import React, { useState } from "react";
 import { Palette, ChevronDown, Check } from "lucide-react";
-import { Column, TRELLO_COLUMN_COLORS, getColumnColorConfig } from "@/core/types/task";
-import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { TRELLO_COLUMN_COLORS } from "@/core/types/task";
 
 interface ColumnColorPickerSectionProps {
-  column: Column;
-  onCloseMenu: () => void;
+  colors: typeof TRELLO_COLUMN_COLORS;
+  isColorSelected: (hex: string) => boolean;
+  onApplyColor: (hex: string) => void;
+  onClearColor: () => void;
 }
 
 export const ColumnColorPickerSection: React.FC<ColumnColorPickerSectionProps> = ({
-  column,
-  onCloseMenu,
+  colors,
+  isColorSelected,
+  onApplyColor,
+  onClearColor,
 }) => {
-  const { setColumnColor } = useKanbanStore();
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -46,18 +48,13 @@ export const ColumnColorPickerSection: React.FC<ColumnColorPickerSectionProps> =
       {isExpanded && (
         <div className="p-2 my-1 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 animate-in fade-in zoom-in-95 duration-100">
           <div className="grid grid-cols-5 gap-1.5 mb-2">
-            {TRELLO_COLUMN_COLORS.map((c) => {
-              const isSelected =
-                column.color?.toLowerCase() === c.hex.toLowerCase() ||
-                getColumnColorConfig(column.color).hex.toLowerCase() === c.hex.toLowerCase();
+            {colors.map((c) => {
+              const isSelected = isColorSelected(c.hex);
               return (
                 <button
                   key={c.hex}
                   type="button"
-                  onClick={() => {
-                    setColumnColor(column.id, c.hex);
-                    onCloseMenu();
-                  }}
+                  onClick={() => onApplyColor(c.hex)}
                   style={{ backgroundColor: c.hex }}
                   className={`w-7 h-7 rounded-lg shadow-xs hover:scale-110 active:scale-95 transition-transform flex items-center justify-center border cursor-pointer ${
                     isSelected
@@ -74,10 +71,7 @@ export const ColumnColorPickerSection: React.FC<ColumnColorPickerSectionProps> =
 
           <button
             type="button"
-            onClick={() => {
-              setColumnColor(column.id, "");
-              onCloseMenu();
-            }}
+            onClick={onClearColor}
             className="w-full py-1 text-center text-[11px] text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 font-medium hover:bg-white dark:hover:bg-slate-700 rounded-lg border border-slate-200/60 dark:border-slate-700 transition-colors cursor-pointer"
           >
             ✕ 移除顏色

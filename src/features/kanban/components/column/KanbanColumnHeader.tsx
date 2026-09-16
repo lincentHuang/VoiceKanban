@@ -24,7 +24,10 @@ export const KanbanColumnHeader: React.FC<Props> = ({
   column, tasks, isEditingTitle, titleInput, titleInputRef, onTitleInputChange,
   onTitleKeyDown, onSaveTitle, onStartEditTitle, onStartAddCard, attributes, listeners,
 }) => {
-  const { isMultiSelectMode, selectedTaskIds, toggleTaskSelection, updateColumnInActiveBoard } = useKanbanStore();
+const isMultiSelectMode = useKanbanStore((s) => s.isMultiSelectMode);
+  const selectedTaskIds = useKanbanStore((s) => s.selectedTaskIds);
+  const toggleTaskSelection = useKanbanStore((s) => s.toggleTaskSelection);
+  const updateColumnInActiveBoard = useKanbanStore((s) => s.updateColumnInActiveBoard);
   const colorConfig = getColumnColorConfig(column.color);
   const uncompleted = tasks.filter((t) => !t.completed);
   const completed = tasks.filter((t) => t.completed);

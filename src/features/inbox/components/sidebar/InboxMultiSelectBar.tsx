@@ -11,12 +11,10 @@ interface InboxMultiSelectBarProps {
 export const InboxMultiSelectBar: React.FC<InboxMultiSelectBarProps> = ({
   selectedCount,
 }) => {
-  const {
-    isMultiSelectMode,
-    setIsMultiSelectMode,
-    selectAllTasksInInbox,
-    clearSelection,
-  } = useKanbanStore();
+const isMultiSelectMode = useKanbanStore((s) => s.isMultiSelectMode);
+  const setIsMultiSelectMode = useKanbanStore((s) => s.setIsMultiSelectMode);
+  const selectAllTasksInInbox = useKanbanStore((s) => s.selectAllTasksInInbox);
+  const clearSelection = useKanbanStore((s) => s.clearSelection);
 
   if (!isMultiSelectMode) return null;
 

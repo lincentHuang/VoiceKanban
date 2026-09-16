@@ -2,13 +2,11 @@
 
 import React from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
-import { WifiOff, RefreshCw, X, CloudOff, ArrowRight, ShieldCheck } from "lucide-react";
+import { WifiOff, RefreshCw, X } from "lucide-react";
 
 export const OfflineBanner: React.FC = () => {
   const {
     isOnline,
-    isManualOffline,
-    setIsManualOffline,
     pendingOfflineChanges,
     isOfflineBannerDismissed,
     setIsOfflineBannerDismissed,
@@ -16,18 +14,14 @@ export const OfflineBanner: React.FC = () => {
     syncState,
   } = useKanbanStore();
 
-  const isOffline = isManualOffline || !isOnline;
+  const isOffline = !isOnline;
 
   if (!isOffline || isOfflineBannerDismissed) {
     return null;
   }
 
   const handleRetryOrReconnect = async () => {
-    if (isManualOffline) {
-      setIsManualOffline(false);
-    } else {
-      await triggerSync();
-    }
+    await triggerSync();
   };
 
   return (
@@ -38,16 +32,12 @@ export const OfflineBanner: React.FC = () => {
     >
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <div className="p-1 rounded-lg bg-white/20 dark:bg-black/20 shrink-0">
-          {isManualOffline ? (
-            <CloudOff className="w-4 h-4 text-white" />
-          ) : (
-            <WifiOff className="w-4 h-4 text-white animate-pulse" />
-          )}
+          <WifiOff className="w-4 h-4 text-white animate-pulse" />
         </div>
 
         <div className="min-w-0 flex items-center flex-wrap gap-x-2 gap-y-0.5">
           <span className="font-bold tracking-tight">
-            {isManualOffline ? "已開啟離線工作模式" : "目前處於離線狀態"}
+            目前處於離線狀態
           </span>
           <span className="text-white/90 hidden sm:inline text-[11px]">
             所有修改已安全暫存本機，連線後自動同步
@@ -73,7 +63,7 @@ export const OfflineBanner: React.FC = () => {
           ) : (
             <RefreshCw className="w-3 h-3" />
           )}
-          <span>{isManualOffline ? "切換連線" : "重試連線"}</span>
+          <span>重試連線</span>
         </button>
 
         <button

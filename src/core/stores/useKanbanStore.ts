@@ -1,15 +1,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { Board, Column, ColumnId, Priority, Task, TaskLink, ViewMode, DEFAULT_COLUMNS, ChecklistItem, TaskAttachment, BoardMember, CollaboratorRole } from "../types/task";
-import { VoiceExtractResult, VoiceState, VoiceLanguage, VoiceMode, CorrectionFeedbackPayload, LearningStats } from "../types/voice";
+import { VoiceExtractResult, VoiceState, VoiceLanguage } from "../types/voice";
 import { BYOKConfig } from "../types/user";
 import { UserSession, SyncState, AuthProvider } from "../types/auth";
 import { INITIAL_BOARDS, INITIAL_TASKS } from "../services/mockData";
 import { generateOrderKeyBetween, initialOrderKey } from "../utils/lexorank";
-import { GUEST_USER, loginWithProvider, logoutUser, signInAsGuest, subscribeToAuthState } from "../services/authService";
-import { syncEngine, reconcileSyncedTasks, reconcileSyncedBoards, withoutSyncedTombstones } from "../services/syncService";
-import { learningEngine } from "../services/learningEngine";
-import { collaborationService } from "@/features/collaboration/services/collaborationService";
+import { GUEST_USER } from "../services/guestUser";
+import { getUserRole, canUserEdit } from "@/features/collaboration/utils/roles";
 import { NotificationItem, ActivityPayload, NotificationActionType } from "@/features/notifications/types";
 import { notificationService } from "@/features/notifications/services/notificationService";
 import { SharedLinkDraft } from "@/features/bookmarks/types";
@@ -18,6 +16,17 @@ import { savePendingShare } from "@/features/bookmarks/services/pendingShareStor
 import { fetchLinkPreview, needsThumbnailRehost, persistThumbnail } from "@/features/bookmarks/services/linkPreviewService";
 import { detectPlatform, isBareUrl, normalizeSharedUrl, toCardTitle } from "@/features/bookmarks/utils/linkParser";
 import { buildLinkDescription } from "@/features/bookmarks/utils/linkDescription";
+
+/**
+ * Firebase Auth + Firestore is by far the heaviest dependency in the app, and nothing needs it
+ * until after the first paint (auth/sync start inside an effect, collaboration only on a shared
+ * board). Loading these three modules on demand keeps the SDK out of the first-paint bundle.
+ * Everything the render path needs synchronously — GUEST_USER, role checks — is imported above
+ * from Firebase-free modules.
+ */
+const loadAuth = () => import("../services/authService");
+const loadSync = () => import("../services/syncService");
+const loadCollab = () => import("@/features/collaboration/services/collaborationService");
 
 interface KanbanStoreState {
   // Notifications
@@ -70,8 +79,6 @@ interface KanbanStoreState {
   triggerSync: () => Promise<void>;
   isOnline: boolean;
   setIsOnline: (online: boolean) => void;
-  isManualOffline: boolean;
-  setIsManualOffline: (offline: boolean) => void;
   pendingOfflineChanges: number;
   incrementPendingOfflineChanges: () => void;
   clearPendingOfflineChanges: () => void;
@@ -206,8 +213,6 @@ interface KanbanStoreState {
   setIsVoiceOverlayOpen: (open: boolean) => void;
   voiceState: VoiceState;
   setVoiceState: (state: VoiceState) => void;
-  voiceMode: VoiceMode;
-  setVoiceMode: (mode: VoiceMode) => void;
   voiceLanguage: VoiceLanguage;
   setVoiceLanguage: (lang: VoiceLanguage) => void;
   voiceTargetColumnId: ColumnId | null;
@@ -215,9 +220,6 @@ interface KanbanStoreState {
   openVoiceForColumn: (columnId?: ColumnId) => void;
   extractedTask: VoiceExtractResult | null;
   setExtractedTask: (task: VoiceExtractResult | null) => void;
-  recordLearningFeedback: (payload: CorrectionFeedbackPayload) => void;
-  getLearningStats: () => LearningStats;
-  resetLearningModel: () => void;
 
   isSettingsModalOpen: boolean;
   setIsSettingsModalOpen: (open: boolean) => void;
@@ -295,12 +297,14 @@ export const useKanbanStore = create<KanbanStoreState>()(
       isBindModalOpen: false,
       setIsBindModalOpen: (isBindModalOpen) => set({ isBindModalOpen }),
       loginAsGuest: async () => {
+        const { signInAsGuest } = await loadAuth();
         const existing = get().userSession;
         const currentId = existing?.isGuest && existing?.id ? existing.id : undefined;
         const guestSession = await signInAsGuest(currentId);
         set({ userSession: guestSession, isAuthModalOpen: false, isBindModalOpen: false });
       },
       bindGuestAccount: async (provider, email, password, displayName, isRegister) => {
+        const [{ loginWithProvider }, { syncEngine }] = await Promise.all([loadAuth(), loadSync()]);
         const session = await loginWithProvider(provider, email, password, displayName, isRegister);
         const localTasks = get().tasks;
         const localBoards = get().boards;
@@ -345,6 +349,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
         await get().triggerSync();
       },
       login: async (provider, email, password, displayName, isRegister) => {
+        const [{ loginWithProvider }, { syncEngine }] = await Promise.all([loadAuth(), loadSync()]);
         const session = await loginWithProvider(provider, email, password, displayName, isRegister);
         set({ userSession: session, isAuthModalOpen: false, isBindModalOpen: false });
 
@@ -407,6 +412,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
         }
       },
       logout: async () => {
+        const [{ logoutUser }, { syncEngine }] = await Promise.all([loadAuth(), loadSync()]);
         syncEngine.unsubscribe();
         await logoutUser();
         set({
@@ -431,12 +437,10 @@ export const useKanbanStore = create<KanbanStoreState>()(
               ...state.syncState,
               status: "synced",
               lastSyncedAt: new Date().toISOString(),
-              isCloudConnected: !state.isManualOffline,
+              isCloudConnected: true,
             },
           }));
-          if (!get().isManualOffline) {
-            get().triggerSync();
-          }
+          get().triggerSync();
         };
 
         const handleOffline = () => {
@@ -457,12 +461,33 @@ export const useKanbanStore = create<KanbanStoreState>()(
           window.addEventListener("offline", handleOffline);
         }
 
-        const unsubscribeAuth = subscribeToAuthState(async (session) => {
+        // Load persisted notifications on start (local storage only, no Firebase involved)
+        const initialNotifications = notificationService.loadStoredNotifications();
+        if (initialNotifications.length > 0) {
+          set({ notifications: initialNotifications });
+        }
+
+        // The auth / sync / collaboration subscriptions below all need the Firebase SDK, which is
+        // loaded on demand so it never blocks the first paint. The caller still gets a cleanup
+        // function synchronously; `disposed` covers unmounting before the SDK finishes loading.
+        let unsubscribeAuth: (() => void) | null = null;
+        let unsubCollab: (() => void) | null = null;
+        let disposed = false;
+
+        void (async () => {
+          const [{ subscribeToAuthState }, { syncEngine }, { collaborationService }] = await Promise.all([
+            loadAuth(),
+            loadSync(),
+            loadCollab(),
+          ]);
+          if (disposed) return;
+
+          unsubscribeAuth = subscribeToAuthState(async (session) => {
           if (session) {
             set({ userSession: session });
 
             // 資料庫為主：初次載入或重新整理時先拉取雲端最新資料（若在線）
-            if (typeof navigator === "undefined" || (navigator.onLine && !get().isManualOffline)) {
+            if (typeof navigator === "undefined" || navigator.onLine) {
               const cloudData = await syncEngine.fetchUserDataFromCloud(session.id);
               if (cloudData) {
                 set({
@@ -488,7 +513,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
 
             // Attach real-time cloud listener
             syncEngine.subscribeToUserData(session.id, (remoteData) => {
-              if (remoteData && !get().isManualOffline) {
+              if (remoteData) {
                 set((state) => ({
                   boards: remoteData.boards && remoteData.boards.length > 0 ? remoteData.boards : state.boards,
                   tasks: remoteData.tasks || [],
@@ -504,14 +529,8 @@ export const useKanbanStore = create<KanbanStoreState>()(
           }
         });
 
-        // Load persisted notifications on start
-        const initialNotifications = notificationService.loadStoredNotifications();
-        if (initialNotifications.length > 0) {
-          set({ notifications: initialNotifications });
-        }
-
-        // Cross-tab real-time sync for shared boards via BroadcastChannel
-        const unsubCollab = collaborationService.onCrossTabUpdate(({ type, boardId, data }) => {
+          // Cross-tab real-time sync for shared boards via BroadcastChannel
+          unsubCollab = collaborationService.onCrossTabUpdate(({ type, boardId, data }) => {
           if (type === "ACTIVITY_EVENT" && data?.activity) {
             get().addNotification(data.activity);
           }
@@ -544,16 +563,18 @@ export const useKanbanStore = create<KanbanStoreState>()(
               });
             }
           }
-        });
+          });
+        })();
 
         return () => {
+          disposed = true;
           if (typeof window !== "undefined") {
             window.removeEventListener("online", handleOnline);
             window.removeEventListener("offline", handleOffline);
           }
-          unsubscribeAuth();
-          syncEngine.unsubscribe();
-          unsubCollab();
+          unsubscribeAuth?.();
+          unsubCollab?.();
+          void loadSync().then(({ syncEngine }) => syncEngine.unsubscribe());
         };
       },
 
@@ -566,24 +587,8 @@ export const useKanbanStore = create<KanbanStoreState>()(
       isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
       setIsOnline: (isOnline) => {
         set({ isOnline });
-        if (isOnline && !get().isManualOffline) {
+        if (isOnline) {
           get().triggerSync();
-        }
-      },
-      isManualOffline: false,
-      setIsManualOffline: (isManualOffline) => {
-        syncEngine.setManualOffline(isManualOffline);
-        set({ isManualOffline, isOfflineBannerDismissed: false });
-        if (!isManualOffline && (typeof navigator === "undefined" || navigator.onLine)) {
-          get().triggerSync();
-        } else {
-          set((s) => ({
-            syncState: {
-              ...s.syncState,
-              status: "offline",
-              isCloudConnected: false,
-            },
-          }));
         }
       },
       pendingOfflineChanges: 0,
@@ -597,8 +602,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
 
       triggerSync: async () => {
         const user = get().userSession;
-        const isOffline =
-          get().isManualOffline || (typeof navigator !== "undefined" && !navigator.onLine);
+        const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
 
         if (isOffline) {
           set((s) => ({
@@ -613,8 +617,10 @@ export const useKanbanStore = create<KanbanStoreState>()(
         }
 
         set((s) => ({ syncState: { ...s.syncState, status: "syncing" } }));
+        const { syncEngine, reconcileSyncedTasks, reconcileSyncedBoards, withoutSyncedTombstones } = await loadSync();
         const currentActiveBoard = get().boards.find((b) => b.id === get().activeBoardId);
         if (currentActiveBoard?.isShared) {
+          const { collaborationService } = await loadCollab();
           collaborationService.syncSharedBoardData(currentActiveBoard, get().tasks);
         }
 
@@ -694,7 +700,8 @@ export const useKanbanStore = create<KanbanStoreState>()(
         set({ activeBoardId: id, selectedTaskIds: [] });
         const targetBoard = get().boards.find((b) => b.id === id);
         if (targetBoard?.isShared) {
-          collaborationService.subscribeToSharedBoard(targetBoard.shareId || id, ({ board, tasks: remoteTasks }) => {
+          void loadCollab().then(({ collaborationService }) =>
+            collaborationService.subscribeToSharedBoard(targetBoard.shareId || id, ({ board, tasks: remoteTasks }) => {
             set((state) => ({
               boards: state.boards.map((b) => (b.id === id ? { ...b, ...board } : b)),
               tasks: [
@@ -702,7 +709,8 @@ export const useKanbanStore = create<KanbanStoreState>()(
                 ...remoteTasks,
               ],
             }));
-          });
+            })
+          );
         }
       },
       createBoard: (name, icon = "📌", description = "") => {
@@ -1147,6 +1155,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
       joinBoardInitialCode: "",
       setJoinBoardInitialCode: (joinBoardInitialCode) => set({ joinBoardInitialCode }),
       enableActiveBoardSharing: async () => {
+        const { collaborationService } = await loadCollab();
         const { boards, activeBoardId, userSession, tasks } = get();
         const activeBoard = boards.find((b) => b.id === activeBoardId);
         if (!activeBoard) return "";
@@ -1174,6 +1183,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
         return inviteCode;
       },
       joinBoardByInviteCode: async (code, nickname) => {
+        const { collaborationService } = await loadCollab();
         const { userSession } = get();
         const result = await collaborationService.joinBoardByInviteCode(
           code,
@@ -1231,6 +1241,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
         return { success: false, message: result.message || "加入失敗" };
       },
       updateMemberRole: async (memberUid, role) => {
+        const { collaborationService } = await loadCollab();
         const { boards, activeBoardId } = get();
         const activeBoard = boards.find((b) => b.id === activeBoardId);
         if (!activeBoard || !activeBoard.isShared) return;
@@ -1247,6 +1258,7 @@ export const useKanbanStore = create<KanbanStoreState>()(
         }));
       },
       removeMemberFromBoard: async (memberUid) => {
+        const { collaborationService } = await loadCollab();
         const { boards, activeBoardId } = get();
         const activeBoard = boards.find((b) => b.id === activeBoardId);
         if (!activeBoard || !activeBoard.isShared) return;
@@ -1265,13 +1277,13 @@ export const useKanbanStore = create<KanbanStoreState>()(
         const { boards, activeBoardId, userSession } = get();
         const targetId = boardId || activeBoardId;
         const targetBoard = boards.find((b) => b.id === targetId);
-        return collaborationService.getUserRole(targetBoard, userSession.id);
+        return getUserRole(targetBoard, userSession.id);
       },
       canCurrentUserEdit: (boardId) => {
         const { boards, activeBoardId, userSession } = get();
         const targetId = boardId || activeBoardId;
         const targetBoard = boards.find((b) => b.id === targetId);
-        return collaborationService.canUserEdit(targetBoard, userSession.id);
+        return canUserEdit(targetBoard, userSession.id);
       },
 
       // Notifications
@@ -1355,7 +1367,9 @@ export const useKanbanStore = create<KanbanStoreState>()(
         });
 
         // Sync to shared board & Broadcast
-        collaborationService.syncSharedBoardData(board, get().tasks, activity);
+        void loadCollab().then(({ collaborationService }) =>
+          collaborationService.syncSharedBoardData(board, get().tasks, activity)
+        );
       },
 
       // Tasks
@@ -1393,6 +1407,13 @@ export const useKanbanStore = create<KanbanStoreState>()(
           coverColor: taskData.coverColor || null,
           attachmentsCount: taskData.attachmentsCount || 0,
           link: taskData.link || null,
+          // Always taken from the current session rather than the caller, so every entry point
+          // (voice, quick add, inbox, share sheet) records the same thing.
+          createdBy: {
+            uid: get().userSession.id,
+            name: get().userSession.name || "成員",
+            avatarUrl: get().userSession.avatarUrl || null,
+          },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -1832,8 +1853,6 @@ export const useKanbanStore = create<KanbanStoreState>()(
       setIsVoiceOverlayOpen: (isVoiceOverlayOpen) => set({ isVoiceOverlayOpen }),
       voiceState: "idle",
       setVoiceState: (voiceState) => set({ voiceState }),
-      voiceMode: "offline_learning",
-      setVoiceMode: (voiceMode) => set({ voiceMode }),
       voiceLanguage: "auto",
       setVoiceLanguage: (voiceLanguage) => set({ voiceLanguage }),
       voiceTargetColumnId: null,
@@ -1847,15 +1866,6 @@ export const useKanbanStore = create<KanbanStoreState>()(
       },
       extractedTask: null,
       setExtractedTask: (extractedTask) => set({ extractedTask }),
-      recordLearningFeedback: (payload) => {
-        learningEngine.recordUserCorrection(payload);
-      },
-      getLearningStats: () => {
-        return learningEngine.getStats();
-      },
-      resetLearningModel: () => {
-        learningEngine.resetModel();
-      },
 
       // Modals
       isSettingsModalOpen: false,

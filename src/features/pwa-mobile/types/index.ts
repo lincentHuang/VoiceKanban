@@ -16,7 +16,7 @@ export type PlatformType = "ios" | "android" | "desktop" | "other";
 export interface PwaInstallState {
   /** 是否可觸發原生 PWA 安裝提示 (支援 beforeinstallprompt) */
   canInstall: boolean;
-  /** 是否已在獨立應用 (Standalone PWA) 或 Capacitor 原生 App 中執行 */
+  /** 是否已在獨立應用 (Standalone PWA) 中執行 */
   isInstalled: boolean;
   /** 是否為 iOS 裝置 */
   isIos: boolean;

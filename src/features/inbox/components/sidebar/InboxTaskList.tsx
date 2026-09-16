@@ -3,7 +3,7 @@
 import React from "react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Task } from "@/core/types/task";
-import { TaskCard } from "@/features/kanban";
+import { TaskCard } from "@/features/kanban/components/TaskCard";
 
 interface InboxTaskListProps {
   tasks: Task[];

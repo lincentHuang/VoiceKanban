@@ -6,15 +6,13 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 export function useOfflineSync() {
   const {
     isOnline,
-    isManualOffline,
     pendingOfflineChanges,
     syncState,
     triggerSync,
-    setIsManualOffline,
     setIsOnline,
   } = useKanbanStore();
 
-  const isOffline = isManualOffline || !isOnline;
+  const isOffline = !isOnline;
 
   useEffect(() => {
     const handleOnline = () => {
@@ -41,10 +39,8 @@ export function useOfflineSync() {
   return {
     isOffline,
     isOnline,
-    isManualOffline,
     pendingOfflineChanges,
     syncState,
     triggerSync,
-    setIsManualOffline,
   };
 }

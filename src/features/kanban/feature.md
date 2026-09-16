@@ -60,7 +60,7 @@ src/features/kanban/
 │   ├── EditTaskModal.tsx          # 編輯任務彈窗 (完整屬性編輯、子任務排序、展開為獨立欄位)
 │   ├── BatchActionBar.tsx         # 多選批次操作懸浮列
 │   ├── ColumnIconPicker.tsx       # 獨立欄位圖示 Popover 選擇器 (支援 Emoji 與純文字)
-│   ├── ColumnActionMenu.tsx       # 欄位下拉選單 (重新命名、淺色選色器、排序、聚合為單一任務卡、管理流程)
+│   ├── ColumnActionMenu.tsx       # 欄位選單分流：桌機為下拉選單，手機 (<640px) 改用 ColumnActionSheet 底部彈出面板
 │   └── ColumnManagerModal.tsx     # 欄位管理與自訂彈窗 (含 Popover 圖示選擇器、無圖示支援、垂直拖曳排序)
 ├── index.ts                       # 模組統一出口
 └── feature.md                     # 功能規格與驗收標準文檔
@@ -106,7 +106,7 @@ src/features/kanban/
 │   ├── DeleteBoardConfirmModal.tsx  # 看板刪除確認彈窗 (包含任務計數警告與最後看板保護)
 │   ├── BatchActionBar.tsx           # 多選批次操作懸浮列
 │   ├── ColumnIconPicker.tsx         # 獨立欄位圖示 Popover 選擇器 (支援 Emoji 與純文字)
-│   ├── ColumnActionMenu.tsx         # 欄位下拉選單 (重新命名、淺色選色器、排序、聚合為單一任務卡、管理流程)
+│   ├── ColumnActionMenu.tsx         # 欄位選單分流：桌機為下拉選單，手機 (<640px) 改用 ColumnActionSheet 底部彈出面板
 │   ├── BoardManagerModal.tsx        # 看板管理彈窗 (取代原狀態流程管理，含分頁：欄位流程／一般設定／共享協作／背景外觀)
 │   └── board-manager/               # 看板管理彈窗子元件 (Header、Tabs、各分頁內容、useBoardManagerModal Hook)
 ├── index.ts                         # 模組統一出口

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
 export function useSettingsModal() {
@@ -8,33 +8,15 @@ export function useSettingsModal() {
     byokConfig,
     updateBYOKConfig,
     boards,
-    getLearningStats,
-    resetLearningModel,
   } = useKanbanStore();
 
-  const [activeTab, setActiveTab] = useState<"api" | "offline" | "learning">("api");
+  const [activeTab, setActiveTab] = useState<"api" | "offline">("api");
   const [inputKey, setInputKey] = useState(byokConfig.apiKey || "");
   const [selectedModel, setSelectedModel] = useState(byokConfig.model || "gemini-3.6-flash");
   const [defaultBoard, setDefaultBoard] = useState(byokConfig.defaultBoardId || "board-work");
   const [showPassword, setShowPassword] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testStatus, setTestStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-
-  const [learningStats, setLearningStats] = useState({
-    totalLearnedWords: 0,
-    totalFeedbackCount: 0,
-    zhFeedbackCount: 0,
-    enFeedbackCount: 0,
-    lastUpdated: null as string | null,
-  });
-  const [resetSuccess, setResetSuccess] = useState(false);
-
-  useEffect(() => {
-    if (isSettingsModalOpen) {
-      setLearningStats(getLearningStats());
-      setResetSuccess(false);
-    }
-  }, [isSettingsModalOpen, getLearningStats]);
 
   const handleTestAndSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +29,7 @@ export function useSettingsModal() {
         model: selectedModel,
         defaultBoardId: defaultBoard,
       });
-      setTestStatus({ type: "success", msg: "已清除自備 Key，系統將以離線半自動學習模式運作。" });
+      setTestStatus({ type: "success", msg: "已清除自備 Key，系統將以本機離線解析模式運作。" });
       return;
     }
 
@@ -79,15 +61,6 @@ export function useSettingsModal() {
     }
   };
 
-  const handleResetLearning = () => {
-    if (confirm("確定要重設本地半自動學習記憶庫嗎？這將會清除歷史詞彙加權與修正關聯。")) {
-      resetLearningModel();
-      setLearningStats(getLearningStats());
-      setResetSuccess(true);
-      setTimeout(() => setResetSuccess(false), 3000);
-    }
-  };
-
   return {
     isSettingsModalOpen,
     setIsSettingsModalOpen,
@@ -103,10 +76,7 @@ export function useSettingsModal() {
     setShowPassword,
     isTesting,
     testStatus,
-    learningStats,
-    resetSuccess,
     boards,
     handleTestAndSave,
-    handleResetLearning,
   };
 }

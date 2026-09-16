@@ -3,7 +3,7 @@
 import React from "react";
 import { Users, ExternalLink } from "lucide-react";
 import { Board } from "@/core/types/task";
-import { MemberAvatarItem } from "@/features/collaboration";
+import { MemberAvatarItem } from "@/features/collaboration/components/MemberAvatarItem";
 
 interface SharingTabProps {
   activeBoard: Board | undefined;

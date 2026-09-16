@@ -19,11 +19,9 @@ export const InboxHeader: React.FC<InboxHeaderProps> = ({
   inboxSort,
   setInboxSort,
 }) => {
-  const {
-    isMultiSelectMode,
-    setIsMultiSelectMode,
-    setIsInboxSidebarOpen,
-  } = useKanbanStore();
+const isMultiSelectMode = useKanbanStore((s) => s.isMultiSelectMode);
+  const setIsMultiSelectMode = useKanbanStore((s) => s.setIsMultiSelectMode);
+  const setIsInboxSidebarOpen = useKanbanStore((s) => s.setIsInboxSidebarOpen);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

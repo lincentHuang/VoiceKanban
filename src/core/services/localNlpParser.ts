@@ -336,7 +336,7 @@ export function matchBoardAndColumn(
       lower.includes("擱置") ||
       lower.includes("阻塞")
     ) {
-      targetColumnId = "waiting";
+      targetColumnId = "in_progress";
       matchedColumnName = "等待/卡關";
     } else if (
       lower.includes("收件夾") ||

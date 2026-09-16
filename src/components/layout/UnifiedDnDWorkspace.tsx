@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { DndContext } from "@dnd-kit/core";
-import { SidebarInbox } from "@/features/inbox";
-import { BoardCanvasContainer } from "@/features/kanban";
+import { SidebarInbox } from "@/features/inbox/components/SidebarInbox";
+import { BoardCanvasContainer } from "@/features/kanban/components/BoardCanvasContainer";
 import { useUnifiedDnD } from "./dnd/useUnifiedDnD";
 import { WorkspaceDragOverlay } from "./dnd/WorkspaceDragOverlay";
 

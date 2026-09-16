@@ -4,13 +4,12 @@ import { ColumnId, Priority, DEFAULT_COLUMNS } from "@/core/types/task";
 import { VoiceExtractResult } from "@/core/types/voice";
 import { webSpeechService } from "@/core/services/webSpeechService";
 import { audioRecorderService } from "@/core/services/audioRecorderService";
-import { learningEngine } from "@/core/services/learningEngine";
-import { detectLanguage } from "@/core/services/localNlpParser";
+import { detectLanguage, parseTranscriptLocally } from "@/core/services/localNlpParser";
 import confetti from "canvas-confetti";
 
 export function useVoiceCapture() {
   const store = useKanbanStore();
-  const { isVoiceOverlayOpen, setIsVoiceOverlayOpen, voiceState, setVoiceState, voiceLanguage, extractedTask, setExtractedTask, boards, activeBoardId, addTask, recordLearningFeedback, voiceTargetColumnId, setVoiceTargetColumnId, byokConfig } = store;
+  const { isVoiceOverlayOpen, setIsVoiceOverlayOpen, voiceState, setVoiceState, voiceLanguage, extractedTask, setExtractedTask, boards, activeBoardId, addTask, voiceTargetColumnId, setVoiceTargetColumnId, byokConfig } = store;
 
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [interimTranscript, setInterimTranscript] = useState("");
@@ -67,8 +66,14 @@ export function useVoiceCapture() {
   const applyExtractedResult = (res: VoiceExtractResult) => {
     setExtractedTask(res);
     setEditTitle(res.title);
-    setEditBoardId(boards.some((b) => b.id === res.targetBoardId) ? res.targetBoardId : activeBoardId || boards[0]?.id || "board-work");
-    setEditColumnId((res.targetColumnId && res.targetColumnId !== "inbox" ? res.targetColumnId : voiceTargetColumnId || "inbox") as ColumnId);
+    const boardId = boards.some((b) => b.id === res.targetBoardId) ? res.targetBoardId : activeBoardId || boards[0]?.id || "board-work";
+    setEditBoardId(boardId);
+    const suggested = (res.targetColumnId && res.targetColumnId !== "inbox" ? res.targetColumnId : voiceTargetColumnId || "inbox") as ColumnId;
+    // The board may not have the suggested column (e.g. a three-column board that never had
+    // "waiting"), which would otherwise drop the card into a column that does not exist.
+    const boardColumns = boards.find((b) => b.id === boardId)?.columns || DEFAULT_COLUMNS;
+    const columnExists = suggested === "inbox" || boardColumns.some((c) => c.id === suggested);
+    setEditColumnId(columnExists ? suggested : (boardColumns[0]?.id || "inbox") as ColumnId);
     setPriority(res.priority || "medium");
     setEditDueDate(res.dueDate || "");
     setEditTags(res.tags || []);
@@ -79,7 +84,7 @@ export function useVoiceCapture() {
     setTimeout(() => {
       const activeBoard = boards.find((b) => b.id === activeBoardId);
       const context = { boards: boards.map((b) => ({ id: b.id, name: b.name })), activeBoardId: activeBoardId || boards[0]?.id || "board-work", columns: (activeBoard?.columns || DEFAULT_COLUMNS).map((c) => ({ id: c.id, title: c.title })) };
-      const res = learningEngine.extractWithLearning(text || "語音待辦任務", context);
+      const res = parseTranscriptLocally(text || "語音待辦任務", context);
       applyExtractedResult(res);
     }, 300);
   };
@@ -119,7 +124,6 @@ export function useVoiceCapture() {
 
   const handleConfirmAdd = () => {
     if (!editTitle.trim()) return;
-    recordLearningFeedback({ transcript: extractedTask?.transcript || editTitle, detectedLanguage: extractedTask?.detectedLanguage || liveLanguage, finalTitle: editTitle.trim(), finalBoardId: editBoardId, finalColumnId: editColumnId, finalPriority: editPriority, finalTags: editTags, finalDueDate: editDueDate || null });
     addTask({ title: editTitle.trim(), description: "", boardId: editBoardId, columnId: editColumnId, priority: editPriority, tags: editTags, dueDate: editDueDate || null, completed: false });
     try { confetti({ particleCount: 60, spread: 80, origin: { y: 0.6 }, colors: ["#BEF264", "#F97316", "#10B981"] }); } catch {}
     setTimeout(() => handleClose(), 300);

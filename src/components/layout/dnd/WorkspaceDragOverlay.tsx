@@ -3,7 +3,8 @@
 import React from "react";
 import { DragOverlay } from "@dnd-kit/core";
 import { Column, Task } from "@/core/types/task";
-import { KanbanColumn, TaskCard } from "@/features/kanban";
+import { KanbanColumn } from "@/features/kanban/components/KanbanColumn";
+import { TaskCard } from "@/features/kanban/components/TaskCard";
 
 interface WorkspaceDragOverlayProps {
   activeColumn: Column | null;

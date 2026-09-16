@@ -6,8 +6,8 @@ import { Search } from "lucide-react";
 import { NavbarBrandSection } from "./sections/NavbarBrandSection";
 import { NavbarSearchBar } from "./sections/NavbarSearchBar";
 import { NavbarUserMenu } from "./sections/NavbarUserMenu";
-import { NotificationBell } from "@/features/notifications";
-import { DesktopInstallButton } from "@/features/pwa-mobile";
+import { NotificationBell } from "@/features/notifications/components/NotificationBell";
+import { DesktopInstallButton } from "@/features/pwa-mobile/components/DesktopInstallButton";
 
 export const Navbar: React.FC = () => {
   const {

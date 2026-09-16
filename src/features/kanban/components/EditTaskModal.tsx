@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnId, TaskAttachment } from "@/core/types/task";
-import { MarkdownEditor } from "@/features/editor";
+import { MarkdownEditor } from "@/features/editor/components/MarkdownEditor";
 import { DateTimePicker } from "@/components/common/DateTimePicker";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import confetti from "canvas-confetti";
@@ -19,7 +19,7 @@ import { EditTaskTagsSection } from "./edit-task/EditTaskTagsSection";
 import { EditTaskCommentsSection } from "./edit-task/EditTaskCommentsSection";
 import { EditTaskExpandModal } from "./edit-task/EditTaskExpandModal";
 import { EditTaskDeleteModal } from "./edit-task/EditTaskDeleteModal";
-import { EditTaskLinkSection } from "@/features/bookmarks";
+import { EditTaskLinkSection } from "@/features/bookmarks/components/EditTaskLinkSection";
 
 const EditTaskModalContent: React.FC = () => {
   const store = useKanbanStore();

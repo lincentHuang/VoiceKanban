@@ -9,6 +9,9 @@ import {
   User as FirebaseUser,
 } from "firebase/auth";
 import { AuthProvider, UserSession } from "../types/auth";
+import { GUEST_USER } from "./guestUser";
+
+export { GUEST_USER };
 import {
   getFirebaseAuth,
   getGoogleProvider,
@@ -60,17 +63,6 @@ export async function signInAsGuest(existingId?: string): Promise<UserSession> {
   return createGuestSession(existingId);
 }
 
-export const GUEST_USER: UserSession = {
-  id: "guest-user",
-  name: "訪客",
-  email: "guest@voicekanban.app",
-  avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=Guest",
-  provider: "guest",
-  isAuthenticated: false,
-  isAnonymous: true,
-  isGuest: true,
-  createdAt: new Date().toISOString(),
-};
 
 
 /**

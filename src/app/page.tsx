@@ -1,16 +1,28 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { Navbar } from "@/components/navbar/Navbar";
 import { BottomDock } from "@/components/navigation/BottomDock";
 import { UnifiedDnDWorkspace } from "@/components/layout/UnifiedDnDWorkspace";
 import { AppModals } from "@/components/layout/AppModals";
-import { VoiceFAB } from "@/features/voice";
-import { BatchActionBar } from "@/features/kanban";
-import { AuthLandingScreen } from "@/features/auth";
-import { OfflineBanner } from "@/features/offline";
-import { NotificationToastContainer } from "@/features/notifications";
+import { VoiceFAB } from "@/features/voice/components/VoiceFAB";
+import { OfflineBanner } from "@/features/offline/components/OfflineBanner";
 import { useAppInit } from "@/core/hooks/useAppInit";
+
+// 這三個在「已登入、沒在多選、沒有通知」的常態下都是 null，不必進首屏 bundle
+const AuthLandingScreen = dynamic(
+  () => import("@/features/auth/components/AuthLandingScreen").then((m) => ({ default: m.AuthLandingScreen })),
+  { ssr: false }
+);
+const BatchActionBar = dynamic(
+  () => import("@/features/kanban/components/BatchActionBar").then((m) => ({ default: m.BatchActionBar })),
+  { ssr: false }
+);
+const NotificationToastContainer = dynamic(
+  () => import("@/features/notifications/components/NotificationToastContainer").then((m) => ({ default: m.NotificationToastContainer })),
+  { ssr: false }
+);
 
 export default function Home() {
   const { isMounted, userSession } = useAppInit();

@@ -3,7 +3,7 @@
  * 支援全功能離線作業、離線快取、靜態資源加速與斷網容錯降級
  */
 
-const CACHE_NAME = "voice-kanban-v3";
+const CACHE_NAME = "voice-kanban-v4";
 
 const PRECACHE_ASSETS = [
   "/",
@@ -43,7 +43,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // 攔截請求策略：
-// 1. 頁面導覽請求 (HTML Navigation)：Network-First，斷網時平滑 fallback 至快取的 App Shell ("/")
+// 1. 頁面導覽請求 (HTML Navigation)：Cache-First + 背景更新，冷開啟不必等網路往返
 // 2. 靜態資源 (Next.js JS, CSS, 圖片, 字型)：Stale-While-Revalidate
 // 3. API 路由 (/api/)：斷網時安全返回 JSON 離線備援，避免拋出未捕獲網路異常
 self.addEventListener("fetch", (event) => {
@@ -74,33 +74,43 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 導覽請求 (HTML Navigation) - 確保重新整理或直接開啟時在斷網下 100% 成功載入
+  // 導覽請求 (HTML Navigation)：Cache-First + 背景更新
+  //
+  // 冷開啟時直接回傳已快取的 App Shell，不等網路往返——這是「開啟很慢」的主因：
+  // 原本是 Network-First，每次打開都要先等一趟 HTML 回來才畫得出任何東西。
+  // 取用快取的同時在背景抓最新版寫回，下一次開啟就會是新版本。
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(async () => {
-          const cachedResponse = await caches.match(request);
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          const appShell = await caches.match("/");
-          if (appShell) {
-            return appShell;
-          }
-          return new Response(
-            "<!DOCTYPE html><html><head><meta charset='utf-8'><title>聲動看板 - 離線模式</title></head><body><h1>離線模式</h1><p>請確認應用已安裝或恢復連線。</p></body></html>",
-            { headers: { "Content-Type": "text/html; charset=utf-8" } }
-          );
-        })
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const cached = (await cache.match("/")) || (await cache.match(request));
+
+        const fromNetwork = fetch(request)
+          .then((response) => {
+            if (response && response.status === 200) {
+              // App Shell 一律存在 "/" 這個 key，讓 start_url 與任何導覽都命中同一份
+              cache.put("/", response.clone());
+            }
+            return response;
+          })
+          .catch(() => null);
+
+        if (cached) {
+          // 背景更新，不阻擋這次的畫面
+          event.waitUntil(fromNetwork);
+          return cached;
+        }
+
+        const networkResponse = await fromNetwork;
+        if (networkResponse) {
+          return networkResponse;
+        }
+
+        return new Response(
+          "<!DOCTYPE html><html><head><meta charset='utf-8'><title>聲動看板 - 離線模式</title></head><body><h1>離線模式</h1><p>請確認應用已安裝或恢復連線。</p></body></html>",
+          { headers: { "Content-Type": "text/html; charset=utf-8" } }
+        );
+      })()
     );
     return;
   }

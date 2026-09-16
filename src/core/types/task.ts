@@ -42,6 +42,17 @@ export interface TaskLink {
   savedAt: string;
 }
 
+/**
+ * Who added the card. Denormalised (rather than just a uid) so a shared family board can still
+ * show the name and face after that person leaves the board, or when they joined as a guest and
+ * has no member record to look up.
+ */
+export interface TaskCreator {
+  uid: string;
+  name: string;
+  avatarUrl?: string | null;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -64,6 +75,7 @@ export interface Task {
   activities?: TaskActivity[];
   isArchived?: boolean;
   link?: TaskLink | null;
+  createdBy?: TaskCreator | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -269,9 +281,8 @@ export function getColumnColorConfig(colorHex?: string | null): {
 }
 
 export const DEFAULT_COLUMNS: Column[] = [
-  { id: "todo", title: "待辦事項", icon: "📋", color: "#fef3c7", description: "準備執行的具體任務" },
-  { id: "in_progress", title: "進行中", icon: "⚡", color: "#ffedd5", description: "當前正在專注處理" },
-  { id: "waiting", title: "等待/阻塞", icon: "⏳", color: "#f3e8ff", description: "等待外部反饋或依賴中" },
-  { id: "done", title: "已完成", icon: "✅", color: "#dcfce7", description: "已交付或已驗收" },
+  { id: "todo", title: "待辦", icon: "📋", color: "#fef3c7", description: "還沒開始的事" },
+  { id: "in_progress", title: "進行中", icon: "⚡", color: "#ffedd5", description: "正在處理的事" },
+  { id: "done", title: "完成", icon: "✅", color: "#dcfce7", description: "已經做完的事" },
 ];
 

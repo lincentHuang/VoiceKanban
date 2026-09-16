@@ -6,7 +6,9 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { inputClass } from "@/components/ui/input";
 
 export const InboxQuickAddBar: React.FC = () => {
-  const { addToInbox, setIsVoiceOverlayOpen, setVoiceState } = useKanbanStore();
+const addToInbox = useKanbanStore((s) => s.addToInbox);
+  const setIsVoiceOverlayOpen = useKanbanStore((s) => s.setIsVoiceOverlayOpen);
+  const setVoiceState = useKanbanStore((s) => s.setVoiceState);
   const [newTitle, setNewTitle] = useState("");
 
   const handleQuickAdd = (e: React.FormEvent) => {

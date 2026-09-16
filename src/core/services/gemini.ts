@@ -28,8 +28,8 @@ export const GEMINI_EXTRACT_SCHEMA = {
     },
     targetColumnId: {
       type: "STRING",
-      enum: ["inbox", "todo", "in_progress", "waiting", "done"],
-      description: "目標欄位 ID：若提及正在做為 in_progress，待辦為 todo，隨手記錄為 inbox，等待為 waiting，完成為 done",
+      enum: ["inbox", "todo", "in_progress", "done"],
+      description: "目標欄位 ID：若提及正在做為 in_progress，待辦為 todo，隨手記錄為 inbox，完成為 done",
     },
     transcript: {
       type: "STRING",
@@ -60,7 +60,7 @@ export function buildSystemInstruction(
 6. 根據語意將任務分流至最適合的看板 (targetBoardId)：
 ${boardsListStr}
 若語意不明確，預設指向第一個看板。
-7. 判斷任務所屬欄位 (targetColumnId: "inbox" | "todo" | "in_progress" | "waiting" | "done")，預設為 "inbox" 或 "todo"。
+7. 判斷任務所屬欄位 (targetColumnId: "inbox" | "todo" | "in_progress" | "done")，預設為 "inbox" 或 "todo"。
 
 請嚴格按照提供的 JSON Schema 輸出結構化資料。`;
 }

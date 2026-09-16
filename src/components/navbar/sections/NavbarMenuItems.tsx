@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { InstallPwaMenuItem } from "@/features/pwa-mobile";
+import { InstallPwaMenuItem } from "@/features/pwa-mobile/components/InstallPwaMenuItem";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
 interface NavbarMenuItemsProps {

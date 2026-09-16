@@ -1,86 +1,79 @@
-# 🌟 智慧型 AI 任務管理看板 (AI-Powered Kanban) - 產品需求規格書 (Master PRD)
+# 🌟 聲動看板 (Voice Kanban) - 產品需求規格書 (Master PRD)
 
 > **文檔屬性**：**產品全貌需求規格書 (Living Master Document)**  
-> **維護原則**：本 PRD 為系統**當前所有現存功能模組之全景規格概述**，每次需求變更皆以「增量演進」方式整合至全域架構中，**絕非單次任務的執行紀錄或 Sprint 日誌**。各功能模組之專屬規格、UI 五態與驗收細節另收錄於各 `src/features/<feature>/feature.md`。
+> **維護原則**：本 PRD 為系統**當前所有現存功能模組之全景規格概述**，每次需求變更皆以「增量演進」方式整合至全域架構中，**絕非單次任務的執行紀錄或 Sprint 日誌**。各功能模組之專屬規格、UI 五態與驗收細節另收錄於各 `src/features/<feature>/feature.md`。  
+> **最後同步**：2026-09-16（依據 `main` 分支現況全面校正）
 
 ---
 
 ## 1. 產品願景與全貌概述 (Product Vision & Executive Summary)
 
-本產品是一套專為現代敏捷工作者、個人開發者與高效團隊打造的**「AI 原生智慧任務管理看板（AI-Powered Task Management System）」**。
-核心特色包含：
-1. **多模態極速輸入**：支援 Web Speech API 語音擷取、Gemini AI 智慧自然語言結構化拆解，以及單行自然語言速記。
-2. **極致流暢看板體驗**：支援毫秒級 Base36 Lexorank 排序、跨欄即時預覽插槽（Drop Slot Indicator）與平滑防抖雙向拖曳。
-3. **雙維度核心檢視**：提供看板（Kanban）與行事曆（Calendar）雙視圖隨心切換。
-4. **Local-First & 雲端雙軌同步**：支援訪客本機離線優先使用，並可一鍵升級綁定 Google / Email 帳號無縫同步至 Firestore。
-5. **BYOK 隱私安全**：支援自帶 Google Gemini API Key（BYOK），採客戶端 AES 加密保障個人隱私。
+聲動看板是一套**以家庭／小團體共用為核心的 AI 原生任務看板**。產品存在的理由是**降低「把家裡的事情記下來」的門檻**：成員的技術熟練度不一，因此任何需要學習成本的操作都會直接讓人放棄記錄。所有功能取捨的判準是「**這會讓家人更願意、還是更不願意打開它**」，而非「對進階使用者是否夠強大」。
+
+核心特色：
+1. **零門檻記錄**：語音口述、貼上連結、單行輸入 Enter，三種最低摩擦的入口。
+2. **多人共用看板**：6 碼邀請碼、免註冊訪客協作、即時同步與通知中心——這是產品的主軸而非附加功能。
+3. **社群內容收藏**：把 IG / YouTube / Threads 的連結一鍵存成有縮圖的卡片。
+4. **極致流暢看板體驗**：Base36 Lexorank 排序、跨欄即時預覽插槽與平滑防抖雙向拖曳。
+5. **Local-First & 雲端雙軌同步**：訪客本機離線優先使用，可一鍵升級綁定 Google / Email 帳號同步至 Firestore。
+6. **零營運成本與 BYOK 隱私安全**：雲端 AI 解析一律使用使用者自帶的 Google Gemini API Key（BYOK），伺服器端**不提供共用金鑰**；R2 上傳與外部抓取皆有帳號驗證與配額上限，確保營運者不承擔使用者的用量成本。
+7. **PWA 優先**：以 PWA 提供手機／桌面安裝體驗，**不維護原生 App 封裝**，開發資源集中在啟動速度與流暢度。
 
 ---
 
 ## 2. 系統架構與前端目錄規範 (System Architecture & Folder Structure)
 
-本專案採用 **Next.js Feature-Driven (垂直切片模組化)** 前端架構：
+本專案採用 **Next.js 16 (App Router) + Feature-Driven（垂直切片模組化）** 前端架構，狀態集中於單一 Zustand Store：
 
 ```text
 src/
-├── app/                        # Next.js App Router (頁面路由與 API Handlers)
-│   ├── api/voice/extract/      # Gemini AI 語音結構化解析 API
-│   ├── api/user/key/           # BYOK API Key 加密儲存/檢驗 API
-│   ├── page.tsx                # 主應用入口
-│   └── globals.css             # 全域 Tailwind CSS 與主題變數
-├── features/                   # 業務功能模組 (Feature Modules)
-│   ├── auth/                   # [Feature 1] 使用者認證與會話管理
-│   │   ├── components/         # AuthLandingScreen, AuthModal, BindAccountModal
-│   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 認證功能全貌規格與 AC
-│   ├── kanban/                 # [Feature 2] 看板核心、卡片、狀態列拖曳、右側新增欄位與批次操作
-│   │   ├── components/         # BoardCanvasContainer, KanbanContainer, KanbanColumn, TaskCard, Add/Edit Modal...
-│   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 看板功能全貌規格與 AC
-│   ├── inbox/                  # [Feature 3] 快速收件匣與工作區分割
-│   │   ├── components/         # SidebarInbox
-│   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 收件匣功能全貌規格與 AC
-│   ├── voice/                  # [Feature 4] AI 語音擷取與自然語言解析
-│   │   ├── components/         # VoiceFAB, VoiceCaptureOverlay, AudioVisualizer
-│   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 語音功能全貌規格與 AC
-│   ├── quick-prompt/           # [Feature 5] 頂部自然語言快速速記
-│   │   ├── components/         # QuickPromptHero
-│   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 速記功能全貌規格與 AC
-│   ├── views/                  # [Feature 6] 行事曆視圖 (Calendar View)
-│   │   ├── components/         # CalendarView
-│   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 行事曆視圖全貌規格與 AC
-│   ├── settings/               # [Feature 7] 使用者設定與 BYOK 金鑰加密
-│   │   ├── components/         # SettingsModal
-│   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 設定功能全貌規格與 AC
-│   ├── editor/                 # [Feature 8] Markdown 任務筆記編輯器
-│   │   ├── components/         # MarkdownEditor
-│   │   ├── index.ts            # 模組統一出口
-│   │   └── feature.md          # 編輯器功能全貌規格與 AC
-│   └── collaboration/          # [Feature 9] 多人即時協同編輯與邀請機制
-│       ├── components/         # ShareBoardModal, JoinBoardModal, CollaboratorAvatars, ReadOnlyBanner
-│       ├── services/           # collaborationService
-│       ├── types/              # collaboration types
-│       ├── index.ts            # 模組統一出口
-│       └── feature.md          # 多人協同功能全貌規格與 AC
-├── components/                 # 全域共用 UI 元件
-│   ├── ui/                     # 基礎原子元件 (Dialog, Dropdown, Select, Popover...)
-│   ├── layout/                 # 全域版面 (UnifiedDnDWorkspace, WorkspaceSplitter)
-│   ├── navbar/                 # 全域頂部導覽列
-│   ├── navigation/             # 全域底部浮動 Dock (精簡收件匣/看板/行事曆)
-│   ├── toolbar/                # 全域子工具列
-│   ├── common/                 # 全域共用複合元件 (DateTimePicker)
-│   └── brand/                  # 品牌 Logo
-└── core/                       # 全域核心底層
-    ├── types/                  # 全域資料型別契約 (task, voice, auth, user, ui)
-    ├── stores/                 # Zustand 全域狀態中心 (useKanbanStore)
-    ├── services/               # 雲端與本機服務 (firebase, gemini, syncService, learningEngine...)
-    └── utils/                  # 工具函式 (lexorank, dateUtils, crypto, cn)
+├── app/                            # Next.js App Router (頁面路由與 API Handlers)
+│   ├── api/voice/extract/          # 語音／逐字稿結構化解析 (Gemini BYOK + 本機 NLP)
+│   ├── api/user/key/               # BYOK API Key 驗證與加密儲存 (含 IP 速率限制)
+│   ├── api/upload/                 # Cloudflare R2 檔案上傳 (需登入 + 每日配額)
+│   ├── api/link/preview/           # 連結預覽爬取 (oEmbed / Open Graph + SSRF 防護)
+│   ├── api/link/thumbnail/         # IG / Threads 縮圖轉存 R2 (需登入 + 配額)
+│   ├── layout.tsx / page.tsx       # 應用外殼與主入口
+│   └── globals.css                 # 全域 Tailwind CSS 與主題變數
+├── features/                       # 業務功能模組 (Feature Modules)
+│   ├── auth/                       # [F1] 認證、訪客模式與帳號綁定
+│   ├── kanban/                     # [F2] 看板核心、卡片詳情、欄位管理、批次操作
+│   ├── inbox/                      # [F3] 快速收件匣側邊欄
+│   ├── voice/                      # [F4] AI 語音擷取與解析
+│   ├── views/                      # [F5] 行事曆視圖
+│   ├── search/                     # [F6] Command Palette 搜尋
+│   ├── editor/                     # [F7] Markdown 說明編輯器與 GFM 渲染
+│   ├── settings/                   # [F8] 設定中心與 BYOK 金鑰
+│   ├── collaboration/              # [F9] 多人即時協同與邀請機制
+│   ├── notifications/              # [F10] 協作通知中心與桌面推播
+│   ├── offline/                    # [F11] 離線偵測、橫幅與待同步佇列
+│   ├── pwa-mobile/                 # [F12] PWA 安裝引導與 Service Worker 註冊
+│   └── bookmarks/                  # [F13] 社群內容收藏與連結展開
+│       （各模組皆具備 components/ · 視需要 hooks/ services/ types/utils/ · index.ts · feature.md）
+├── components/                     # 全域共用 UI 元件
+│   ├── ui/                         # 基礎原子元件 (Radix: Dialog, Dropdown, Select, Popover, Input...)
+│   ├── layout/                     # 全域版面 (UnifiedDnDWorkspace, AppModals, dnd/)
+│   ├── navbar/                     # 全域頂部導覽列與使用者選單
+│   ├── navigation/                 # 底部浮動 Dock (收件匣／看板／行事曆)
+│   ├── common/                     # 複合元件 (DateTimePicker, TagPicker, UserAvatar)
+│   └── brand/                      # 品牌 Logo
+└── core/                           # 全域核心底層
+    ├── hooks/                      # useAppInit, useClickOutside, useEscapeKey
+    ├── types/                      # 全域型別契約 (task, voice, auth, user)
+    ├── stores/                     # Zustand 狀態中心 (useKanbanStore)
+    ├── services/                   # firebase, authService, syncService, gemini, localNlpParser,
+    │                               # webSpeechService, audioRecorderService, r2Storage,
+    │                               # verifyIdToken, guestUser, mockData
+    └── utils/                      # lexorank, dateUtils, crypto, rateLimit, authToken,
+                                    # chineseConvert, imageUtils, uploadUtils, calendar, cn
 ```
+
+**已退場的架構元素**（曾出現於舊版 PRD，現已自程式碼移除）：
+- `features/quick-prompt/`（頂部自然語言速記 Hero）：入口收斂為語音 FAB、欄位內行內新增與收件匣單行輸入。
+- `core/services/learningEngine.ts`（語音欄位偏好學習引擎）。
+- `components/toolbar/`（全域子工具列）與 `WorkspaceSplitter`（收件匣寬度分割器，現為固定 320px）。
+- `android/` 與 `ios/` Capacitor 原生工程與 `capacitor.config.ts`（詳見 §3.12）。
+- Table View 與 List View 兩種檢視模式。
 
 ---
 
@@ -88,218 +81,178 @@ src/
 
 ### 3.1 🔐 使用者認證與資料漫遊 (Auth Feature)
 - **訪客模式 (Guest First)**：無需註冊直接上手，資料持久化於 LocalStorage。
-- **多渠道登入 (Multi-Provider)**：支援 Google OAuth 與 Email 密碼登入。
-- **無縫帳號綁定 (Seamless Account Binding)**：訪客建立之資料可隨時綁定至正式雲端帳號，資料零遺失。
+- **多渠道登入 (Multi-Provider)**：支援 Google OAuth 與 Email 密碼登入（Firebase Auth）。
+- **無縫帳號綁定 (Seamless Account Binding)**：訪客建立之資料可隨時綁定至正式雲端帳號，資料零遺失；綁定後既有協作看板身分自動延續。
 
 ### 3.2 📋 看板、狀態列拖曳與雙向拖曳引擎 (Kanban & DnD Feature)
-- **狀態列欄位拖曳重排 (Column DnD Reorder)**：支援抓住欄位 Header（或長按 200ms）進行水平平滑拖曳排序，即時預覽換位並持久化順序。
-- **狀態流程管理視窗拖曳排序與 Popover 圖示選擇**：在 `ColumnManagerModal` 中支援按住 `⋮⋮` 垂直拖曳（Drag & Drop）直覺調整順序；圖示選擇器採用小巧 Popover 彈窗取代傳統下拉選單，並支援「無圖示 (純文字)」選項。
-- **已完成任務底部折疊收合 (Collapsible Completed Tasks at Column Bottom)**：各狀態欄位內的已完成任務（`completed: true`）自動沉底排列至最下方，預設收合為「已完成任務 (N)」精緻折疊條；點擊可流暢展開/收合查看，展開後支援卡片全功能查看與正常拖曳排序。
-- **最右側行內極速新增欄位 (Inline Column Creation)**：看板橫向末端提供「+ 新增欄位」卡片，行內輸入名稱 Enter 立即建立新狀態欄位。
-- **卡片即時預覽插槽與幽靈佔位 (Live Drop Slot & Ghost Card Placeholder)**：
-  - 拖曳卡片時，原始欄位保持本體幽靈佔位（Ghost Placeholder，`opacity-35`），徹底杜絕欄位高度瞬間塌陷所導致的跳動與版面位移。
-  - 目標切入位置以**簡約素雅灰色塊（Subtle Gray Drop Block）**呈現清晰插槽，高度適中（`h-12`），取代過粗線條或過大方塊。
-  - 目標欄位維持常態優雅底色與邊框，不出現干擾性橘色高亮外框。
-  - **跨欄拖曳極速頂部定位**：由其他欄位或側邊收件匣拖入新欄位時，預覽插槽與落點直接固定為該欄位最頂端第一個（Index 0），確保視覺位置一致且免除跨欄位移錯置。
-- **精準中線切入與平滑防抖碰撞策略**：同欄排序結合 `pointerWithin` 與卡片垂直中線（Midpoint Thresholding）幾何判定，拖至最頂端、兩張卡片縫隙或最底端皆能 100% 精準切入，杜絕快速拖曳時跳欄震盪，並完美分離 Column 與 Task 拖曳。
-- **Lexorank Base36 排序鍵**：毫秒級任意區間卡片插入，避免大量全量更新。
-- **欄位管理、全欄位柔和色彩與 WIP 上限**：支援自訂欄位名稱、柔和淺色系全欄位主題色調（取代單一線條，呈現精緻底色與邊框）、排序與在製品（WIP）超額警示。
-- **欄位名稱與圖示行內極速編輯與選單重新命名 (Inline Column Rename & Action Menu Integration)**：
-  - **列表動作選單整合**：點擊欄位右上角 `...` 選單新增「✏️ 重新命名列表」與「⚙️ 管理所有欄位流程...」入口，點擊前者直接令欄位標題進入編輯狀態。
-  - **標頭就地行內編輯 (Inline Title Edit)**：滑鼠懸停於欄位標題顯示微光鉛筆圖示，點擊或雙擊標題文字立即切換為行內輸入框（自動全選聚焦）；按 `Enter` 或游標移出（`Blur`）即時保存變更，按 `Escape` 取消還原，空白輸入自動防呆復原。
-  - **圖示 Popover 極速更換**：點擊欄位標頭圖示即刻展開精緻 Popover 面板，支援直覺點選 Emoji 或切換為「無圖示 (純文字)」，修改名稱或圖示彼此獨立且互不覆蓋。
-  - **嚴格手勢防衝突隔離**：行內輸入框與圖示按鈕徹底隔離指標事件冒泡（`stopPropagation`），打字、框選文字或點選圖示時 100% 杜絕觸發欄位或畫布 DnD 拖曳。
-- **多選與批次操作 (Batch Actions & Mobile Responsive Bar)**：
-  - 支援多選卡片，一鍵批次搬移欄位、變更優先級、完成與刪除。
-  - **響應式兩行佈局 (Mobile Two-Line Layout)**：於手機小螢幕下（`< sm`），底部浮動 `BatchActionBar` 自動切換為雙行卡片佈局（第一行：選取計數與退出多選按鈕；第二行：移動至、優先級、未完成、完成與刪除動作列），徹底杜絕按鈕壓縮換行跑版，桌機寬螢幕（`≥ sm`）則維持俐落單行膠囊列。
-- **桌機版看板滑鼠拖曳滑動畫面 (Desktop Canvas Mouse Drag Panning / Drag-to-Scroll)**：
-  - **畫布滑鼠抓取平移**：桌機環境下，使用者可在看板空白畫布、欄位間隙或非互動空白區域按住滑鼠左鍵自由水平拖曳（Drag to Scroll / Pan），畫面流暢 1:1 跟隨滑鼠位移，放開時帶有自然慣性滑行（Momentum Gliding）。
-  - **智慧防衝突隔離**：自動識別互動元素與拖曳目標（卡片拖曳、欄位標頭拖曳、按鈕、輸入框、選單與下拉彈窗），點擊/拖曳卡片或標頭時正常觸發 DnD 排序，絕不干擾既有操作；滑鼠微移（< 3px）精準判定為靜態點擊，超過 3px 啟動平移並自動阻止誤觸點擊。
-  - **動態游標反饋**：常態懸停於畫布空白區域顯示 `cursor-grab`（抓取手勢），拖曳平移期間即時切換為 `cursor-grabbing`（握拳手勢）並啟用 `select-none` 防文字反白。
-- **看板多看板切換、編輯（改名/更換圖示）與安全刪除防呆 (Board Management, Rename, Icon & Safe Deletion)**：
-  - **看板下拉選單直覺操作 (Board Dropdown Quick Actions)**：在頂部 `BoardSwitcherMenu` 看板切換選單中，各看板項目均提供專屬編輯（✏️）與刪除（🗑️）按鈕。
-  - **專屬看板編輯視窗 (Edit Board Modal)**：支援自訂看板名稱、選取 Emoji 圖示（或設定純文字）與看板描述，修改即時生效並自動同步至雲端與本機存儲。
-  - **全方位看板安全刪除防呆 (Safe Board Deletion Guard & Cascade Clean)**：
-    - **最後看板保護機制**：系統強制限制當僅存最後 1 個看板時不可刪除，並顯示防呆提示，確保系統核心資料結構穩定。
-    - **刪除確認視窗 (Board Delete Confirmation Modal)**：點擊刪除看板時彈出防呆確認視窗，明確提示看板名稱、包含之任務數量及刪除後不可復原之警示。
-    - **自動平滑切換**：刪除當前啟用中（Active）看板時，系統自動將視圖無縫切換至剩餘看板中的第一個，並同步清理該看板關聯任務與通知雲端同步。
-- **手機端看板欄位底部與浮動 Dock 安全避讓 (Mobile Column Bottom Dock Clearance & Safe Area)**：
-  - **精準避讓浮動控制列**：手機版視窗下（`< sm`），看板主畫布底部容器與收件匣內容區統一配置 `pb-[54px]` 精準避讓間距，徹底解決無效 CSS 類別導致欄位卡片底部、已完成折疊列與「+ 新增卡片」按鈕被底部浮動 Dock (`BottomDock`)、語音按鈕 (`VoiceFAB`) 或 Next.js 開發標籤遮擋重疊之問題。
-  - **直覺透視背景**：欄位卡片與內容滾動至最底部時精準停止於 Dock 上方，保持乾淨呼吸感，Dock 背後僅透出看板專屬紫紅漸層畫布，互動零衝突、按鈕 100% 可視且易於點擊。
+- **狀態列欄位拖曳重排 (Column DnD Reorder)**：抓住欄位 Header（或長按 200ms）水平平滑拖曳排序，即時預覽換位並持久化。
+- **已完成任務底部折疊收合**：各欄位內 `completed: true` 的任務自動沉底，預設收合為「已完成任務 (N)」折疊條，展開後支援全功能查看與拖曳排序。
+- **最右側行內極速新增欄位 (Inline Column Creation)**：看板橫向末端提供「+ 新增欄位」卡片，行內輸入名稱 Enter 立即建立。
+- **卡片即時預覽插槽與幽靈佔位**：
+  - 拖曳時原欄位保留幽靈佔位（`opacity-35`），杜絕欄位高度塌陷造成的跳動。
+  - 目標插槽以簡約灰色塊（`h-12`）呈現，目標欄位維持常態底色不加干擾性高亮外框。
+  - **跨欄拖曳極速頂部定位**：由其他欄位或收件匣拖入時，落點固定為最頂端（Index 0）。
+- **精準中線切入與平滑防抖碰撞策略**：`pointerWithin` 結合卡片垂直中線判定，最頂端、卡片縫隙與最底端皆能精準切入，並完美分離 Column 與 Task 拖曳。
+- **Lexorank Base36 排序鍵**：毫秒級任意區間插入，避免大量全量更新。
+- **欄位柔和色彩與行內編輯**：
+  - 十色粉彩欄位主題（含舊版飽和色自動映射），於欄位選單內以色票即時套用。
+  - **標頭就地行內編輯**：懸停顯示鉛筆，點擊／雙擊標題切換為輸入框，Enter 或 Blur 儲存、Escape 還原、空白防呆復原；**所有輸入皆內建中文 IME 組字保護**（`isComposing` / `Process` 防重複送出）。
+  - **圖示 Popover 極速更換**：點擊欄位圖示展開 Emoji Popover，支援「無圖示（純文字）」；名稱與圖示修改互不覆蓋。
+  - **嚴格手勢防衝突隔離**：輸入框與圖示按鈕阻斷指標事件冒泡，打字與框選 100% 不觸發 DnD。
+- **欄位動作選單 (`ColumnActionMenu`)**：新增卡片、重新命名列表、欄位色票、**排序依據（到期日／優先等級／卡片名稱）**、**移動這個列表的所有卡片至指定欄位**、封存這個列表、看板管理、📦 聚合為單一任務卡（移至收件匣）。
+- **多選與批次操作 (Batch Actions)**：多選卡片後一鍵批次搬移欄位、變更優先級、標記完成／未完成與刪除；手機小螢幕（`< sm`）底部 `BatchActionBar` 自動切換為雙行卡片佈局，桌機維持單行膠囊列。
+- **桌機版看板滑鼠拖曳平移 (Drag-to-Scroll Panning)**：於空白畫布按住左鍵 1:1 水平平移並帶慣性滑行；自動識別互動元素避免衝突；`cursor-grab` / `cursor-grabbing` 動態游標；微移（< 3px）判定為點擊。
+- **多看板切換與安全刪除防呆**：`BoardSwitcherMenu` 提供切換、新增、編輯（✏️）與刪除（🗑️）；刪除時彈出確認視窗並提示任務數量，**最後一個看板不可刪除**；刪除當前看板時自動平滑切換至第一個剩餘看板並級聯清理任務。
+- **手機端底部安全避讓**：看板主畫布與收件匣內容區統一配置 `pb-[calc(54px+env(safe-area-inset-bottom,0px))]`，確保卡片、折疊條與新增按鈕完整露出於 BottomDock 與語音 FAB 之上。
 
----
+### 3.3 🗂️ 看板管理中心 (Board Manager Modal)
+單一 `BoardManagerModal` 以四個分頁整合所有看板層級設定（取代舊版獨立的 `ColumnManagerModal` 與 `EditBoardModal`）：
+- **欄位流程 (Columns)**：按住 `⋮⋮` 垂直拖曳調整欄位順序、行內改名、Popover 圖示選擇（含無圖示）、新增與刪除欄位。
+- **一般設定 (General)**：看板名稱、Emoji 圖示與描述。
+- **共享協作 (Sharing)**：開啟共享、檢視邀請碼與成員清單、角色調整（詳見 §3.15）。
+- **背景外觀 (Appearance)**：套用 `BOARD_BACKGROUND_PRESETS` 看板畫布漸層背景（極光紫、深海藍、暮色橘、森林綠、極夜黑、糖果粉等），色票即時預覽並持久化於 `Board.background`。
 
-## 3.3 📥 快速收件匣 (Inbox Feature)
-- **固定側邊欄與滑順展開收合動畫 (Animated Fixed Sidebar Inbox)**：
-  - **桌機版平滑動畫 (Desktop Smooth Transition)**：收件匣固定寬度（320px），展開與收合時具備 300ms `ease-in-out` 平滑寬度、透明度與邊距過渡動畫，內層具備固定寬度包裝容器（Fixed Inner Wrapper），動畫縮放期間內部標題、搜尋按鈕、輸入框與卡片保持穩定不折行；右側看板畫布同步帶有 `transition-all` 平滑寬度伸縮。
-  - **一鍵收合開關**：收件匣頂部 Header 右側配置專屬 `<ChevronLeft>` 收合按鈕，支援與底部浮動 BottomDock「收件匣」按鈕雙向聯動流暢切換。
-  - **手機版全寬自適應與消除不明空白 (Mobile Full-Width Responsive Inset)**：手機版（`< sm`）收件匣覆蓋卡片採 `inset-2.5` 滿版展示，內層容器全寬自適應（`w-full min-w-0`），徹底消除內嵌固定寬度（294px）導致右側留白的不明間隙，標頭、輸入框、待辦卡片與自訂捲軸 100% 貼合滿版寬度；桌機版（`≥ sm`）維持固定寬度包裝容器防折行抖動。
+### 3.4 🗃️ 任務詳情卡 (Task Detail Modal)
+單張卡片承載的完整資訊結構（`Task` 型別契約）與其編輯介面：
+- **頂部動作列**：完成切換、⭐ 重要標記、移動卡片（Popover 選擇看板／欄位）、封面設定、🚀 展開為狀態欄位、🗑️ 刪除（含防呆確認 Modal）、關閉。
+- **封面 (Cover)**：支援純色／漸層（日落暖陽、極光青綠、深邃海洋、霓虹魅紫）或自訂上傳圖片，並可選擇顯示比例 `banner (16:9)` / `1:1` / `3:4` / `9:16` / `bar (極簡飾條)`；卡片列表同步呈現封面。
+- **標籤選擇器 (`TagPicker`)**：Notion 風格 Popover，一個搜尋框同時完成「過濾既有標籤」與「建立新標籤」，右側顯示每個標籤的使用卡數，避免家庭成員各自打出同義標籤。
+- **子任務待辦清單 (Checklist)**：長按 500ms 啟用平滑垂直拖曳排序（無多餘箭頭或把手），短按切換勾選、雙擊行內改名；即時進度百分比條。
+- **附件檔案 (Attachments)**：介面允許單檔至 25MB；已登入帳號優先直傳 Cloudflare R2（伺服器端單檔上限 5MB、每日 20 次／50MB 配額），訪客、超額或超過 5MB 時自動降級為本機壓縮 Base64，流程不中斷。圖片可一鍵「插入到說明」，支援下載與刪除，上傳期間顯示旋轉 Loading。
+- **留言與活動紀錄 (Comments & Activity)**：`TaskActivity` 時間軸，可在卡片內撰寫評論或進度筆記，家庭成員之間以此對同一件事補充狀況。
+- **建立者身份 (Task Creator)**：`createdBy` 於共享看板的卡片上顯示頭像與名稱（去正規化儲存，成員離開看板或以訪客身分加入時仍可正確顯示）。
+- **手機 Bottom Sheet**：手機版（`< sm`）以底部抽屜呈現（88vh~92vh）並支援下拉關閉手勢，桌機維持置中彈窗（詳見 §3.14）。
+
+### 3.5 📥 快速收件匣 (Inbox Feature)
+- **固定側邊欄與滑順展開收合**：桌機固定寬度 320px，300ms `ease-in-out` 寬度／透明度過渡，內層固定寬度包裝容器避免動畫期間折行；Header 右側 `<ChevronLeft>` 收合按鈕與底部 Dock「收件匣」雙向聯動。
+- **手機版全寬自適應**：手機（`< sm`）覆蓋卡片採 `inset-2.5` 滿版，內層 `w-full min-w-0`，標頭、輸入框與卡片 100% 貼合寬度。
 - **雙向自由拖曳**：可從收件匣拖曳卡片至看板任意位置（落點固定首位），或將看板卡片暫存回收件匣。
-- **單行極速新增**：支援鍵盤 Enter 即時加入待辦。
+- **單行極速新增**：鍵盤 Enter 即時加入待辦（內建 IME 組字保護）；貼上單一網址時自動展開為含縮圖的連結卡片（詳見 §3.18）。
+- **收件匣多選列**：支援全選與批次操作。
 
-### 3.4 🎙️ AI 語音擷取與智慧解析 (Voice & AI Extraction)
-- **極簡俐落語音彈窗 (Clean & Minimalist Voice Modal)**：
-  - 彈窗頂部統一標題為「語音輸入」，移除冗贅的「離線半自動學習」、「零 API 依賴」與語系切換按鈕，視覺清爽專注。
-  - 預覽畫面移除次級贅述標題、語言標籤與技術提示框，保留純粹精準的口述逐字稿與任務微調欄位（看板、欄位、優先級、到期時間、標籤）。
-- **即時錄音與聲波視覺化**：Web Speech API 結合 Web Audio API 動態頻譜波形。
-- **純淨標題與欄位精準辨識**：語音新增聚焦提取**任務標題 (`title`)** 與 **所屬狀態欄位 (`targetColumnId`)**，卡片建立時**不額外於說明欄位備註逐字稿**，保持卡片說明空間乾淨清爽。
-- **全方位欄位關鍵字與自訂欄位支援**：支援進行中、待辦清單、已完成、等待/卡關、收件夾及看板自訂欄位名稱智能分流，並自標題中智慧剔除「放進進行中」、「移至待辦」等動作贅詞。
-- **本機 Local NLP 備援**：離線或無 API Key 時無縫降級本機正規分析。
-- **回饋學習引擎 (Learning Engine)**：根據使用者手動修正行為學習欄位分配偏好。
+### 3.6 🎙️ AI 語音擷取與智慧解析 (Voice & AI Extraction)
+- **極簡俐落語音彈窗**：頂部統一標題「語音輸入」，移除語系切換與技術提示框，預覽僅保留逐字稿與任務微調欄位（看板、欄位、優先級、到期時間、標籤）。
+- **雙軌辨識管線**：
+  - **Web Speech API 即時辨識**：瀏覽器原生辨識即時上字幕，`AudioVisualizer` 以 Web Audio API 繪製動態頻譜。辨識結果**自動以 OpenCC 轉為繁體中文（zh-TW）**，修正部分瀏覽器／OS 語音引擎回傳簡體字的問題。
+  - **音訊上傳雲端解析**：無法使用 Web Speech 時由 `audioRecorderService` 錄音並上傳（單檔上限 10MB，每分鐘 10 次）交由 Gemini 直接聽打與結構化。
+- **BYOK 強制原則（零營運成本）**：雲端音訊解析**一律使用呼叫者自己的 Gemini API Key**，伺服器端刻意不設共用金鑰備援——公開部署上的共用金鑰會由營運者買單並可被任意壓榨。未填金鑰時回傳 `API_KEY_REQUIRED` 並引導至設定頁。
+- **純淨標題與欄位精準辨識**：聚焦提取任務標題（`title`）與目標欄位（`targetColumnId`），建立卡片時**不於說明欄位備註逐字稿**。
+- **全方位欄位關鍵字與自訂欄位支援**：動態取得當前看板所有欄位（含自訂），並自標題中智慧剔除「放進進行中」、「移至待辦」等動作贅詞。
+- **本機 Local NLP 備援**：離線、無金鑰或直接送出逐字稿時，由 `localNlpParser` 以正則解析時間、優先級與標籤，流程不中斷。
+- **欄位定向啟動**：由特定欄位的語音按鈕觸發時，若口述未指定欄位則精準落在該欄位。
 
-### 3.5 ⚡ 快速自然語言指令輸入 (Quick Prompt Feature)
-- **頂部/Hero 自然語言速記**：支援文字直接輸入如「後天下午 3 點 提交報告 #work !urgent」，秒級建立。
-- **一鍵切換語音**：輸入框直通語音浮層。
-
-### 3.6 📊 雙重視圖切換 (Views Feature)
+### 3.7 📊 雙重視圖切換 (Views Feature)
 - **Kanban Board**：泳道卡片流動檢視，支援欄位拖曳排序與行內新增欄位。
-- **Calendar View**：月度/週度時間排程視覺化。
+- **Calendar View**：月度／週度時間排程視覺化（以 `dynamic()` 延遲載入，不佔用看板首屏成本）。
 - **全域同步篩選**：標籤與關鍵字搜尋在看板與行事曆即時聯動。
-- **精簡架構**：已徹底移除不便使用之 Table View 與 List View，專注極致看板與日曆體驗。
+- **精簡架構**：已徹底移除 Table View 與 List View，專注看板與行事曆雙視圖；底部 Dock 僅保留收件匣／看板／行事曆三個入口。
 
-### 3.7 ⚙️ 設定中心與 BYOK 加密 (Settings & Security)
-- **BYOK (Bring Your Own Key)**：支援使用者填入自訂 Google Gemini API Key，採本機 AES 加密存儲。
-- **AI 模型切換**：可選擇 Gemini 2.5 Flash / Pro 及預設辨識語系。
-- **外觀偏好**：深色模式 (Dark)、淺色模式 (Light)、系統自動跟隨。
+### 3.8 ⚙️ 設定中心與 BYOK 加密 (Settings & Security)
+- **BYOK 分頁 (API)**：填入自訂 Google Gemini API Key，採本機 AES 加密儲存；提供連線測試（每 IP 每小時 5 次上限）與金鑰抹除。
+- **AI 模型切換**：`gemini-3.6-flash`（推薦，免費方案可用）與 `gemini-3.1-pro-preview`（深度語義，需付費方案）。
+- **離線分頁 (Offline)**：手動「離線工作模式」開關與待同步狀態（詳見 §3.13）。
+- **深淺色主題**：全站以 Tailwind `darkMode: "class"` 撰寫完整深／淺色樣式，跟隨系統環境呈現。
 
-### 3.8 📝 Markdown 任務筆記與子任務待辦清單 (Markdown Notes & Checklists)
-- **極簡內嵌式說明排版 (Clean Inline Layout)**：
-  - 移除冗餘的多層卡片白底容器與「說明內容預覽」次標題列，視覺自然融入任務詳情彈窗中。
-  - 將「編輯說明」功能按鈕整合置於「說明 (Markdown & 圖片)」標題列的最右端，編輯模式下切換為「取消」與「完成」按鈕。
-- **超長內容漸層收合與展開 (Gradient Fade Collapse & Expand)**：
-  - 當渲染後的說明 Markdown 內容高度超過 500px 時，自動啟用漸層漸隱到底部透明遮罩，並提供寬版「展開完整說明內容 / 收合說明內容」按鈕切換。
-- **雙模切換與即時儲存防護 (Edit/Preview & Safe Persistence)**：
-  - 支援即時編輯（Write）與渲染預覽（Preview），修正狀態閉包覆蓋問題，確保點擊「完成」或使用快捷鍵時即時持久化更新至 Store 與資料庫。
-  - **智慧圖片壓縮與超額防護**：上傳或貼上圖片時自動調用 Canvas 進行高畫質 WebP/JPEG 壓縮，解決瀏覽器 localStorage 容量上限（5MB QuotaExceededError）與 Firestore 單檔大小限制問題。
-- **工具列支援**：粗體、斜體、刪除線、清單、表格、代碼、標題、圖片上傳一鍵插入。
-- **完整 GFM 排版與表格渲染支援 (GitHub Flavored Markdown & Tables)**：
-  - **表格渲染支援 (GFM Table)**：支援標準 Markdown 表格語法（`| 欄位 | 欄位 |` 與分隔線 `| :--- | :---: | ---: |`），自動產生結構化 `<table>`，支援文字對齊（置左、置中、置右）、表格內行內 Markdown 樣式（粗體、連結、代碼）、隔行微底色與懸停高亮、響應式橫向滾動（`overflow-x-auto`）及深色模式適配，徹底解決 Markdown 表格退化為純文字行的失效問題。
-  - **水平分隔線 (Horizontal Dividers)**：正確將 `---`、`***`、`___` 解析並渲染為優雅的 `<hr>` 分隔線，取代原本作為純文字段落的錯誤呈現。
-  - **多行代碼區塊 (Fenced Code Blocks)**：支援 ```` ```lang ... ``` ```` 程式碼區塊解析，具備語言標籤與高對比專屬代碼框。
-  - **多層級清單與 Checklists**：支援無序清單縮排層級、有序清單以及待辦核取方塊（`- [ ]` / `- [x]`）。
-- **子任務待辦清單 (Checklists)**：
-  - **長按 500ms 拖曳上下移動與排序 (500ms Long Press Reorder)**：極簡純淨視覺，無需多餘上下箭頭或把手符號，手指或滑鼠直接長按子任務 500ms 即可啟用平滑垂直拖曳排序，放開即更新位置並持久化。
-  - **常態短按防誤觸**：小於 500ms 的短按即時切換完成狀態勾選或雙擊編輯，互不干擾。
-  - **進度百分比條 (Progress Bar)**：即時連動已完成子任務數量與完成率百分比。
-  - **行內快速編輯與刪除**：支援點擊鉛筆或雙擊修改項目名稱，Enter 儲存、Escape 取消。
+### 3.9 📝 Markdown 任務筆記與 GFM 渲染 (Markdown Notes)
+- **極簡內嵌式排版**：說明區自然融入任務詳情彈窗，「編輯說明」按鈕置於標題列最右端，編輯模式切換為「取消 / 完成」。
+- **超長內容漸層收合**：渲染高度超過 500px 時自動漸隱並提供「展開完整說明內容 / 收合」按鈕。
+- **雙模切換與即時儲存防護**：Write / Preview 雙模，修正狀態閉包覆蓋問題，確保「完成」與快捷鍵即時持久化。
+- **智慧圖片壓縮與 R2 上傳**：貼上或上傳圖片自動經 Canvas 壓縮為 WebP/JPEG，優先直傳 R2，未設定時降級本機壓縮 Base64，避免 localStorage 5MB 與 Firestore 單檔上限。
+- **完整 GFM 支援**：表格（含 `:---` / `:---:` / `---:` 對齊、隔行底色、懸停高亮、橫向滾動與深色適配）、水平分隔線（`---` / `***` / `___`）、Fenced Code Blocks（含語言標籤）、多層級清單與 `- [ ]` / `- [x]` 核取方塊。
+- **工具列**：粗體、斜體、刪除線、清單、表格、代碼、標題、圖片上傳一鍵插入。
 
-
-### 3.9 🔍 響應式搜尋與 Search Modal (Search Feature)
-- **Header 瘦身與空間專注**：全面移除頂部 Header 上的「建立（+）」與「一鍵語音（Mic）」按鈕，使 Header 回歸純粹的導覽與搜尋功能。
-- **全響應式搜尋觸發體驗**：
-  - **桌機版（`≥ sm`）**：搜尋列設計為微互動膠囊列觸發器（含 `⌘K` 快捷鍵提示），點擊或鍵盤輸入瞬開 Search Modal。
-  - **手機版（`< sm`）**：搜尋列轉為右上角精緻搜尋按鈕圖示，徹底消除小螢幕空間不足導致輸入框被擠壓變形的問題。
-- **Command Palette 風格 Search Modal**：
-  - 自動聚焦搜尋輸入框、支援即時關鍵字模糊過濾（任務標題、內文描述、標籤）。
-  - 嚴格落實 UI 5 態（引導空狀態、無相符結果狀態、即時結果清單、鍵盤選取高亮態）。
-  - 任務卡片結果直觀呈現所屬欄位色標、標籤、截止日與星號，點擊可直接開啟任務詳情編輯（`setEditingTaskId`）或一鍵在看板中套用篩選。
-
-### 3.10 📱 行動端封裝、Capacitor App 與 PWA (Mobile App & PWA Feature)
-- **Capacitor 跨平台雙平台原生封裝 (iOS & Android Native Container)**：
-  - 應用識別碼 (App ID / Bundle ID)：`com.voicekanban.app`，中文應用顯示名稱：**「聲動看板」**。
-  - 混合容錯雙軌架構：建立完整 `capacitor.config.ts`，支援本地靜態包裝與生產伺服器 API 容錯代理，解決 Next.js Route Handlers（語音辨識、BYOK 驗證）於原生端運行之需要。
-  - 原生權限與設備適配：配置 iOS `Info.plist`（`NSMicrophoneUsageDescription`）與 Android `AndroidManifest.xml`（`RECORD_AUDIO`, `INTERNET`），確保語音輸入無縫啟用；適配行動裝置 Safe Area Insets（動態島與底部 Home Bar 避讓）。
-- **全規格 Progressive Web App (PWA) 與電腦桌面獨立應用 (Desktop Standalone App)**：
-  - 標準 Web App Manifest（`manifest.webmanifest`）：包含繁中完整名稱、短名稱、主題色標（`#f97316` 橘色與白底）、192x192 / 512x512 高解析度圖示與 Maskable 圖示，支援 `standalone` 獨立全螢幕運行模式。
-  - 輕量強健 Service Worker 快取（`public/sw.js`）：離線快取關鍵資源、網路優先降級策略，提供斷網狀態下的平滑快取展示。
-  - 完整 iOS Web App Meta Tags：支援 `apple-mobile-web-app-capable`、`apple-mobile-web-app-status-bar-style`、動態主題色與 Apple Touch Icons。
-- **雙軌安裝入口（Navbar 專屬「💻 安裝電腦版」+ 頭像選單）與智慧隱藏**：
-  - **頂部 Navbar 專屬安裝按鈕**：桌機瀏覽器環境下，Navbar 右側顯示「💻 安裝電腦版」膠囊按鈕；點擊後若支援原生 prompt 即刻彈窗安裝，若為 macOS Safari 則彈出專屬「加入 Dock」圖文教學彈窗。
-  - **頭像設定選單整合**：選單動態適配設備環境（桌機顯示「💻 安裝為電腦桌面應用」、手機顯示「📱 在手機安裝應用」）。
-  - **智慧環境狀態偵測 (自動隱藏)**：當偵測到使用者已在獨立 PWA 模式（`display-mode: standalone`）或 Capacitor 原生 App 容器內執行時，自動隱藏所有安裝按鈕，維持介面純淨。
-  - **跨瀏覽器桌面安裝體驗 (Multi-Browser Desktop Flow)**：
-    - **桌面 Chrome / Edge / Brave / Android**：攔截並保存 `beforeinstallprompt` 事件，點擊按鈕直接觸發系統原生「安裝應用程式」視窗。
-    - **macOS Safari (Sonoma 14+)**：彈出專屬圖文導引視窗（`DesktopInstallGuideModal`），指引「檔案 ➔ 加入 Dock...」，秒級建立 Mac 獨立 App。
-    - **iOS Safari**：彈出 3 步驟圖文導引彈窗（`IosInstallGuideModal`），指引「分享 ⎋ ➔ 加入主畫面 ➕」。
+### 3.10 🔍 響應式搜尋與 Search Modal (Search Feature)
+- **Header 瘦身**：頂部 Header 回歸純導覽與搜尋，不再放置「建立」與「一鍵語音」按鈕。
+- **全響應式觸發**：桌機（`≥ sm`）為含 `⌘K` 提示的膠囊觸發器；手機（`< sm`）收斂為右上角搜尋圖示按鈕。
+- **Command Palette 風格**：自動聚焦、即時模糊過濾（標題、內文、標籤）、快捷標籤列、鍵盤選取高亮，並嚴格落實 UI 5 態。
+- **結果直達**：結果卡片顯示所屬欄位色標、標籤、截止日與星號，點擊直接開啟任務詳情（`setEditingTaskId`）或套用看板篩選。
 
 ### 3.11 🚀 展開與聚合工作流 (Expand & Aggregate Feature)
-- **任務卡片展開為獨立狀態欄位 (Expand Task to Column)**：
-  - **觸發入口**：任務詳細編輯視窗 (`EditTaskModal`) 頂部動作列，提供「🚀 展開為狀態欄位」專屬按鈕。
-  - **轉換機制**：
-    - 主任務標題無縫升級為當前看板之全新狀態欄位（Column）。
-    - 任務內含之 Checklist 子任務逐條提取並轉化為該欄位底下的獨立任務卡片，並保留各自已完成/未完成（`completed`）勾選狀態與順序。
-    - 若無子任務，則自動生成該名稱的空欄位，供使用者後續填充。
-    - 原主任務自看板中安全升級除役，並關閉編輯視窗，即時觸發雲端與本地同步。
-- **狀態欄位聚合為單一任務卡片 (Aggregate Column to Task)**：
-  - **觸發入口**：看板各狀態欄位 Header 之「更多選單 `···`」(`ColumnActionMenu`)，提供「📦 聚合為單一任務卡片（移至收件匣）」選項。
-  - **轉換機制**：
-    - 該狀態欄位名稱轉化為新任務卡片標題。
-    - 欄位內的所有任務卡片依序轉化為新卡片內之 Checklist 子任務清單（保留其完成狀態）。
-    - **深層資料零遺失 (Deep Data Preservation)**：若原欄位內之各卡片含有標籤、到期日、內文描述或多層資訊，系統自動彙整為 Markdown 結構化備註附加至新任務描述中。
-    - 聚合生成之任務卡片自動移入 **收件匣 (Inbox)**，並即時自動滑開收件匣側邊欄以供檢視。
-    - 原看板欄位及其內部所有卡片安全清除除役，順暢釋放看板空間。
+- **任務展開為狀態欄位**：任務詳情頂部「🚀 展開為狀態欄位」將主任務標題升級為新欄位，Checklist 子任務逐條轉為該欄位下的獨立卡片並保留完成狀態與順序；無子任務時建立空欄位；原主任務除役並即時同步。
+- **欄位聚合為單一卡片**：欄位選單「📦 聚合為單一任務卡（移至收件匣）」將欄位名稱轉為新卡片標題、欄位內卡片依序轉為 Checklist；原卡片的標籤、到期日與內文自動彙整為 Markdown 備註附加於說明（深層資料零遺失）；新卡片落入收件匣並自動滑開側邊欄，原欄位安全清除。
 
-### 3.12 📴 Local-First 離線模式與 PWA 離線作業 (Offline Mode & Resilient Sync)
-- **Local-First 零延遲離線作業**：
-  - 離線時（無網路或手動啟用離線模式）完全開放卡片之建立、編輯、刪除、跨欄拖曳、子清單排序、搜尋與視圖切換，所有操作立即持久化於 LocalStorage，零延遲不卡頓。
-  - **離線變更佇列（Pending Sync Queue）**：離線進行之任何狀態變更自動計入未同步隊列，確保變更紀錄不遺失。
-- **斷網偵測與全域視覺反饋 (Offline Indicator & Dynamic Banner)**：
-  - **頂部 Navbar 離線徽章**：當斷網時，Navbar 顯示精緻的「離線中」狀態膠囊，並動態呈現「待同步 N 筆變更」。
-  - **柔和頂部離線提示橫幅 (OfflineBanner)**：斷網瞬間於頂部滑出優雅提示列（顯示「目前為離線工作模式，所有修改已暫存本機，連線後將自動同步」），支援一鍵手動重試或關閉；連線恢復時 Toast 提示「已恢復連線，雲端資料同步完成」。
-- **自動連線偵測與背景批次同步 (Auto Reconnect & Sync Engine)**：
-  - 自動監聽瀏覽器 `online` / `offline` 事件。當網路恢復時，自動無縫批次觸發雲端同步（Last-Write-Wins 與欄位合併），更新完成後清空待同步佇列。
-- **離線 AI 與文字速記降級策略 (Offline Local NLP Fallback)**：
-  - 離線時文字速記自動轉由 **本機 Local NLP 正則解析器** 處理，辨識時間、優先級與標籤，秒級建立結構化任務並標註「⚡ 離線本機解析」；語音辨識不可用時提供友善文字輸入引導。
-- **設定中心「離線工作模式」開關 (Manual Offline Toggle in Settings)**：
-  - 在「系統設定」與使用者選單中提供手動「離線工作模式」開關，方便使用者在連線環境下亦可主動啟用無干擾純本機離線作業或進行離線測試。
-- **PWA Service Worker 強健離線快取 (Enhanced PWA Service Worker)**：
-  - 加強 `public/sw.js`：預先快取核心外殼資源、應用靜態檔案 (`/_next/static/`) 與離線頁面；對 HTML 導覽實施 Network-First 降級 Cache 策略，靜態檔案 Stale-While-Revalidate，確保在完全斷網環境下重新整理網頁仍可 100% 完整載入應用。
+### 3.12 📱 PWA 安裝與跨平台體驗 (PWA & Install Feature)
+- **PWA 優先策略（原生封裝已退場）**：專案**不再維護 Capacitor iOS / Android 原生工程**（`android/`、`ios/`、`capacitor.config.ts` 與相關相依套件皆已移除）。經評估 PWA 已足以滿足家庭使用情境，資源改投入啟動速度與流暢度（詳見 §3.19）。
+- **完整 Web App Manifest**：`manifest.webmanifest` 含繁中名稱「聲動看板」、主題色 `#f97316`、192/512 高解析與 Maskable 圖示、`standalone` 全螢幕模式、`portrait-primary` 與 Web Share Target 宣告。
+- **Service Worker 離線快取**：`public/sw.js` 預先快取應用外殼與 `/_next/static/`，HTML 導覽採 Network-First 降級 Cache、靜態檔案 Stale-While-Revalidate，斷網重新整理仍可完整載入。
+- **雙軌安裝入口與智慧隱藏**：
+  - 桌機 Navbar 顯示「💻 安裝電腦版」膠囊按鈕；頭像選單動態適配（桌機「安裝為電腦桌面應用」／手機「在手機安裝應用」）。
+  - 偵測到已於 `display-mode: standalone` 執行時自動隱藏所有安裝入口。
+  - **Chrome / Edge / Brave / Android**：攔截 `beforeinstallprompt`，點擊直接觸發系統安裝視窗。
+  - **macOS Safari (Sonoma 14+)**：彈出 `DesktopInstallGuideModal` 指引「檔案 ➔ 加入 Dock...」。
+  - **iOS Safari**：彈出 `IosInstallGuideModal` 三步驟圖文導引（分享 ⎋ ➔ 加入主畫面 ➕）。
+- **行動裝置適配**：全域 Safe Area Insets（動態島與底部 Home Bar 避讓）、`100dvh` 與 `overscroll-behavior: none` 防橡皮筋。
 
-### 3.13 📱 手機端原生手勢體驗 (Mobile Gestures & Navigation)
-- **任務詳細 Bottom Sheet 抽屜 (Task Detail Bottom Sheet Drawer)**：
-  - **手機版抽屜呈現**：在手機螢幕（`< sm`）下點擊任務卡片，任務詳細內容自動切換為由螢幕底部滑出的 **Bottom Sheet Drawer**（佔比 88vh~92vh），頂部配置直觀拖曳握柄（Drag Handle），桌機版（`≥ sm`）維持優雅置中彈窗。
-  - **下拉手勢關閉 (Pull-to-Close Gesture)**：支援手指按住頂部握柄或在內容位於最頂端（`scrollTop === 0`）時向下拉動，抽屜流暢跟隨手指位移；下拉超過閥值（100px）或快速向下滑動放開時，以彈性物理動畫滑出螢幕底部並關閉，未達閥值則平滑回彈。
-- **收件匣 ↔ 看板 雙向滑動切換 (Swipe Navigation)**：
-  - **收件匣 ➔ 看板**：在手機版收件匣介面中，向左滑動（Swipe Left，`ΔX < -60px`）平滑切換進入看板視圖。
-  - **看板 ➔ 收件匣**：在手機版看板位於最左側第一欄（`scrollLeft === 0`）時，向右滑動（Swipe Right，`ΔX > 70px`）平滑切換進入收件匣。
-  - **智慧防衝突保護**：精確判定水平與垂直向量比例（`|ΔX| > |ΔY| * 1.5`），杜絕垂直滑動內容時誤觸頁面切換；拖曳卡片時自動將手勢通道讓渡予拖曳引擎。
-- **拖曳任務磁力滑動與邊界切換 (Magnetic Drag Edge Scroll & View Transition)**：
-  - **靈敏磁力滾動**：拖曳任務卡片至螢幕左或右邊緣（< 50px）時，即時啟動磁力滑動與階梯吸附切換（Step Scroll），搭配邊緣微光指引與震動回饋。
-  - **最左邊界磁吸至收件匣**：在看板第一欄拖曳任務至最左邊緣到底時，磁吸連動切換至收件匣，支援跨視圖拖曳暫存。
+### 3.13 📴 Local-First 離線模式 (Offline Mode & Resilient Sync)
+- **零延遲離線作業**：離線時完整開放建立、編輯、刪除、跨欄拖曳、子清單排序、搜尋與視圖切換，立即持久化於 LocalStorage。
+- **離線變更佇列**：離線期間的變更計入 `pendingOfflineChanges`，確保紀錄不遺失。
+- **斷網視覺反饋**：Navbar「離線中」徽章顯示「待同步 N 筆變更」；頂部 `OfflineBanner` 滑出提示並支援手動重試或關閉；恢復連線時 Toast 提示同步完成。
+- **自動重連與背景批次同步**：監聽 `online` / `offline` 事件，恢復時自動批次同步。
+- **同步合併策略**：雲端寫入採**合併（merge）而非盲目覆蓋**，同步進行中於本機新增或修改的卡片不會被較舊的雲端快照蓋掉；刪除以墓碑（tombstone）紀錄，避免已刪卡片被雲端合併復活，且同步期間新增的墓碑不會被提前清除。
+- **離線 AI 降級**：離線時文字與語音改由本機 NLP 正則解析，標註「⚡ 離線本機解析」。
+- **手動離線開關**：設定中心「離線工作模式」分頁供主動啟用純本機作業或測試。
 
-### 3.14 👥 多人即時協同編輯與邀請機制 (Multiplayer Collaborative Kanban)
-- **看板專屬 6 碼短代碼與一鍵邀請連結 (Invite Code & Share Link)**：
-  - **邀請生成**：看板建立者（Owner）於頂部工具列點擊「邀請協作」按鈕，立即展開 `ShareBoardModal`，系統自動為該看板生成專屬 6 碼短代碼（如 `VK-8X4B`）與對應邀請連結（`https://.../?invite=VK-8X4B`）。
-  - **極速加入 (Join Board)**：使用者可透過頂部導覽或看板切換選單點擊「加入協作看板...」開啟 `JoinBoardModal` 輸入 6 碼代碼加入；亦可直接點擊分享連結，應用啟動時自動解析 URL 查詢參數 `?invite=CODE` 並自動帶入加入視窗。
-- **免強制登入極速協作 (Guest Collaboration with Nickname)**：
-  - 未登入或訪客（Guest）使用者點擊邀請連結或輸入代碼時，無需經歷繁瑣註冊流程，僅需填寫「協作者暱稱」（系統自動分配隨機頭像與訪客協作者 ID）即可秒級加入看板。日後登入 Google 或 Email 帳號時自動保留並無縫綁定所有協作看板歷史。
-- **三級角色權限模型 (Three-Tier Role & Permission Architecture)**：
-  - **擁有者 (Owner)**：看板建立者，具備最高權限，可管理成員名單、升降級角色（Editor ↔ Viewer）、移出成員以及刪除/更名看板。
-  - **編輯者 (Editor，受邀預設)**：可即時新增、修改、刪除、拖曳任務卡片，以及增減與排序狀態欄位。
-  - **檢視者 (Viewer / 唯讀)**：僅具備看板瀏覽、篩選與查看任務詳情之權限；系統自動隱藏新增按鈕並停用卡片與欄位拖曳，頂部常設「👁️ 唯讀模式」溫和提示徽章。
-- **即時跨裝置雙向同步與成員狀態頭像 (Real-Time Sync & Active Avatars)**：
-  - **雙軌即時同步引擎**：在線時即時監聽 Firestore `shared_boards` 集合，並在同瀏覽器跨分頁環境下藉由 `BroadcastChannel` 達成 0 延遲同步；一人拖曳或編輯，所有成員畫面秒級無縫更新。
-  - **協作者頭像堆疊 (Collaborator Avatars)**：看板頂部直觀展示所有參與成員頭像堆疊與身份徽章（👑 擁有者、✏️ 編輯者、👁️ 檢視者），點擊可展開檢視成員清單或由 Owner 管理。
-  - **最後寫入生效 (Last-Write-Wins)**：卡片變更採樂觀更新配合最後寫入時間戳記（`updatedAt`）自動裁決，確保多人同時編輯時資料一致性。
+### 3.14 📱 手機端原生手勢體驗 (Mobile Gestures & Navigation)
+- **任務詳情 Bottom Sheet**：手機版（`< sm`）點擊卡片由底部滑出抽屜（88vh~92vh），頂部拖曳握柄；按住握柄或內容位於最頂端（`scrollTop === 0`）向下拉動時抽屜跟隨手指，超過 100px 或快速下滑放開即彈性關閉，未達閥值平滑回彈。
+- **收件匣 ↔ 看板雙向滑動切換**：收件匣向左滑（`ΔX < -60px`）進入看板；看板位於最左側第一欄（`scrollLeft === 0`）向右滑（`ΔX > 70px`）回到收件匣；以 `|ΔX| > |ΔY| * 1.5` 向量判定防誤觸，拖曳卡片時讓渡手勢通道。
+- **拖曳磁力邊界滑動**：拖曳卡片至螢幕左右邊緣（< 50px）啟動階梯吸附滾動與邊緣微光／震動回饋；於第一欄拖至最左邊界時磁吸切換至收件匣，支援跨視圖暫存。
 
-### 3.15 🔔 群組協作即時通知中心 (Collaborative Notifications Feature)
-- **多維度即時通知入口與未讀計數 (Notification UI & Unread Badge)**：
-  - **Navbar 鈴鐺與紅點徽章**：頂部導覽列配置 `NotificationBell`，即時呈現未讀通知計數標籤（紅點微光 Badge），未讀數大於 0 時動態顯示數字。
-  - **通知中心下拉抽屜 (NotificationPopover)**：點擊鈴鐺展開通知中心面板，支援「全部標為已讀」、「一鍵清空所有通知」、以及「瀏覽器桌面推播開關」。
-  - **即時浮動快訊 (Live Floating Toast)**：當協同群組有其他成員進行操作時，畫面右上角即時滑出 4 秒自動淡出之浮動卡片，提示操作者頭像、動作與影響卡片。
-- **全方位協同事件觸發與格式化動態 (Event Triggers & Human-Readable Alerts)**：
-  - ➕ **新增任務**（例：「*Alex 在 [進行中] 新增了任務『重構 API』*」）
-  - 🔄 **移動任務欄位**（例：「*Sarah 將『首頁改版』移至 [已完成]*」）
-  - ✅ **完成/取消完成任務**（例：「*Alex 完成了『修正登入 Bug』*」）
-  - 🗑️ **刪除任務**（例：「*Sarah 刪除了任務『舊版文案』*」）
-  - 👥 **新成員加入**（例：「*Ken 加入了看板協作*」）
-- **操作者自我過濾原則 (Self-Action Exclusion Guard)**：
-  - 系統強制過濾使用者自身的本機操作，絕不跳出提示打擾自己；僅接收「同看板其他協作成員」的操作動態。
-- **Web Notification 桌面系統推播整合 (Browser Web Push Integration)**：
-  - 支援 Web Notification API。使用者可在通知中心面板中點擊「開啟桌面推播」按鈕取得瀏覽器授權。當使用者切換分頁或視窗位於背景時，系統自動發送原生系統通知橫幅，點擊通知自動切換聚焦回應用視窗。
-- **雙軌資料持久化與點擊聚焦跳轉 (Persistence & Interactive Focus Navigation)**：
-  - 通知即時同步至本機 LocalStorage（上限保留最新 50 筆）與雲端 Firestore，支援在線跨分頁 BroadcastChannel 同步。
-  - 點擊通知清單中之項目，系統自動定位至對應看板並短暫高亮聚焦該任務卡片。
+### 3.15 👥 多人即時協同編輯與邀請機制 (Multiplayer Collaborative Kanban)
+- **6 碼短代碼與一鍵邀請連結**：Owner 於工具列點擊「邀請協作」開啟 `ShareBoardModal`，系統生成專屬 6 碼代碼（如 `VK-8X4B`）與邀請連結（`?invite=VK-8X4B`）；應用啟動時自動解析該參數並開啟加入視窗。
+- **免強制登入極速協作**：未登入者僅需填寫「協作者暱稱」即可加入（自動配發隨機頭像與訪客協作者 ID），日後登入 Google / Email 時無縫綁定所有協作看板。
+- **三級角色權限模型**：
+  - **擁有者 (Owner)**：管理成員、升降級角色、移出成員、刪除／更名看板。
+  - **編輯者 (Editor，受邀預設)**：新增、修改、刪除、拖曳卡片與增減排序欄位。
+  - **檢視者 (Viewer)**：僅瀏覽、篩選與查看詳情，系統自動隱藏新增按鈕、停用拖曳，頂部常設「👁️ 唯讀模式」徽章。
+- **即時同步與成員頭像**：線上監聽 Firestore `shared_boards`，同瀏覽器跨分頁以 `BroadcastChannel` 零延遲同步；頂部 `CollaboratorAvatars` 呈現成員頭像堆疊與身分徽章（👑 / ✏️ / 👁️）。
+- **不可猜測的共享 ID**：共享看板文件以隨機 `shareId` 存放而非本機可預測的 `board-work` 類 id，避免跨使用者碰撞與互相覆寫。
+- **最後寫入生效 (Last-Write-Wins)**：卡片變更採樂觀更新配合 `updatedAt` 時間戳裁決。
 
-### 3.16 🔖 社群內容收藏看板 (Bookmarks Feature)
+### 3.16 🔔 群組協作即時通知中心 (Collaborative Notifications)
+- **Navbar 鈴鐺與未讀徽章**：`NotificationBell` 即時顯示未讀計數紅點。
+- **通知中心下拉面板**：`NotificationPopover` 支援「全部／未讀」分頁過濾、全部標為已讀、一鍵清空與瀏覽器桌面推播開關。
+- **即時浮動快訊**：他人操作時右上角滑出 4 秒自動淡出的浮動卡片，顯示操作者頭像、動作與影響卡片。
+- **協同事件涵蓋**：➕ 新增任務、🔄 移動欄位、✅ 完成／取消完成、🗑️ 刪除任務、👥 新成員加入，皆格式化為可讀中文動態。
+- **自我過濾原則**：強制過濾使用者自身操作，只接收同看板其他成員的動態。
+- **Web Notification 桌面推播**：授權後於分頁背景時發送原生系統通知，點擊自動聚焦回應用。
+- **雙軌持久化與跳轉**：本機 LocalStorage（保留最新 50 筆）與 Firestore 同步，點擊通知自動定位看板並短暫高亮該卡片。
+
+### 3.17 🔖 社群內容收藏看板 (Bookmarks Feature)
 - **手機一鍵收藏 IG / YouTube / Threads**：
-  - **Android**：PWA manifest 宣告 Web Share Target，安裝後「聲動看板」出現在各 App 的系統分享選單，選擇即開啟「儲存到收藏」面板。
-  - **iOS**：主畫面 Web App 無法成為分享目標，改以「複製連結 → 收藏看板『貼上連結』」完成收藏；剪貼簿無連結時提供手動輸入框。
-  - 未登入時收到的分享暫存於 sessionStorage，登入後自動接續。
-- **專屬「收藏」看板**：以 `Board.kind = "collection"` 辨識，預設欄位 ▶️ YouTube / 📸 Instagram / 🧵 Threads / 🔗 其他連結，依平台自動分流；新帳號預設建立，既有使用者可從看板切換選單建立或於首次分享時自動建立。
-- **連結預覽 API (`/api/link/preview`)**：YouTube 走 oEmbed 並使用長效縮圖；IG / Threads / 一般網頁解析 Open Graph 取得貼文文字、作者與縮圖；具 SSRF 防護（僅 http(s)、拒絕私有網段、逐跳驗證轉址）、逾時與大小上限。
-- **卡片呈現**：`Task.link` 卡片顯示縮圖封面、平台徽章、作者與「開啟原文」按鈕；縮圖過期時顯示平台漸層底圖；已看內容可勾選完成，沿用「已完成 (N)」折疊。
-- **標題貼連結自動展開**：任何卡片標題只輸入一個網址時，自動換成真正標題並寫入縮圖；詳細內容依序為圖片、標題與內容（連結由頂部預覽卡「開啟原文」提供）（YouTube 完整影片說明、IG / Threads 貼文文字）。IG / Threads 縮圖自動轉存 R2 避免過期。詳見 `src/features/bookmarks/feature.md`。
+  - **Android**：Manifest 宣告 Web Share Target（`GET /`，參數 `share_title` / `share_text` / `share_url`），安裝後出現在各 App 分享選單；IG 與 Threads 將連結置於 `text`，故以 `extractFirstUrl()` 自三個欄位擷取第一個 http(s) 連結，讀取後立即 `history.replaceState` 清除參數。
+  - **iOS**：主畫面 Web App 無法成為分享目標，改以「複製連結 → 收藏看板『貼上連結』」完成；剪貼簿無連結時提供手動輸入框。
+  - 未登入時分享內容暫存 `sessionStorage`（`vk_pending_share`），登入後自動接續開啟儲存面板。
+- **專屬「收藏」看板**：以 `Board.kind = "collection"`（而非固定 id）辨識，預設欄位 ▶️ YouTube / 📸 Instagram / 🧵 Threads / 🔗 其他連結，依平台自動分流；新帳號預設建立，既有使用者可從看板切換選單建立或於首次分享時自動建立。
+- **連結預覽 API (`GET /api/link/preview`)**：YouTube 走 oEmbed 並使用長效縮圖（`i.ytimg.com/vi/<id>/hqdefault.jpg`）；IG / Threads / 一般網頁解析 Open Graph 取得貼文文字、作者與縮圖。安全與成本防護：僅允許 http(s)、拒絕 localhost 與私有網段、逐跳重新驗證轉址、6 秒逾時、HTML 最多讀取 800KB、每 IP 每分鐘 15 次／每小時 120 次，結果 CDN 快取 1 天。
+- **儲存面板 (`ShareSaveSheet`)**：手機底部抽屜、桌機置中視窗；可編輯標題與備註，偵測重複收藏並提示（忽略 `igsh`、`si`、`utm_*` 等追蹤參數）。
+- **卡片呈現**：`Task.link` 卡片顯示縮圖封面（使用者自訂封面優先）、平台徽章、作者與「開啟原文」；縮圖失效時顯示平台漸層底圖；已看內容可勾選完成並沿用「已完成 (N)」折疊。
+- **標題貼連結自動展開**：任何卡片標題只輸入一個網址時，`enrichTaskFromLink` 自動抓取預覽換成真正標題並寫入 `Task.link`；讀取期間顯示「讀取連結內容…」，失敗或離線時保留網址標題但仍寫入連結；使用者於讀取期間自行改標題時不覆蓋。
+- **詳細內容格式 (`buildLinkDescription`)**：依序為 ① 圖片 ② 標題（內容未重複時）③ 內容（YouTube 完整影片說明／IG 貼文文字／Threads 串文／網頁 og:description，上限 4000 字）④ 📝 使用者備註；連結本身不放入說明，由頂部預覽卡「開啟原文」提供。
+- **縮圖轉存 R2 (`POST /api/link/thumbnail`)**：IG / Threads 縮圖為數日即過期的簽章網址，儲存後自動複製至 R2 並替換卡片與說明中的圖片網址；僅接受 Meta CDN 網域、5MB 上限、不跟隨轉址、需登入並受每分鐘／每日配額限制；R2 未設定時保留原網址。
+
+### 3.18 🛡️ 安全、隱私與零成本防濫用 (Security, Privacy & Cost Control)
+營運原則：**這個專案必須能在零營運成本下持續運作**，因此所有會產生外部帳單的路徑都必須有身分驗證與配額上限。
+- **Firebase ID Token 驗證**：`/api/upload` 與 `/api/link/thumbnail` 要求 `Authorization: Bearer <idToken>`，由 `verifyIdToken` 驗證後才執行；匿名／訪客呼叫一律拒絕，前端自動降級為本機儲存。
+- **相依套件零負擔的速率限制 (`core/utils/rateLimit`)**：純記憶體桶計數（無 Redis、無資料庫寫入）：
+  - `/api/user/key`：每 IP 每小時 5 次金鑰測試（避免淪為免費的失竊金鑰驗證機）。
+  - `/api/voice/extract`：音訊每分鐘 10 次、單檔 10MB。
+  - `/api/link/preview`：每 IP 每分鐘 15 次、每小時 120 次。
+  - `/api/upload`：每帳號每日 20 次／50MB、單檔 5MB、瞬時 5 次；僅允許 image/ audio/ video/ 與 PDF、純文字、CSV。
+  - `/api/link/thumbnail`：每帳號瞬時與每日雙層配額。
+- **SSRF 與路徑防護**：連結抓取拒絕非 http(s)、localhost 與私有網段並逐跳驗證轉址；上傳資料夾名稱經 `sanitizeFolder` 清洗，杜絕路徑跳脫。
+- **BYOK 與金鑰保護**：伺服器端不保存共用 Gemini 金鑰；使用者金鑰採客戶端 AES 加密儲存，金鑰長度上限 200 字元。
+- **Firestore 安全規則 (`firestore.rules`)**：
+  - `users/{userId}` 嚴格私有，僅本人可讀寫。
+  - `shared_boards/{boardId}` 以去正規化的 `memberIds` 判定成員（規則無法檢視陣列內物件欄位）；建立者為 Owner，成員可更新，**加入者僅能透過 `isJoiningSelf()` 這條窄路把自己加入成員清單**，不得改動看板內容或移除他人；因看板 id 即為秘密，故共享文件置於隨機 `shareId` 之下。
+  - `invite_codes/{code}` 僅 Owner 可改動。
+  - 結尾預設 deny，任何日後新增的集合預設關閉而非世界可讀。
+
+### 3.19 ⚡ 啟動速度與效能 (Performance & Cold Start)
+啟動速度被視為比新增功能更高優先的產品品質項目（打得開才會有人記錄）。
+- **全部 Modal 延遲載入**：`AppModals` 以 `dynamic({ ssr: false })` 個別載入十餘個彈窗，且**僅在開啟時掛載**——`dynamic()` 元件一掛載就會抓取其 chunk，若無條件渲染只會把成本往後挪而非移除。
+- **避開 barrel 匯入**：延遲載入一律指向具體檔案而非 feature barrel，避免整個 feature（卡片、欄位、服務）被拖進 lazy chunk。
+- **主要視圖按需載入**：`AuthLandingScreen`、`BatchActionBar`、`NotificationToastContainer` 與 `CalendarView` 皆為動態載入，不佔用看板首屏成本。
+- **LocalStorage 容錯**：`safeLocalStorage` 於 QuotaExceededError 時自動清理舊版本 key 後重試，避免寫入失敗導致資料遺失或阻塞。
 
 ---
 
@@ -312,6 +265,8 @@ src/
 4. **Success**：操作完成時給予震動、Toast 通知或微動畫確認反饋。
 5. **Active / Interactive**：選取、聚焦、拖曳中提供高亮邊框、微光與陰影景深。
 
+**輸入法通則（全域強制）**：本產品主要使用者以注音輸入法輸入繁體中文，任何監聽 `Enter` / `Escape` 的文字輸入框或 textarea，處理常式**必須**以 `if (e.nativeEvent.isComposing || e.key === "Process") return;` 起手，否則組字確認的 Enter 會造成文字重複送出。
+
 ---
 
 ## 5. 全域驗收標準 (Master Acceptance Criteria, Master AC)
@@ -319,73 +274,40 @@ src/
 - [x] **MAC-1 (全模組 Feature-Driven 結構清晰)**：前端遵循 `src/features/<feature>/` 模組化規範，每個模組均具備專屬 `feature.md` 與獨立出口 `index.ts`。
 - [x] **MAC-2 (看板卡片與狀態列拖曳穩定)**：支援卡片跨欄與欄內拖曳（含即時預覽插槽）以及狀態列 Header 長按/拖曳橫向排序，順序即時持久化。
 - [x] **MAC-3 (最右側行內新增欄位)**：看板橫向末端提供「+ 新增欄位」行內卡片，輸入名稱 Enter 即刻建立。
-- [x] **MAC-4 (檢視精簡與 Dock 淨化)**：精簡為看板與行事曆雙視圖，底部 Dock 僅保留收件匣、看板、行事曆，移除欄位設定按鈕。
+- [x] **MAC-4 (檢視精簡與 Dock 淨化)**：精簡為看板與行事曆雙視圖，底部 Dock 僅保留收件匣、看板、行事曆。
 - [x] **MAC-5 (多模態語音與 AI 解析)**：支援語音輸入與 Gemini AI / 本機 NLP 結構化任務解析及多任務拆解。
 - [x] **MAC-6 (認證與多端同步)**：支援訪客模式與 Firebase Google/Email 登入綁定，離線優先並同步至雲端。
 - [x] **MAC-7 (安全 BYOK 與設定)**：支援本機加密儲存自訂 Gemini API Key，連線測試正常。
 - [x] **MAC-8 (已完成任務底部折疊收合)**：各狀態欄位內的已完成任務自動沉底並預設折疊收合，點擊平滑展開查看與支援拖曳。
 - [x] **MAC-9 (編譯與型別無誤)**：`npm run build` 與 TypeScript 型別檢查 100% 通過。
-- [x] **MAC-10 (手機版看板磁力置中與拖曳邊緣切換)**：手機版左右滑動具備磁力吸附自動置中（`snap-center`），卡片拖曳期間不卡頓且懸停邊緣約 1 秒自動磁吸平滑切換至下一欄/上一欄。
-- [x] **MAC-11 (看板卡片上下動態像素切入判定與邊界免空白空間)**：拖曳卡片至目標卡片上下邊緣動態像素/百分比閥值時精確判定插入點，頂部卡片上緣必定切入最上方（Index 0），底部卡片下緣必定切入最下方（Index Max），無需預留空白即可流暢插入。
-- [x] **MAC-12 (Header 瘦身與全響式 Search Modal 搜尋體驗)**：Header 成功移除「建立」與「一鍵語音」按鈕；桌機版點擊搜尋框或按 `⌘K` 開啟 Search Modal；手機版自動轉為右上角按鈕圖示開啟 Modal，輸入框不被擠壓，搜尋支援即時任務過濾與直接開啟編輯。
-- [x] **MAC-13 (Capacitor 跨平台雙平台專案與設定)**：整合 `@capacitor/core`、`@capacitor/cli`、`@capacitor/ios` 與 `@capacitor/android`，完成 `capacitor.config.ts`（App ID: `com.voicekanban.app`，名稱: 聲動看板），生成標準 `ios/` 與 `android/` 專案工程，配置麥克風權限與雙平台建置指令。
+- [x] **MAC-10 (手機版看板磁力置中與拖曳邊緣切換)**：手機版左右滑動具備磁力吸附自動置中（`snap-center`），卡片拖曳期間不卡頓且懸停邊緣自動磁吸平滑切換欄位。
+- [x] **MAC-11 (看板卡片上下動態像素切入判定)**：拖曳至目標卡片上下邊緣時精確判定插入點，頂部必定切入 Index 0、底部必定切入 Index Max，無需預留空白。
+- [x] **MAC-12 (Header 瘦身與全響應式 Search Modal)**：Header 移除「建立」與「一鍵語音」；桌機點擊搜尋框或 `⌘K` 開啟 Search Modal，手機轉為右上角圖示按鈕，支援即時過濾與直接開啟編輯。
+- [~] **MAC-13 (Capacitor 原生封裝) — 已退場 (Retired)**：經產品決策評估，PWA 已足以支撐家庭使用情境，`android/`、`ios/` 工程與 Capacitor 相依套件已自專案移除，改以 §3.12 的 PWA 安裝體驗取代。此條保留作為歷史決策紀錄，不再列為驗收項目。
 - [x] **MAC-14 (PWA 標準支援與 Service Worker 離線快取)**：具備合法 `manifest.webmanifest`、各尺寸高解析度圖示、全螢幕獨立模式、iOS Safe Area Insets、以及 `public/sw.js` 資源快取與自動註冊。
-- [x] **MAC-15 (頭像選單 PWA 安裝按鈕與雙軌引導體驗)**：在 Navbar 頭像下拉選單中提供「在手機安裝應用」選項；若處於 Standalone/原生 App 模式則自動隱藏；Android/Chrome 觸發系統安裝視窗，iOS Safari 彈出 3 步驟圖文導引視窗（`IosInstallGuideModal`），符合 UI 5 態規範。
-- [x] **MAC-16 (子任務待辦清單極簡長按 500ms 拖曳移動排序)**：任務編輯視窗中的子任務清單維持無多餘符號與箭頭的純淨外觀，長按 500ms 即可啟用平滑垂直拖曳排序，短按快速切換勾選完成，資料即時持久化與雲端同步。
-- [x] **MAC-17 (任務卡片與狀態欄位雙向展開與聚合工作流)**：任務詳細視窗支援一鍵將卡片與其子清單「展開」為獨立看板欄位；欄位 Header 選單支援一鍵將整個欄位「聚合」為單一任務卡片並安全收納至收件匣（Inbox），且完整保留原卡片深層屬性與子任務勾選狀態。
-- [x] **MAC-19 (手機版 Modal 彈窗 100dvh 安全視窗與全域溢出滾動防護)**：全域採用 `100dvh` 與 `overflow: hidden; overscroll-behavior: none;`，所有 Modal 彈窗皆限制在 `max-h-[calc(100dvh-2rem)]` 內，內部採用 `flex-col` 與獨立 `flex-1 overflow-y-auto` 容器，徹底消除手機版點擊 Modal 後畫面下方出現的不明滾動區與橡皮筋彈跳。
-- [x] **MAC-20 (手機端 Bottom Sheet 抽屜與手勢滑動切換體驗)**：
-  - 任務詳細內容在手機版以 Bottom Sheet Drawer 開啟，支援頂部握柄與最頂端下拉（Pull Down）關閉手勢，桌機版維持 Center Modal。
-  - 手機版支援收件匣向左滑動進入看板、看板第一欄最左側向右滑動切換回收件匣，且具備向量防誤觸保護。
-  - 拖曳任務卡片時支援邊界靈敏磁力滑動，並支援最左邊界磁吸至收件匣。
-- [x] **MAC-21 (桌機版看板滑鼠拖曳滑動畫布)**：
-  - 桌機端支援在看板空白區域、欄位間隙按住滑鼠左鍵自由拖曳平移（Pan/Scroll），即時 1:1 滾動並具備平滑慣性滑行。
-  - 與卡片/欄位 DnD 拖曳、點擊事件完美隔離互不衝突，懸停與拖曳時游標自動切換為 `cursor-grab` 與 `cursor-grabbing`。
-- [x] **MAC-22 (Cloudflare R2 雲端物件儲存與 S3 相容上傳)**：
-  - 後端整合 AWS S3 SDK (`@aws-sdk/client-s3`) 實現 `/api/upload` 路由，支援安全上傳大檔至 Cloudflare R2 Bucket。
-  - 前端整合通用上傳工具 (`uploadFile`)，具備 R2 雲端直傳與本地壓縮 Base64 雙軌容錯降級機制。
-  - 任務附件、封面圖片與 Markdown 編輯器貼圖全面接入 R2 上傳與即時 Loading 旋轉動畫反饋。
-- [x] **MAC-23 (任務安全刪除防呆與雲端徹底抹除)**：
-  - 任務詳細視窗（`EditTaskModal`）頂部操作列常設刪除垃圾桶圖示與防呆確認 Modal，底部同步提供確認展開/刪除防護。
-  - 雲端同步層（`syncService`）修復 Firestore `setDoc` 覆蓋機制（移除 `{ merge: true }`），確保刪除之任務從 Firestore 雲端徹底清除，杜絕刪除後又被雲端合併復活之問題。
-- [x] **MAC-24 (語音目標欄位動態適配、排版換行與手機版按鈕防擠壓優化)**：
-  - 語音辨識預覽視窗自動取得當前選定看板之所有動態與自訂欄位，不再鎖死預設欄位。
-  - 「優先等級」與「到期時間」分行獨立排列，徹底消除水平擠壓。
-  - 手機小螢幕下，「重新錄音」與「捨棄」自動轉換為直覺圖示按鈕（Icon Buttons），防範文字折行跑版。
-  - 確認加入按鈕精簡為「✓ 確認」，視覺俐落大方。
-- [x] **MAC-25 (卡片防誤刪原則與全平台確認刪除 Modal 一致性)**：
-  - 任務卡片本體（`TaskCard` 直式/橫列）、清單檢視（`ListView`）、表格檢視（`TableView`）全面移除直接暴露的未確認刪除按鈕，杜絕誤觸刪除風險。
-  - 任務刪除強制收斂為「卡片詳情頁刪除」與「批次選取刪除」兩大路徑，點擊刪除後一律彈出居中防呆確認 Modal（含不可復原警告、紅色確認刪除與取消按鈕）。
-  - 桌機端與手機端確認 Modal 樣式與行為 100% 一致，修復桌機端先前因 `fixed` 與 `overflow-hidden` 遮擋導致確認窗未呈現之問題。
-- [x] **MAC-26 (Markdown GFM 表格、水平分隔線與區塊排版渲染增強)**：
-  - 修復 Markdown 表格失效問題：升級渲染引擎為區塊解析架構，完整支援 GitHub Flavored Markdown (GFM) 表格語法（表頭、分隔線、資料列、對齊模式 `:---` / `:---:` / `---:`）。
-  - 表格支援響應式橫向滾動（`overflow-x-auto`）、隔行斑馬紋底色、儲存格內行內樣式（粗體、代碼、超連結）解析與深淺色主題適配。
-  - 修正水平分隔線（`---` / `***` / `___`）渲染為優雅 `<hr>` 標籤，多行代碼區塊（```` ```lang ... ``` ````）與待辦方塊（`- [ ]` / `- [x]`）正常解析。
-  - 編輯器工具列新增「表格」快捷按鈕，點擊一鍵插入標準 3 欄 Markdown 表格範本。
-- [x] **MAC-27 (手機端看板欄位底部與浮動 Dock 重疊隔離與安全避讓)**：
-  - 看板主視圖容器底部設置精準 `pb-[calc(54px+env(safe-area-inset-bottom,0px))]`（桌機端 `sm:pb-16`），確保看板欄位底端停止於浮動 Dock 上方。
-  - 側邊收件匣（`SidebarInbox`）於手機端將卡片容器底部邊界設定為 `bottom-[calc(0.625rem+54px+env(safe-area-inset-bottom,0px))]`，與看板欄位底部 **100% 精準水平對齊**，徹底修復先前外層容器延伸過長導致內部卡片被底部 Dock 遮擋卡住的缺陷。
-  - 欄位與收件匣內部之所有任務卡片、折疊條與按鈕 100% 完整露出於浮動 Dock 及語音 FAB 之上，零重疊、易點擊，全系統各視圖具備高度一致性。
-- [x] **MAC-28 (多人即時協同編輯、邀請代碼與權限管理)**：
-  - 支援看板專屬 6 碼邀請代碼（如 `VK-8X4B`）與一鍵複製分享連結，網址帶有 `?invite=...` 時應用自動開啟加入彈窗。
-  - 支援未登入訪客（Guest）免註冊輸入暱稱極速加入協同，自動產生協作者身分，登入時無縫綁定。
-  - 支援三級角色權限（Owner 擁有者、Editor 編輯者、Viewer 檢視者），Owner 可動態切換成員角色與移出成員；Viewer 模式自動限制卡片新增、編輯與拖曳，並顯示專屬唯讀提示。
-  - 支援 Firestore 與跨分頁 BroadcastChannel 雙軌即時同步，頂部即時呈現協作者頭像堆疊（Collaborator Avatars）與在線狀態。
-- [x] **MAC-29 (群組協作即時通知中心與他人動態推播)**：
-  - 頂部 Navbar 整合 `NotificationBell`，即時呈現未讀數紅點 Badge；點擊展開 `NotificationPopover` 通知中心面板，實作 UI 5 態、全部已讀、一鍵清空與 Web Notification 桌面推播授權切換。
-  - 支援即時右上角 4 秒浮動 Toast 卡片（`NotificationToastContainer`），展示操作者頭像與活動詳情。
-  - 支援全方位協同事件（新增任務、移動欄位、完成/取消任務、刪除任務、新成員加入）即時廣播與 Firestore 同步。
-  - 具備嚴格的操作者自我過濾機制（Self-Action Exclusion），絕不對自身的操作發出打擾通知。
-- [x] **MAC-30 (電腦桌面獨立應用程式與跨瀏覽器安裝體驗)**：
-  - 頂部 Navbar 於桌機瀏覽環境下顯示「💻 安裝電腦版」專屬膠囊按鈕；使用者頭像選單動態適配「💻 安裝為電腦桌面應用」。
-  - 支援 Chrome / Edge 原生秒級 prompt 安裝與 macOS Safari (Sonoma 14+)「加入 Dock」圖文導引視窗（`DesktopInstallGuideModal`）。
-  - 當應用程式以獨立桌面視窗模式（`display-mode: standalone`）執行時，系統自動隱藏安裝按鈕，提供無網址列、無瀏覽器標籤頁干擾之沉浸式看板體驗。
-
-
-
-
-
-- [ ] **MAC-31 (社群內容收藏看板與手機分享收藏)**：
+- [x] **MAC-15 (安裝入口與雙軌引導體驗)**：頭像選單提供安裝選項；Standalone 模式自動隱藏；Android/Chrome 觸發系統安裝視窗，iOS Safari 彈出 3 步驟圖文導引（`IosInstallGuideModal`）。
+- [x] **MAC-16 (子任務長按 500ms 拖曳排序)**：子任務清單維持無多餘符號的純淨外觀，長按 500ms 啟用垂直拖曳排序，短按快速勾選，資料即時持久化與雲端同步。
+- [x] **MAC-17 (任務與欄位雙向展開與聚合)**：任務詳情可一鍵「展開」為欄位；欄位選單可一鍵「聚合」為單一卡片並收納至收件匣，完整保留深層屬性與勾選狀態。
+- [x] **MAC-19 (手機版 Modal 100dvh 安全視窗)**：全域採用 `100dvh` 與 `overflow: hidden; overscroll-behavior: none;`，所有 Modal 限制於 `max-h-[calc(100dvh-2rem)]` 內並以 `flex-1 overflow-y-auto` 獨立捲動，消除不明滾動區與橡皮筋彈跳。
+- [x] **MAC-20 (手機端 Bottom Sheet 與手勢滑動切換)**：任務詳情於手機以 Bottom Sheet 開啟並支援下拉關閉；收件匣與看板雙向滑動切換具向量防誤觸；拖曳支援邊界磁力滑動與最左邊界磁吸至收件匣。
+- [x] **MAC-21 (桌機版看板滑鼠拖曳平移)**：桌機可於空白區域按住左鍵平移畫布並具慣性滑行，與 DnD／點擊完美隔離，游標自動切換 `cursor-grab` / `cursor-grabbing`。
+- [x] **MAC-22 (Cloudflare R2 雲端物件儲存)**：`/api/upload` 以 AWS S3 SDK 上傳至 R2；前端 `uploadFile` 具 R2 直傳與本地壓縮 Base64 雙軌降級；附件、封面與 Markdown 貼圖全面接入並具 Loading 反饋。
+- [x] **MAC-23 (任務安全刪除防呆與雲端徹底抹除)**：任務詳情常設刪除圖示與防呆確認 Modal；同步層以刪除墓碑確保 Firestore 徹底清除，杜絕刪除後被雲端合併復活。
+- [x] **MAC-24 (語音目標欄位動態適配與手機防擠壓)**：語音預覽自動取得當前看板所有自訂欄位；優先等級與到期時間分行排列；手機版「重新錄音／捨棄」轉為圖示按鈕，確認按鈕精簡為「✓ 確認」。
+- [x] **MAC-25 (卡片防誤刪原則與確認 Modal 一致性)**：卡片本體不暴露未確認刪除按鈕，刪除收斂為「詳情頁刪除」與「批次選取刪除」兩條路徑，桌機與手機確認 Modal 行為 100% 一致。
+- [x] **MAC-26 (Markdown GFM 表格與區塊渲染)**：完整支援 GFM 表格（含對齊、斑馬紋、橫向滾動、深色適配）、水平分隔線、Fenced Code Blocks 與待辦方塊；工具列提供一鍵插入表格。
+- [x] **MAC-27 (手機端底部 Dock 安全避讓)**：看板主視圖與收件匣底部統一 `pb-[calc(54px+env(safe-area-inset-bottom,0px))]`，卡片、折疊條與按鈕 100% 露出於 Dock 與語音 FAB 之上。
+- [x] **MAC-28 (多人即時協同、邀請代碼與權限管理)**：支援 6 碼邀請碼與 `?invite=` 自動開窗、訪客免註冊暱稱加入、三級角色權限與 Viewer 唯讀限制、Firestore 與 BroadcastChannel 雙軌同步及協作者頭像堆疊。
+- [x] **MAC-29 (協作通知中心與他人動態推播)**：`NotificationBell` 未讀紅點、`NotificationPopover` 全部／未讀分頁與清空、4 秒浮動 Toast、全事件廣播與嚴格自我過濾。
+- [x] **MAC-30 (電腦桌面獨立應用與跨瀏覽器安裝)**：Navbar「💻 安裝電腦版」按鈕；Chrome/Edge 原生 prompt 與 macOS Safari「加入 Dock」導引；Standalone 模式自動隱藏安裝入口。
+- [ ] **MAC-31 (社群內容收藏看板與手機分享收藏)**：功能已實作完成，待 QA 依 `src/features/bookmarks/feature.md` AC-BOOKMARK-1~8 實機驗收。
   - Android 安裝 PWA 後可從 IG / YouTube / Threads 系統分享選單直接存入「收藏」看板；iOS 以「貼上連結」完成收藏。
   - 收藏卡片依平台自動分欄，顯示縮圖、平台徽章、作者與開啟原文按鈕，並同步至雲端。
   - 預覽失敗、離線或私人帳號時仍可儲存連結；重複收藏時提示。
+  - 標題只貼一個網址時自動展開為真實標題與縮圖；IG / Threads 縮圖自動轉存 R2 避免數日後失效。
+- [x] **MAC-32 (看板管理中心四分頁整合)**：`BoardManagerModal` 以「欄位流程／一般設定／共享協作／背景外觀」四分頁整合所有看板層級設定，欄位支援 `⋮⋮` 拖曳排序、行內改名與 Popover 圖示選擇，背景可套用漸層預設並持久化於 `Board.background`。
+- [x] **MAC-33 (任務詳情資訊完整度：封面／附件／留言／標籤)**：任務詳情支援純色與漸層封面、五種顯示比例與自訂圖片上傳；附件可上傳並插入說明，R2 與本機 Base64 雙軌降級；留言與活動紀錄時間軸可新增評論；`TagPicker` 以單一搜尋框同時完成過濾與新建標籤並顯示使用次數。
+- [x] **MAC-34 (API 身分驗證與零成本防濫用配額)**：`/api/upload` 與 `/api/link/thumbnail` 強制 Firebase ID Token 驗證；`/api/user/key`、`/api/voice/extract`、`/api/link/preview` 具 IP 或帳號層級速率限制；雲端語音解析一律使用使用者自帶金鑰，伺服器端不提供共用金鑰備援。
+- [x] **MAC-35 (Firestore 安全規則最小權限)**：`users/*` 嚴格私有；`shared_boards/*` 以 `memberIds` 判定成員且加入者僅能透過窄路把自己加入成員清單；共享文件置於隨機 `shareId`；規則結尾預設 deny。
+- [x] **MAC-36 (啟動速度與程式碼分割)**：全部彈窗以 `dynamic({ ssr: false })` 延遲載入且僅於開啟時掛載，延遲載入指向具體檔案而非 feature barrel；`CalendarView`、`AuthLandingScreen`、`BatchActionBar` 與 `NotificationToastContainer` 皆按需載入，首屏不含未使用的功能程式碼。
+- [x] **MAC-37 (繁體中文輸入法全域相容)**：所有處理 `Enter` / `Escape` 的文字輸入元件皆以 `isComposing` / `Process` 判定跳過 IME 組字事件，注音輸入確認候選字時不會造成文字重複送出；Web Speech 辨識結果統一以 OpenCC 正規化為繁體中文（zh-TW）。

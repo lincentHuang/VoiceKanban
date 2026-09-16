@@ -3,7 +3,7 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { OfflineIndicator } from "@/features/offline";
+import { OfflineIndicator } from "@/features/offline/components/OfflineIndicator";
 
 interface NavbarBrandSectionProps {
   isGuest: boolean;

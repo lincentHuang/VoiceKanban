@@ -2,11 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
 export function useSidebarInboxGestures() {
-  const {
-    activeDragTaskId,
-    setIsInboxSidebarOpen,
-    setViewMode,
-  } = useKanbanStore();
+const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
+  const setIsInboxSidebarOpen = useKanbanStore((s) => s.setIsInboxSidebarOpen);
+  const setViewMode = useKanbanStore((s) => s.setViewMode);
 
   const [isMobile, setIsMobile] = useState(false);
   const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });

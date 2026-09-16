@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { Sparkles, WifiOff, BrainCircuit } from "lucide-react";
+import { Sparkles, WifiOff } from "lucide-react";
 
 interface SettingsTabNavProps {
-  activeTab: "api" | "offline" | "learning";
-  setActiveTab: (tab: "api" | "offline" | "learning") => void;
+  activeTab: "api" | "offline";
+  setActiveTab: (tab: "api" | "offline") => void;
 }
 
 export const SettingsTabNav: React.FC<SettingsTabNavProps> = ({
@@ -38,19 +38,6 @@ export const SettingsTabNav: React.FC<SettingsTabNavProps> = ({
       >
         <WifiOff className="w-3.5 h-3.5 text-amber-500" />
         <span>離線與同步</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setActiveTab("learning")}
-        className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-          activeTab === "learning"
-            ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-            : "text-slate-500 hover:text-slate-700"
-        }`}
-      >
-        <BrainCircuit className="w-3.5 h-3.5 text-lime-600" />
-        <span>半自動學習</span>
       </button>
     </div>
   );

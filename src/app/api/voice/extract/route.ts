@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
               dueDate: { type: Type.STRING },
               priority: { type: Type.STRING, enum: ["high", "medium", "low"] },
               targetBoardId: { type: Type.STRING },
-              targetColumnId: { type: Type.STRING, enum: ["inbox", "todo", "in_progress", "waiting", "done"] },
+              targetColumnId: { type: Type.STRING, enum: ["inbox", "todo", "in_progress", "done"] },
               transcript: { type: Type.STRING },
             },
             required: ["title", "priority", "targetBoardId", "targetColumnId", "transcript"],

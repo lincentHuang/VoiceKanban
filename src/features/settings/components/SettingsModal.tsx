@@ -7,7 +7,6 @@ import { SettingsModalHeader } from "./modal/SettingsModalHeader";
 import { SettingsTabNav } from "./modal/SettingsTabNav";
 import { SettingsByokTab } from "./modal/SettingsByokTab";
 import { SettingsOfflineTab } from "./modal/SettingsOfflineTab";
-import { SettingsLearningTab } from "./modal/SettingsLearningTab";
 
 export const SettingsModal: React.FC = () => {
   const {
@@ -25,11 +24,8 @@ export const SettingsModal: React.FC = () => {
     setShowPassword,
     isTesting,
     testStatus,
-    learningStats,
-    resetSuccess,
     boards,
     handleTestAndSave,
-    handleResetLearning,
   } = useSettingsModal();
 
   useEscapeKey(() => {
@@ -73,15 +69,6 @@ export const SettingsModal: React.FC = () => {
 
           {activeTab === "offline" && (
             <SettingsOfflineTab onClose={() => setIsSettingsModalOpen(false)} />
-          )}
-
-          {activeTab === "learning" && (
-            <SettingsLearningTab
-              learningStats={learningStats}
-              resetSuccess={resetSuccess}
-              handleResetLearning={handleResetLearning}
-              onClose={() => setIsSettingsModalOpen(false)}
-            />
           )}
         </div>
       </div>

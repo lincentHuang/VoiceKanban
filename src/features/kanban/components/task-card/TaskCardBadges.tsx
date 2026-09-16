@@ -1,6 +1,8 @@
 import React from "react";
 import { Star, AlignLeft, Paperclip, CheckSquare2, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { DueDateStatus } from "@/core/utils/dateUtils";
+import { TaskCreator } from "@/core/types/task";
+import { UserAvatar } from "@/components/common/UserAvatar";
 
 interface Props {
   isStarred?: boolean;
@@ -11,18 +13,29 @@ interface Props {
   isChecklistAllDone: boolean;
   isSubtasksExpanded: boolean;
   dueDateStatus?: DueDateStatus | null;
+  /** Only passed on shared boards — on a personal board every card would show the same face. */
+  creator?: TaskCreator | null;
   onToggleSubtasksExpand: (e: React.MouseEvent) => void;
 }
 
 export const TaskCardBadges: React.FC<Props> = ({
   isStarred, hasDescription, totalAttachments, totalChecklist, completedChecklist,
-  isChecklistAllDone, isSubtasksExpanded, dueDateStatus, onToggleSubtasksExpand,
+  isChecklistAllDone, isSubtasksExpanded, dueDateStatus, creator, onToggleSubtasksExpand,
 }) => {
-  const hasBadges = isStarred || hasDescription || totalAttachments > 0 || totalChecklist > 0 || Boolean(dueDateStatus);
+  const hasBadges = isStarred || hasDescription || totalAttachments > 0 || totalChecklist > 0 || Boolean(dueDateStatus) || Boolean(creator);
   if (!hasBadges) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-2 mt-2.5 pt-2 border-t border-slate-100/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400">
+      {creator && (
+        <span className="inline-flex items-center gap-1 shrink-0" title={`${creator.name} 記下的`}>
+          <UserAvatar
+            src={creator.avatarUrl}
+            name={creator.name}
+            className="w-4 h-4 rounded-full text-[9px]"
+          />
+        </span>
+      )}
       {isStarred && <span className="text-amber-500 flex items-center justify-center shrink-0" title="重要事項"><Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" /></span>}
       {hasDescription && <span className="inline-flex items-center gap-1 shrink-0" title="有備註說明"><AlignLeft className="w-3.5 h-3.5" /></span>}
       {totalAttachments > 0 && <span className="inline-flex items-center gap-1 shrink-0" title="有附件檔案"><Paperclip className="w-3.5 h-3.5" /><span>{totalAttachments}</span></span>}

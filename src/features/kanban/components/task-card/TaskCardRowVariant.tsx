@@ -2,7 +2,7 @@ import React from "react";
 import { CheckSquare, Square, Star, CheckSquare2, Calendar, CheckCircle2 } from "lucide-react";
 import { Task } from "@/core/types/task";
 import { getDueDateStatus } from "@/core/utils/dateUtils";
-import { LinkEnrichingHint } from "@/features/bookmarks";
+import { LinkEnrichingHint } from "@/features/bookmarks/components/TaskCardLinkParts";
 
 interface Props {
   task: Task;

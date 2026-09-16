@@ -2,7 +2,6 @@
 
 import React from "react";
 import { WifiOff, Cloud, Check } from "lucide-react";
-import { ManualOfflineToggle } from "@/features/offline";
 
 interface SettingsOfflineTabProps {
   onClose: () => void;
@@ -11,8 +10,6 @@ interface SettingsOfflineTabProps {
 export const SettingsOfflineTab: React.FC<SettingsOfflineTabProps> = ({ onClose }) => {
   return (
     <div className="mt-4 space-y-4">
-      <ManualOfflineToggle variant="settings" />
-
       <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/60 space-y-2">
         <div className="flex items-center gap-2">
           <WifiOff className="w-4 h-4 text-amber-600" />
@@ -21,7 +18,7 @@ export const SettingsOfflineTab: React.FC<SettingsOfflineTabProps> = ({ onClose 
           </h4>
         </div>
         <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-          即使處於完全無網路（飛航模式、地下室）或手動離線狀態下，您仍可自由建立、拖曳排序、編輯與刪除任何看板任務。所有操作均會即時儲存至本地快取，並在網路恢復時自動無縫同步至雲端。
+          即使處於完全無網路（飛航模式、地下室）的狀態下，您仍可自由建立、拖曳排序、編輯與刪除任何看板任務。所有操作均會即時儲存至本地快取，並在網路恢復時自動無縫同步至雲端。
         </p>
       </div>
 
@@ -32,7 +29,7 @@ export const SettingsOfflineTab: React.FC<SettingsOfflineTabProps> = ({ onClose 
         </div>
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
           <Check className="w-3 h-3" />
-          <span>已就緒 (v2)</span>
+          <span>已就緒 (v4)</span>
         </span>
       </div>
 

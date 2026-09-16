@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import React, { useCallback, useState } from "react";
 import { Column } from "@/core/types/task";
 import {
   DropdownMenu,
@@ -9,10 +8,13 @@ import {
   DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import { useIsMobile } from "@/core/hooks/useIsMobile";
 import { ColumnColorPickerSection } from "./column-action-menu/ColumnColorPickerSection";
 import { ColumnSortSubmenu } from "./column-action-menu/ColumnSortSubmenu";
 import { ColumnMoveSubmenu } from "./column-action-menu/ColumnMoveSubmenu";
 import { ColumnActionBasicItems } from "./column-action-menu/ColumnActionBasicItems";
+import { ColumnActionSheet } from "./column-action-menu/ColumnActionSheet";
+import { useColumnActions } from "./column-action-menu/useColumnActions";
 
 interface ColumnActionMenuProps {
   column: Column;
@@ -20,24 +22,22 @@ interface ColumnActionMenuProps {
   onStartRename?: () => void;
 }
 
-export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
+const TRIGGER_CLASS =
+  "p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none focus:border-orange-500 cursor-pointer";
+
+const DesktopColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
   column,
   onAddTask,
   onStartRename,
 }) => {
-  const { getActiveBoardColumns } = useKanbanStore();
   const [isOpen, setIsOpen] = useState(false);
-  const columns = getActiveBoardColumns();
-  const otherColumns = columns.filter((c) => c.id !== column.id);
+  const closeMenu = useCallback(() => setIsOpen(false), []);
+  const actions = useColumnActions({ column, onAddTask, onStartRename, onCloseMenu: closeMenu });
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <button
-          className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none focus:border-orange-500 cursor-pointer"
-          title="列表選項與顏色"
-          aria-label="列表選項"
-        >
+        <button className={TRIGGER_CLASS} title="列表選項與顏色" aria-label="列表選項">
           <MoreHorizontal className="w-4 h-4" />
         </button>
       </DropdownMenuTrigger>
@@ -56,16 +56,43 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
         </div>
 
         <ColumnActionBasicItems
-          columnId={column.id}
-          onAddTask={onAddTask}
-          onStartRename={onStartRename}
-          onCloseMenu={() => setIsOpen(false)}
+          primaryItems={actions.primaryItems}
+          manageItems={actions.manageItems}
         />
-        <ColumnColorPickerSection column={column} onCloseMenu={() => setIsOpen(false)} />
-        <ColumnSortSubmenu columnId={column.id} onCloseMenu={() => setIsOpen(false)} />
-        <ColumnMoveSubmenu columnId={column.id} otherColumns={otherColumns} onCloseMenu={() => setIsOpen(false)} />
+        <ColumnColorPickerSection
+          colors={actions.colors}
+          isColorSelected={actions.isColorSelected}
+          onApplyColor={actions.applyColor}
+          onClearColor={actions.clearColor}
+        />
+        <ColumnSortSubmenu sortItems={actions.sortItems} />
+        <ColumnMoveSubmenu moveTargets={actions.moveTargets} />
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+};
+
+export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = (props) => {
+  const isMobile = useIsMobile();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  if (!isMobile) return <DesktopColumnActionMenu {...props} />;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsSheetOpen(true)}
+        className={TRIGGER_CLASS}
+        title="列表選項與顏色"
+        aria-label="列表選項"
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+      {isSheetOpen && (
+        <ColumnActionSheet {...props} onClose={() => setIsSheetOpen(false)} />
+      )}
+    </>
   );
 };
 export default ColumnActionMenu;

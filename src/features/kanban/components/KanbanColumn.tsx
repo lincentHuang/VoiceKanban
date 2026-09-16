@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -19,10 +19,19 @@ interface KanbanColumnProps {
   isOverlay?: boolean;
 }
 
-export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOverlay = false }) => {
-  const store = useKanbanStore();
-  const { openVoiceForColumn, addTask, activeBoardId, dragOverLocation, activeDragTaskId, canCurrentUserEdit } = store;
-  const canEdit = canCurrentUserEdit();
+const KanbanColumnImpl: React.FC<KanbanColumnProps> = ({ column, tasks, isOverlay = false }) => {
+  const openVoiceForColumn = useKanbanStore((s) => s.openVoiceForColumn);
+  const addTask = useKanbanStore((s) => s.addTask);
+  const activeBoardId = useKanbanStore((s) => s.activeBoardId);
+  const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
+  const canEdit = useKanbanStore((s) => s.canCurrentUserEdit());
+  // 只取「是不是拖到我這一欄」與「插在第幾格」兩個純量：拖曳過程中 dragOverLocation
+  // 每次移動都是新物件，直接訂閱它會讓每一欄在每個 pointermove 都重畫。
+  const isColumnOver = useKanbanStore((s) => !isOverlay && s.dragOverLocation?.columnId === column.id);
+  const dragOverIndex = useKanbanStore((s) =>
+    s.dragOverLocation?.columnId === column.id ? s.dragOverLocation.index : -1
+  );
+
   const colorConfig = getColumnColorConfig(column.color);
 
   const { attributes, listeners, setNodeRef: setSortableRef, transform, transition, isDragging } = useSortable({
@@ -41,15 +50,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
 
   const titleEdit = useColumnTitleEdit(column.id, column.title);
 
-  const uncompleted = tasks.filter((t) => !t.completed);
-  const completed = tasks.filter((t) => t.completed);
-  const isColumnOver = !isOverlay && dragOverLocation?.columnId === column.id;
+  const uncompleted = useMemo(() => tasks.filter((t) => !t.completed), [tasks]);
+  const completed = useMemo(() => tasks.filter((t) => t.completed), [tasks]);
   const isCrossDrag = isColumnOver && Boolean(activeDragTaskId && !tasks.some((t) => t.id === activeDragTaskId));
   const visActive = isOverlay ? uncompleted : isCrossDrag ? uncompleted.filter((t) => t.id !== activeDragTaskId) : uncompleted;
   const visComp = isOverlay ? completed : isCrossDrag ? completed.filter((t) => t.id !== activeDragTaskId) : completed;
   const rendered = isCompletedExpanded ? [...visActive, ...visComp] : visActive;
   const taskIds = rendered.map((t) => t.id);
-  const insertIndex = isCrossDrag && dragOverLocation ? Math.max(0, Math.min(dragOverLocation.index, visActive.length)) : -1;
+  const insertIndex = isCrossDrag && dragOverIndex >= 0 ? Math.max(0, Math.min(dragOverIndex, visActive.length)) : -1;
 
   useEffect(() => {
     if (isAddingCard) {
@@ -78,7 +86,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
   }
 
   return (
-    <div ref={setSortableRef} style={{ transform: CSS.Translate.toString(transform), transition }} data-column-id={column.id} className={`flex flex-col w-[84vw] max-w-[320px] min-w-[270px] sm:w-[270px] snap-center shrink-0 max-h-full h-fit backdrop-blur-xl border rounded-2xl p-3 shadow-md transition-all relative overflow-hidden group/col ${colorConfig.containerClass}`}>
+    // 原本這裡有 backdrop-blur-xl，但 containerClass 的底色是 /95 不透明度，模糊看不出來；
+    // 橫向捲動時卻要整欄每一幀重新取樣背景，是「滑起來卡卡」的主因，移除。
+    // transition-all 也收斂成實際會變的屬性，避免每次狀態變動都重算全部屬性。
+    <div ref={setSortableRef} style={{ transform: CSS.Translate.toString(transform), transition }} data-column-id={column.id} className={`flex flex-col w-[84vw] max-w-[320px] min-w-[270px] sm:w-[270px] snap-center shrink-0 max-h-full h-fit border rounded-2xl p-3 shadow-md transition-[box-shadow,border-color] relative overflow-hidden group/col ${colorConfig.containerClass}`}>
       <KanbanColumnHeader column={column} tasks={tasks} isEditingTitle={titleEdit.isEditingTitle} titleInput={titleEdit.titleInput} titleInputRef={titleEdit.titleInputRef} onTitleInputChange={titleEdit.setTitleInput} onTitleKeyDown={titleEdit.handleTitleKeyDown} onSaveTitle={titleEdit.handleSaveTitle} onStartEditTitle={() => titleEdit.setIsEditingTitle(true)} onStartAddCard={() => setIsAddingCard(true)} attributes={attributes} listeners={listeners} />
       <div ref={(el) => { scrollRef.current = el; setDroppableRef(el); }} className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 pt-1 pb-1 custom-scrollbar min-h-[60px]">
         <KanbanColumnTaskList columnId={column.id} taskIds={taskIds} visibleActiveTasks={visActive} visibleCompletedTasks={visComp} renderedTasks={rendered} insertIndex={insertIndex} isCrossColumnDrag={isCrossDrag} isColumnOver={isColumnOver} isCompletedExpanded={isCompletedExpanded} onToggleCompletedExpanded={() => setIsCompletedExpanded(!isCompletedExpanded)} />
@@ -88,3 +99,6 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, tasks, isOve
     </div>
   );
 };
+
+export const KanbanColumn = React.memo(KanbanColumnImpl);
+KanbanColumn.displayName = "KanbanColumn";

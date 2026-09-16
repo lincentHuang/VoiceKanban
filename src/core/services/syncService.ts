@@ -182,7 +182,6 @@ export class DatabaseSyncEngine {
 
   private static instance: DatabaseSyncEngine;
   private isOnline: boolean = true;
-  private isManualOffline: boolean = false;
   private unsubscribeSnapshot: Unsubscribe | null = null;
   private activeUserId: string | null = null;
 
@@ -205,16 +204,12 @@ export class DatabaseSyncEngine {
     return DatabaseSyncEngine.instance;
   }
 
-  public setManualOffline(offline: boolean): void {
-    this.isManualOffline = offline;
-  }
-
   public isOfflineMode(): boolean {
-    return this.isManualOffline || !this.isOnline;
+    return !this.isOnline;
   }
 
   public isCloudAvailable(): boolean {
-    return isFirebaseConfigured() && this.isOnline && !this.isManualOffline;
+    return isFirebaseConfigured() && this.isOnline;
   }
 
   /**

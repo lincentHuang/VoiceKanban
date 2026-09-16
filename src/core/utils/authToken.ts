@@ -1,5 +1,4 @@
-import { onAuthStateChanged, type User } from "firebase/auth";
-import { getFirebaseAuth } from "../services/firebase";
+import type { User } from "firebase/auth";
 
 /** Upper bound on waiting for Firebase to restore a session before treating the user as a guest. */
 const AUTH_READY_TIMEOUT_MS = 3000;
@@ -10,6 +9,12 @@ const AUTH_READY_TIMEOUT_MS = 3000;
  */
 export async function getIdToken(): Promise<string | null> {
   try {
+    // Imported on demand: this module is reachable from the store (link previews), and a static
+    // import would pull the whole Firebase SDK into the first-paint bundle.
+    const [{ getFirebaseAuth }, { onAuthStateChanged }] = await Promise.all([
+      import("../services/firebase"),
+      import("firebase/auth"),
+    ]);
     const auth = getFirebaseAuth();
     if (!auth) return null;
 

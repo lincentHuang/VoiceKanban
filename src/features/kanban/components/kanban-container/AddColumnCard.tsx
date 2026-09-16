@@ -42,7 +42,7 @@ export const AddColumnCard: React.FC<Props> = ({ onAddColumn }) => {
   return (
     <div ref={containerRef} data-add-column-card="true" className="w-[84vw] max-w-[320px] min-w-[270px] sm:w-[270px] sm:min-w-[270px] sm:max-w-[270px] snap-center shrink-0">
       {isAdding ? (
-        <form onSubmit={handleSubmit} className="backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border-2 border-orange-400/90 dark:border-orange-500/80 rounded-2xl p-3.5 shadow-xl animate-in fade-in zoom-in-95 duration-150 relative overflow-hidden">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 border-2 border-orange-400/90 dark:border-orange-500/80 rounded-2xl p-3.5 shadow-xl animate-in fade-in zoom-in-95 duration-150 relative overflow-hidden">
           <div style={{ backgroundColor: selectedColor }} className="absolute top-0 left-4 right-4 h-1 rounded-b-full shadow-xs" />
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-orange-500" />新增狀態欄位</span>
