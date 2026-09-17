@@ -6,6 +6,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Column, Task, getColumnColorConfig } from "@/core/types/task";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { useIsMobile } from "@/core/hooks/useIsMobile";
 import { useColumnTitleEdit } from "./column/useColumnTitleEdit";
 import { KanbanColumnOverlay } from "./column/KanbanColumnOverlay";
 import { KanbanColumnHeader } from "./column/KanbanColumnHeader";
@@ -34,8 +35,13 @@ const KanbanColumnImpl: React.FC<KanbanColumnProps> = ({ column, tasks, isOverla
 
   const colorConfig = getColumnColorConfig(column.color);
 
+  // 手機上欄位不能拖曳換位（長按容易誤觸，也會跟左右滑動搶手勢），順序只在「看板管理」裡調整。
+  // 只關掉 draggable：卡片仍要能拖進這一欄。
+  const isMobile = useIsMobile();
+  const isColumnDragEnabled = !isOverlay && canEdit && !isMobile;
   const { attributes, listeners, setNodeRef: setSortableRef, transform, transition, isDragging } = useSortable({
-    id: column.id, data: { type: "Column", column }, disabled: isOverlay || !canEdit,
+    id: column.id, data: { type: "Column", column },
+    disabled: { draggable: !isColumnDragEnabled, droppable: isOverlay || !canEdit },
   });
   const { setNodeRef: setDroppableRef } = useDroppable({
     id: column.id, data: { type: "Column", column }, disabled: isOverlay || !canEdit,
@@ -90,7 +96,7 @@ const KanbanColumnImpl: React.FC<KanbanColumnProps> = ({ column, tasks, isOverla
     // 橫向捲動時卻要整欄每一幀重新取樣背景，是「滑起來卡卡」的主因，移除。
     // transition-all 也收斂成實際會變的屬性，避免每次狀態變動都重算全部屬性。
     <div ref={setSortableRef} style={{ transform: CSS.Translate.toString(transform), transition }} data-column-id={column.id} className={`flex flex-col w-[84vw] max-w-[320px] min-w-[270px] sm:w-[270px] snap-center shrink-0 max-h-full h-fit border rounded-2xl p-3 shadow-md transition-[box-shadow,border-color] relative overflow-hidden group/col ${colorConfig.containerClass}`}>
-      <KanbanColumnHeader column={column} tasks={tasks} isEditingTitle={titleEdit.isEditingTitle} titleInput={titleEdit.titleInput} titleInputRef={titleEdit.titleInputRef} onTitleInputChange={titleEdit.setTitleInput} onTitleKeyDown={titleEdit.handleTitleKeyDown} onSaveTitle={titleEdit.handleSaveTitle} onStartEditTitle={() => titleEdit.setIsEditingTitle(true)} onStartAddCard={() => setIsAddingCard(true)} attributes={attributes} listeners={listeners} />
+      <KanbanColumnHeader column={column} tasks={tasks} isEditingTitle={titleEdit.isEditingTitle} titleInput={titleEdit.titleInput} titleInputRef={titleEdit.titleInputRef} onTitleInputChange={titleEdit.setTitleInput} onTitleKeyDown={titleEdit.handleTitleKeyDown} onSaveTitle={titleEdit.handleSaveTitle} onStartEditTitle={() => titleEdit.setIsEditingTitle(true)} onStartAddCard={() => setIsAddingCard(true)} isDragEnabled={isColumnDragEnabled} attributes={attributes} listeners={isColumnDragEnabled ? listeners : undefined} />
       <div ref={(el) => { scrollRef.current = el; setDroppableRef(el); }} className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 pr-1 pt-1 pb-1 custom-scrollbar min-h-[60px]">
         <KanbanColumnTaskList columnId={column.id} taskIds={taskIds} visibleActiveTasks={visActive} visibleCompletedTasks={visComp} renderedTasks={rendered} insertIndex={insertIndex} isCrossColumnDrag={isCrossDrag} isColumnOver={isColumnOver} isCompletedExpanded={isCompletedExpanded} onToggleCompletedExpanded={() => setIsCompletedExpanded(!isCompletedExpanded)} />
         <KanbanColumnInlineAdd isAddingCard={isAddingCard} newCardTitle={newCardTitle} isSubmitting={isSubmitting} inputRef={inputRef} onTitleChange={setNewCardTitle} onSubmit={handleAddSubmit} onCancel={() => { setIsAddingCard(false); setNewCardTitle(""); }} />

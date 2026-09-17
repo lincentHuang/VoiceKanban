@@ -16,13 +16,15 @@ interface Props {
   onSaveTitle: () => void;
   onStartEditTitle: () => void;
   onStartAddCard: () => void;
+  /** False on phones and for read-only viewers: no grip icon, no drag affordance. */
+  isDragEnabled: boolean;
   attributes: any;
   listeners: any;
 }
 
 export const KanbanColumnHeader: React.FC<Props> = ({
   column, tasks, isEditingTitle, titleInput, titleInputRef, onTitleInputChange,
-  onTitleKeyDown, onSaveTitle, onStartEditTitle, onStartAddCard, attributes, listeners,
+  onTitleKeyDown, onSaveTitle, onStartEditTitle, onStartAddCard, isDragEnabled, attributes, listeners,
 }) => {
 const isMultiSelectMode = useKanbanStore((s) => s.isMultiSelectMode);
   const selectedTaskIds = useKanbanStore((s) => s.selectedTaskIds);
@@ -37,9 +39,11 @@ const isMultiSelectMode = useKanbanStore((s) => s.isMultiSelectMode);
   };
 
   return (
-    <div {...attributes} {...listeners} data-column-header="true" className="flex items-center justify-between px-1 py-1 shrink-0 cursor-grab active:cursor-grabbing select-none [-webkit-touch-callout:none] transition-colors hover:bg-black/5 dark:hover:bg-white/5 rounded-xl" title="按住標頭可拖曳重新排列欄位順序">
+    <div {...attributes} {...listeners} data-column-header="true" className={`flex items-center justify-between px-1 py-1 shrink-0 select-none [-webkit-touch-callout:none] transition-colors rounded-xl ${isDragEnabled ? "cursor-grab active:cursor-grabbing hover:bg-black/5 dark:hover:bg-white/5" : ""}`} title={isDragEnabled ? "按住標頭可拖曳重新排列欄位順序" : undefined}>
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
-        <GripVertical className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover/col:text-slate-600 dark:group-hover/col:text-slate-300 transition-colors shrink-0 -ml-0.5" />
+        {isDragEnabled && (
+          <GripVertical className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover/col:text-slate-600 dark:group-hover/col:text-slate-300 transition-colors shrink-0 -ml-0.5" />
+        )}
         <ColumnIconPicker value={column.icon || ""} onChange={(icon) => updateColumnInActiveBoard(column.id, undefined, icon)} variant="ghost">
           <span className="text-base shrink-0 cursor-pointer hover:scale-115 active:scale-95 transition-transform p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center" title="點擊更換欄位圖示">
             {column.icon ? column.icon : <SmilePlus className="w-3.5 h-3.5 text-slate-400" />}
