@@ -37,7 +37,7 @@ const isMultiSelectMode = useKanbanStore((s) => s.isMultiSelectMode);
   };
 
   return (
-    <div {...attributes} {...listeners} data-column-header="true" className="flex items-center justify-between px-1 py-1 shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5 rounded-xl" title="按住標頭可拖曳重新排列欄位順序">
+    <div {...attributes} {...listeners} data-column-header="true" className="flex items-center justify-between px-1 py-1 shrink-0 cursor-grab active:cursor-grabbing select-none [-webkit-touch-callout:none] transition-colors hover:bg-black/5 dark:hover:bg-white/5 rounded-xl" title="按住標頭可拖曳重新排列欄位順序">
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
         <GripVertical className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover/col:text-slate-600 dark:group-hover/col:text-slate-300 transition-colors shrink-0 -ml-0.5" />
         <ColumnIconPicker value={column.icon || ""} onChange={(icon) => updateColumnInActiveBoard(column.id, undefined, icon)} variant="ghost">

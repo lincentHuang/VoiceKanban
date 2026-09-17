@@ -48,7 +48,22 @@ export function useUnifiedDnD() {
 
   const collisionDetectionStrategy: CollisionDetection = (args) => {
     if (args.active.data.current?.type === "Column") {
-      return closestCenter(args);
+      // 只跟「欄位」比對：原本對所有 droppable 做 closestCenter，手機上一欄就佔滿畫面，
+      // 拖到邊緣時最近的常是隔壁欄裡的卡片，over.id 變成任務 id，放開後排序直接被略過。
+      const columnContainers = args.droppableContainers.filter((c) =>
+        columns.some((col) => col.id === c.id)
+      );
+      // 以手指／游標的水平位置判定落在哪一欄；欄位 droppable 只量到卡片清單區，
+      // 拖曳的是標頭，所以只看 x，不看 y。
+      const pointerX = args.pointerCoordinates?.x;
+      if (pointerX !== undefined) {
+        const hit = columnContainers.find((c) => {
+          const rect = args.droppableRects.get(c.id);
+          return rect && pointerX >= rect.left && pointerX <= rect.left + rect.width;
+        });
+        if (hit) return [{ id: hit.id, data: { droppableContainer: hit, value: 0 } }];
+      }
+      return closestCenter({ ...args, droppableContainers: columnContainers });
     }
 
     const pointerCollisions = pointerWithin(args);

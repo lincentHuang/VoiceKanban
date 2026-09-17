@@ -8,7 +8,7 @@ import {
 } from "firebase/firestore";
 import { getUserRole, canUserEdit } from "../utils/roles";
 import { getFirebaseDb, isFirebaseConfigured } from "@/core/services/firebase";
-import { Board, Task, BoardMember, CollaboratorRole } from "@/core/types/task";
+import { Board, Column, Task, BoardMember, CollaboratorRole } from "@/core/types/task";
 import { UserSession } from "@/core/types/auth";
 import { sanitizeForFirestore, serializeTasks, deserializeTasks } from "@/core/services/syncService";
 import { JoinBoardResult, SharedBoardData } from "../types";
@@ -576,6 +576,36 @@ export class CollaborationService {
       } catch (err) {
         console.warn("Firestore syncSharedBoardData error:", err);
       }
+    }
+  }
+
+  /**
+   * Adds a column and its tasks to a shared board that isn't necessarily the active one.
+   *
+   * syncSharedBoardData rewrites the whole board from local state, which is only trustworthy
+   * for the board being watched live. For any other shared board the local copy may be stale,
+   * so this reads the current columns first and only adds to them. `tasks` is stored as a map,
+   * so a merge write adds the new entries without touching other members' tasks.
+   */
+  public async appendColumnToSharedBoard(board: Board, column: Column, tasks: Task[]): Promise<void> {
+    if (!board.isShared) return;
+    if (!isFirebaseConfigured() || typeof navigator === "undefined" || !navigator.onLine) return;
+
+    try {
+      const db = getFirebaseDb();
+      if (!db) return;
+      const boardRef = doc(db, "shared_boards", this.resolveShareId(board));
+      const snapshot = await getDoc(boardRef);
+      const remoteColumns = snapshot.exists() ? snapshot.data().columns : null;
+      const baseColumns: Column[] = Array.isArray(remoteColumns) ? remoteColumns : board.columns || [];
+
+      await setDoc(boardRef, sanitizeForFirestore({
+        columns: [...baseColumns.filter((c) => c.id !== column.id), column],
+        tasks: serializeTasks(tasks),
+        updatedAt: new Date().toISOString(),
+      }), { merge: true });
+    } catch (err) {
+      console.warn("Firestore appendColumnToSharedBoard error:", err);
     }
   }
 

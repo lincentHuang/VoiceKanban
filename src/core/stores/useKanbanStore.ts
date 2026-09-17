@@ -16,6 +16,7 @@ import { savePendingShare } from "@/features/bookmarks/services/pendingShareStor
 import { fetchLinkPreview, needsThumbnailRehost, persistThumbnail } from "@/features/bookmarks/services/linkPreviewService";
 import { detectPlatform, isBareUrl, normalizeSharedUrl, toCardTitle } from "@/features/bookmarks/utils/linkParser";
 import { buildLinkDescription } from "@/features/bookmarks/utils/linkDescription";
+import { ColumnTransferMode, canTransferColumn } from "@/features/kanban/utils/columnTransfer";
 
 /**
  * Firebase Auth + Firestore is by far the heaviest dependency in the app, and nothing needs it
@@ -122,6 +123,8 @@ interface KanbanStoreState {
   archiveColumn: (columnId: string) => void;
   expandTaskToColumn: (taskId: string) => void;
   aggregateColumnToTask: (columnId: string) => void;
+  /** Moves or copies a column of the active board, with its cards, to another board. Resolves to the new column id, or null if not allowed. */
+  transferColumnToBoard: (columnId: string, targetBoardId: string, mode: ColumnTransferMode) => Promise<string | null>;
 
   // Bookmarks (收藏): links shared in from IG / YouTube / Threads
   pendingShare: SharedLinkDraft | null;
@@ -1048,6 +1051,66 @@ export const useKanbanStore = create<KanbanStoreState>()(
           isInboxSidebarOpen: true,
         });
         get().triggerSync();
+      },
+
+      transferColumnToBoard: async (columnId, targetBoardId, mode) => {
+        const { boards, tasks, activeBoardId } = get();
+        const sourceBoard = boards.find((b) => b.id === activeBoardId);
+        const targetBoard = boards.find((b) => b.id === targetBoardId);
+        if (!sourceBoard || !targetBoard || !canTransferColumn(sourceBoard, targetBoard, mode)) return null;
+        if (!get().canCurrentUserEdit(targetBoardId)) return null;
+        if (mode === "move" && !get().canCurrentUserEdit(sourceBoard.id)) return null;
+
+        const sourceColumns = get().getActiveBoardColumns();
+        const column = sourceColumns.find((c) => c.id === columnId);
+        if (!column) return null;
+        // 看板沒有欄位時會退回預設欄位，搬走最後一欄反而會讓「待辦／進行中／完成」冒出來
+        if (mode === "move" && sourceColumns.length <= 1) return null;
+
+        const now = new Date().toISOString();
+        // 欄位 id 在各看板間會重複（預設欄位都叫 todo…），進到新看板一律換新 id
+        const newColumn: Column = { ...column, id: `col-${Date.now()}`, isCustom: true };
+        const columnTasks = tasks.filter((t) => t.boardId === sourceBoard.id && t.columnId === columnId);
+        const transferredTasks: Task[] = columnTasks.map((t, index) =>
+          mode === "move"
+            ? { ...t, boardId: targetBoardId, columnId: newColumn.id, updatedAt: now }
+            : {
+                ...t,
+                id: `task-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
+                boardId: targetBoardId,
+                columnId: newColumn.id,
+                checklist: t.checklist?.map((item) => ({ ...item })),
+                createdAt: now,
+                updatedAt: now,
+              }
+        );
+        const transferredIds = new Set(columnTasks.map((t) => t.id));
+
+        const targetColumns =
+          targetBoard.columns && targetBoard.columns.length > 0 ? targetBoard.columns : DEFAULT_COLUMNS;
+        const updatedTargetBoard: Board = { ...targetBoard, columns: [...targetColumns, newColumn] };
+
+        set((state) => ({
+          boards: state.boards.map((b) => {
+            if (b.id === targetBoardId) return updatedTargetBoard;
+            if (mode === "move" && b.id === sourceBoard.id) {
+              return { ...b, columns: sourceColumns.filter((c) => c.id !== columnId) };
+            }
+            return b;
+          }),
+          tasks:
+            mode === "move"
+              ? [...state.tasks.filter((t) => !transferredIds.has(t.id)), ...transferredTasks]
+              : [...state.tasks, ...transferredTasks],
+          selectedTaskIds: state.selectedTaskIds.filter((id) => !transferredIds.has(id)),
+        }));
+
+        if (updatedTargetBoard.isShared) {
+          const { collaborationService } = await loadCollab();
+          await collaborationService.appendColumnToSharedBoard(updatedTargetBoard, newColumn, transferredTasks);
+        }
+        get().triggerSync();
+        return newColumn.id;
       },
 
       // Bookmarks (收藏)

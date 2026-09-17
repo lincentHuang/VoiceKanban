@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Palette, ArrowUpDown, MoveRight, ChevronDown, Check } from "lucide-react";
+import { X, Palette, ArrowUpDown, MoveRight, ChevronDown, Check, FolderInput } from "lucide-react";
 import { Column } from "@/core/types/task";
 import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import { useColumnActions, ColumnActionItem } from "./useColumnActions";
@@ -219,6 +219,51 @@ export const ColumnActionSheet: React.FC<ColumnActionSheetProps> = ({
                   <span className="text-orange-500 shrink-0">➔</span>
                   <span className="truncate">移動至「{target.title}」</span>
                 </button>
+              ))}
+            </SheetSection>
+          )}
+
+          {actions.boardTransferTargets.length > 0 && (
+            <SheetSection
+              id="board-transfer"
+              label="移動或複製到其他看板"
+              icon={FolderInput}
+              expandedId={expandedId}
+              onToggle={toggle}
+            >
+              {actions.moveOutBlockedReason && (
+                <p className="px-2 pb-2 text-xs text-slate-400 dark:text-slate-500">
+                  {actions.moveOutBlockedReason}
+                </p>
+              )}
+              {actions.boardTransferTargets.map((target) => (
+                <div key={target.id} className="flex items-center gap-2 px-2 py-1.5">
+                  <span className="flex-1 min-w-0 flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {target.icon && <span className="shrink-0">{target.icon}</span>}
+                    <span className="truncate">{target.name}</span>
+                    {target.isShared && (
+                      <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold">
+                        共享
+                      </span>
+                    )}
+                  </span>
+                  {target.onMove && (
+                    <button
+                      type="button"
+                      onClick={target.onMove}
+                      className="shrink-0 px-3 py-2 rounded-xl text-xs font-bold bg-orange-500 text-white active:scale-95 transition-transform cursor-pointer"
+                    >
+                      移動
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={target.onCopy}
+                    className="shrink-0 px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 active:scale-95 transition-transform cursor-pointer"
+                  >
+                    複製
+                  </button>
+                </div>
               ))}
             </SheetSection>
           )}

@@ -12,6 +12,7 @@ import { useIsMobile } from "@/core/hooks/useIsMobile";
 import { ColumnColorPickerSection } from "./column-action-menu/ColumnColorPickerSection";
 import { ColumnSortSubmenu } from "./column-action-menu/ColumnSortSubmenu";
 import { ColumnMoveSubmenu } from "./column-action-menu/ColumnMoveSubmenu";
+import { ColumnBoardTransferSubmenu } from "./column-action-menu/ColumnBoardTransferSubmenu";
 import { ColumnActionBasicItems } from "./column-action-menu/ColumnActionBasicItems";
 import { ColumnActionSheet } from "./column-action-menu/ColumnActionSheet";
 import { useColumnActions } from "./column-action-menu/useColumnActions";
@@ -67,6 +68,10 @@ const DesktopColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
         />
         <ColumnSortSubmenu sortItems={actions.sortItems} />
         <ColumnMoveSubmenu moveTargets={actions.moveTargets} />
+        <ColumnBoardTransferSubmenu
+          targets={actions.boardTransferTargets}
+          moveOutBlockedReason={actions.moveOutBlockedReason}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );
