@@ -7,37 +7,31 @@ import { useEscapeKey } from "@/core/hooks/useEscapeKey";
 import { BatchSelectionCount } from "./batch/BatchSelectionCount";
 import { BatchMoveMenu } from "./batch/BatchMoveMenu";
 import { BatchPriorityMenu } from "./batch/BatchPriorityMenu";
+import { BatchTagMenu } from "./batch/BatchTagMenu";
 import { BatchActionButtons } from "./batch/BatchActionButtons";
 import { BatchDeleteConfirmModal } from "./batch/BatchDeleteConfirmModal";
 
 export const BatchActionBar: React.FC = () => {
   const {
-    isMultiSelectMode,
-    selectedTaskIds,
-    clearSelection,
-    setIsMultiSelectMode,
-    getActiveBoardColumns,
+    isMultiSelectMode, selectedTaskIds, clearSelection,
+    setIsMultiSelectMode, getActiveBoardColumns,
   } = useKanbanStore();
 
   const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const [isPriorityMenuOpen, setIsPriorityMenuOpen] = useState(false);
+  const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
   const [isBatchDeleteConfirm, setIsBatchDeleteConfirm] = useState(false);
 
   const hasSelection = selectedTaskIds.length > 0;
   const isVisible = isMultiSelectMode || hasSelection;
 
   useEscapeKey(() => {
-    if (isBatchDeleteConfirm) {
-      setIsBatchDeleteConfirm(false);
-    } else if (isMoveMenuOpen) {
-      setIsMoveMenuOpen(false);
-    } else if (isPriorityMenuOpen) {
-      setIsPriorityMenuOpen(false);
-    } else if (hasSelection) {
-      clearSelection();
-    } else if (isMultiSelectMode) {
-      setIsMultiSelectMode(false);
-    }
+    if (isBatchDeleteConfirm) setIsBatchDeleteConfirm(false);
+    else if (isMoveMenuOpen) setIsMoveMenuOpen(false);
+    else if (isPriorityMenuOpen) setIsPriorityMenuOpen(false);
+    else if (isTagMenuOpen) setIsTagMenuOpen(false);
+    else if (hasSelection) clearSelection();
+    else if (isMultiSelectMode) setIsMultiSelectMode(false);
   }, isVisible);
 
   if (!isVisible) return null;
@@ -53,13 +47,13 @@ export const BatchActionBar: React.FC = () => {
       <div className="backdrop-blur-2xl bg-slate-900/95 dark:bg-slate-900/98 text-white border border-slate-700/80 shadow-2xl rounded-2xl sm:rounded-full p-2.5 sm:px-5 sm:py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
         <BatchSelectionCount selectedCount={selectedTaskIds.length} />
 
-        <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-1.5 w-full sm:w-auto pt-1.5 sm:pt-0 border-t border-slate-800/80 sm:border-t-0">
+        <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-1.5 w-full sm:w-auto pt-1.5 sm:pt-0 border-t border-slate-800/80 sm:border-t-0 overflow-x-auto no-scrollbar">
           <BatchMoveMenu
             hasSelection={hasSelection}
             isOpen={isMoveMenuOpen}
             setIsOpen={(open) => {
               setIsMoveMenuOpen(open);
-              if (open) setIsPriorityMenuOpen(false);
+              if (open) { setIsPriorityMenuOpen(false); setIsTagMenuOpen(false); }
             }}
             targetColumns={allTargetColumns}
           />
@@ -69,7 +63,16 @@ export const BatchActionBar: React.FC = () => {
             isOpen={isPriorityMenuOpen}
             setIsOpen={(open) => {
               setIsPriorityMenuOpen(open);
-              if (open) setIsMoveMenuOpen(false);
+              if (open) { setIsMoveMenuOpen(false); setIsTagMenuOpen(false); }
+            }}
+          />
+
+          <BatchTagMenu
+            hasSelection={hasSelection}
+            isOpen={isTagMenuOpen}
+            setIsOpen={(open) => {
+              setIsTagMenuOpen(open);
+              if (open) { setIsMoveMenuOpen(false); setIsPriorityMenuOpen(false); }
             }}
           />
 

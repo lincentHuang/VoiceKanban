@@ -194,6 +194,9 @@ interface KanbanStoreState {
   batchDeleteTasks: () => void;
   batchToggleComplete: (completed: boolean) => void;
   batchSetPriority: (priority: Priority) => void;
+  batchAddTag: (tag: string) => void;
+  batchRemoveTag: (tag: string) => void;
+  batchToggleTag: (tag: string) => void;
 
   // Drag & Drop Live Placement
   activeDragTaskId: string | null;
@@ -1892,6 +1895,93 @@ export const useKanbanStore = create<KanbanStoreState>()(
           ),
           selectedTaskIds: [],
         });
+        get().triggerSync();
+      },
+
+      batchAddTag: (tag) => {
+        const trimmed = tag.trim();
+        if (!trimmed) return;
+        const { selectedTaskIds, tasks } = get();
+        if (selectedTaskIds.length === 0) return;
+
+        const now = new Date().toISOString();
+        let changed = false;
+        const updatedTasks = tasks.map((t) => {
+          if (!selectedTaskIds.includes(t.id)) return t;
+          const currentTags = t.tags || [];
+          if (currentTags.includes(trimmed)) return t;
+          changed = true;
+          return {
+            ...t,
+            tags: [...currentTags, trimmed],
+            updatedAt: now,
+          };
+        });
+
+        if (changed) {
+          set({ tasks: updatedTasks });
+          get().triggerSync();
+        }
+      },
+
+      batchRemoveTag: (tag) => {
+        const trimmed = tag.trim();
+        if (!trimmed) return;
+        const { selectedTaskIds, tasks } = get();
+        if (selectedTaskIds.length === 0) return;
+
+        const now = new Date().toISOString();
+        let changed = false;
+        const updatedTasks = tasks.map((t) => {
+          if (!selectedTaskIds.includes(t.id)) return t;
+          const currentTags = t.tags || [];
+          if (!currentTags.includes(trimmed)) return t;
+          changed = true;
+          return {
+            ...t,
+            tags: currentTags.filter((x) => x !== trimmed),
+            updatedAt: now,
+          };
+        });
+
+        if (changed) {
+          set({ tasks: updatedTasks });
+          get().triggerSync();
+        }
+      },
+
+      batchToggleTag: (tag) => {
+        const trimmed = tag.trim();
+        if (!trimmed) return;
+        const { selectedTaskIds, tasks } = get();
+        if (selectedTaskIds.length === 0) return;
+
+        const selectedTasks = tasks.filter((t) => selectedTaskIds.includes(t.id));
+        const allHave =
+          selectedTasks.length > 0 &&
+          selectedTasks.every((t) => (t.tags || []).includes(trimmed));
+
+        const now = new Date().toISOString();
+        const updatedTasks = tasks.map((t) => {
+          if (!selectedTaskIds.includes(t.id)) return t;
+          const currentTags = t.tags || [];
+          if (allHave) {
+            return {
+              ...t,
+              tags: currentTags.filter((x) => x !== trimmed),
+              updatedAt: now,
+            };
+          } else {
+            if (currentTags.includes(trimmed)) return t;
+            return {
+              ...t,
+              tags: [...currentTags, trimmed],
+              updatedAt: now,
+            };
+          }
+        });
+
+        set({ tasks: updatedTasks });
         get().triggerSync();
       },
 

@@ -10,4 +10,5 @@ export * from "./components/ColumnIconPicker";
 export * from "./components/BoardManagerModal";
 export * from "./components/DeleteBoardConfirmModal";
 export * from "./components/SortableChecklistItem";
+export * from "./components/batch/BatchTagMenu";
 export * from "./hooks/useBoardDragScroll";

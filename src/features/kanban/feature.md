@@ -35,8 +35,9 @@
    - 具備簡約精緻的「已完成 (N)」折疊面板，預設折疊隱藏已完成任務，點擊箭頭或整條按鈕平滑展開。
    - 展開後完整顯示已完成卡片，支援點擊查看詳情與卡片拖曳排序。
 8. **多選與批次操作 (Batch Actions & Mobile Responsive Bar)**：
-   - 支援勾選多張卡片，底部浮動 `BatchActionBar` 提供批次移動欄位、批次變更優先級、批次完成與批次刪除。
-   - **手機版雙行響應式佈局**：小螢幕（`< sm`）下切換為圓角雙行卡片（Row 1：選取數量徽章、計數文字與「退出多選」按鈕；Row 2：移動至、優先級、未完成、完成、刪除等操作按鈕，標籤加上 `whitespace-nowrap` 防折行），桌機寬螢幕（`≥ sm`）則維持俐落單行膠囊列。
+   - 支援勾選多張卡片，底部浮動 `BatchActionBar` 提供批次移動欄位、批次變更優先級、**批次管理標籤 (`BatchTagMenu`)**、批次完成與批次刪除。
+   - **批次標籤管理 (`BatchTagMenu`)**：點擊展開專屬標籤浮動面板，支援以關鍵字過濾既有標籤並即時建立全新標籤（內建中文注音輸入法 IME 保護）；針對已選取的任務顯示「全選 ✓ / 部分 – / 未選」三態識別，點擊一鍵批量套用或移除，並於面板底部彙整已套用標籤 Chip 供單鍵快速移除；標籤操作期間保留多選狀態，不突兀關閉操作列。
+   - **手機版雙行響應式佈局**：小螢幕（`< sm`）下切換為圓角雙行卡片（Row 1：選取數量徽章、計數文字與「退出多選」按鈕；Row 2：移動至、優先級、標籤、未完成、完成、刪除等操作按鈕，標籤加上 `whitespace-nowrap` 防折行），桌機寬螢幕（`≥ sm`）則維持俐落單行膠囊列。
 9. **手機版看板磁力滑動置中與邊緣懸停磁吸切換 (Mobile Scroll Snap & Edge Magnet Drag Navigation)**：
    - 手機小螢幕瀏覽時，看板容器啟用 `snap-x snap-mandatory`，各欄位 `w-[84vw] max-w-[320px] snap-center`，滑動時自動置中於畫面中央並保留兩側鄰欄邊緣預覽。
 10. **展開與聚合工作流 (Expand & Aggregate Workflow)**：
@@ -105,6 +106,8 @@ src/features/kanban/
 │   ├── EditTaskModal.tsx            # 編輯任務彈窗 (完整屬性編輯、子任務排序、展開為獨立欄位)
 │   ├── DeleteBoardConfirmModal.tsx  # 看板刪除確認彈窗 (包含任務計數警告與最後看板保護)
 │   ├── BatchActionBar.tsx           # 多選批次操作懸浮列
+│   ├── batch/                       # 批次操作子元件 (BatchMoveMenu, BatchPriorityMenu, BatchTagMenu, BatchActionButtons 等)
+│   │   └── BatchTagMenu.tsx         # 多選批次標籤操作面板 (含搜尋過濾、新建標籤、三態指示器)
 │   ├── ColumnIconPicker.tsx         # 獨立欄位圖示 Popover 選擇器 (支援 Emoji 與純文字)
 │   ├── ColumnActionMenu.tsx         # 欄位選單分流：桌機為下拉選單，手機 (<640px) 改用 ColumnActionSheet 底部彈出面板
 │   ├── BoardManagerModal.tsx        # 看板管理彈窗 (取代原狀態流程管理，含分頁：欄位流程／一般設定／共享協作／背景外觀)
@@ -170,3 +173,10 @@ src/features/kanban/
   - 欄位進入新看板時一律換新欄位 id；移動保留卡片 id，複製則產生新卡片 id。
   - 目標為共享看板時，先讀取雲端最新欄位再附加（`appendColumnToSharedBoard`），不以本機可能過期的資料覆蓋其他成員的內容。
   - 完成後自動切換到目標看板並捲動到新欄位。
+- [x] **AC-KANBAN-21**：**多選批次標籤功能 (Batch Tag Management)**：
+  - 勾選多張卡片後，浮動操作列提供「標籤」按鈕與向上彈出選單（`BatchTagMenu`）。
+  - 支援關鍵字即時搜尋既有標籤與建立新標籤（支援中文注音輸入法組字防重複送出保護）。
+  - 針對當前選取卡片提供全選（`✓`）、部分選取（`–`）、未選取三種狀態指示，點擊可快速切換。
+  - 點擊新增或切換標籤時，所屬變更即時批次套用至所有已選任務並自動觸發雲端同步（`triggerSync`）。
+  - 標籤操作期間保持卡片選取狀態，不強制關閉選取列；支援 ESC 鍵先關閉標籤面板，再按關閉多選。
+

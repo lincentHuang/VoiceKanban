@@ -1,63 +1,54 @@
-# QA 驗收報告：全站 React 元件極致模組化 (All Components ≤ 100 Lines)
+# QA 驗收報告：多選批次標籤功能 (Batch Tag Management)
 
 ## 1. 驗收摘要
-- **目標要求**：將專案中所有 React UI 元件 (`.tsx`) 進行精細化拆分，確保**每一個 `.tsx` 元件與子元件均嚴格落在 100 行以內**。
-- **執行結果**：**100% 達成**。
-- **TypeScript 構建檢查**：`npm run build` 通過，0 Errors，0 Warnings。
-- **本地預覽**：開發伺服器穩定運行於 `http://localhost:3011`。
+- **功能項目**：多選任務時支援批次標籤管理（`BatchTagMenu`）。
+- **驗收標準**：對照 `PRD.md` 全域驗收標準 **MAC-38** 與 `src/features/kanban/feature.md` **AC-KANBAN-21**。
+- **測試結果**：**100% 通過（9/9 測試情境全數通過）**。
+- **TypeScript 構建檢查**：`npm run build` 與 `npx tsc --noEmit` 0 Errors，0 Warnings。
+- **UI 行數規範**：所有新增與重構之 `.tsx` 元件均嚴格限制在 ≤ 100 行以內。
+- **本機預覽**：開發伺服器穩定運行於 `http://localhost:3011`。
 
 ---
 
-## 2. 元件行數驗證資料 (Line Count Audit)
-透過 `find src -name "*.tsx" | xargs wc -l | sort -nr` 進行全域掃描，統計結果如下：
-- **總 TSX 檔案數**：160+ 個模組化檔案
-- **超過 100 行的檔案數**：**0 個**（最大檔案為 100 行）
+## 2. 測試矩陣與邊界值驗證
 
-### 前 15 大檔案行數分佈範例：
-| 檔案路徑 | 行數 | 狀態 |
-| :--- | :---: | :---: |
-| `src/features/kanban/components/edit-task/EditTaskCoverPickerModal.tsx` | 100 | ✅ 通過 |
-| `src/features/views/components/table/TableRowItem.tsx` | 99 | ✅ 通過 |
-| `src/features/kanban/components/edit-task/EditTaskChecklistSection.tsx` | 99 | ✅ 通過 |
-| `src/features/kanban/components/EditTaskModal.tsx` | 99 | ✅ 通過 |
-| `src/features/inbox/components/SidebarInbox.tsx` | 98 | ✅ 通過 |
-| `src/features/kanban/components/column-action-menu/ColumnActionBasicItems.tsx` | 97 | ✅ 通過 |
-| `src/features/kanban/components/ColumnManagerModal.tsx` | 97 | ✅ 通過 |
-| `src/features/editor/components/utils/markdownBlocks.tsx` | 97 | ✅ 通過 |
-| `src/features/views/components/calendar/CalendarHeaderControls.tsx` | 96 | ✅ 通過 |
-| `src/features/kanban/components/checklist/ChecklistItemView.tsx` | 96 | ✅ 通過 |
-| `src/features/kanban/components/column-manager/ColumnManagerDndList.tsx` | 95 | ✅ 通過 |
-| `src/features/voice/components/VoicePreviewForm.tsx` | 94 | ✅ 通過 |
-| `src/features/settings/components/modal/SettingsLearningTab.tsx` | 94 | ✅ 通過 |
-| `src/features/search/components/SearchModal.tsx` | 94 | ✅ 通過 |
-| `src/components/ui/dropdown-menu-items.tsx` | 94 | ✅ 通過 |
+| 測試編號 | 測試項目 | 測試情境與邊界條件 | 驗收結果 |
+| :--- | :--- | :--- | :---: |
+| **TC-TAG-01** | 批次加入既有標籤 | 選取多個不同狀態任務，點擊現有標籤一鍵套用至所有已選卡片 | ✅ 通過 |
+| **TC-TAG-02** | 行內即時建立新標籤 | 搜尋框輸入未曾使用之標籤名稱，Enter 或點擊建立按鈕即刻寫入 | ✅ 通過 |
+| **TC-TAG-03** | 中文注音 IME 組字保護 | 繁體中文注音輸入確認字詞時（Enter），阻斷組字送出，杜絕重複建立 | ✅ 通過 |
+| **TC-TAG-04** | 三態指示器精確度 | 全涵蓋顯示 `✓`、部分涵蓋顯示 `–`（附帶「部分」提示）、無涵蓋為空框 | ✅ 通過 |
+| **TC-TAG-05** | 三態切換轉換邏輯 | 部分涵蓋點擊切換為全選；全選點擊切換為全部移除，行為直覺流暢 | ✅ 通過 |
+| **TC-TAG-06** | 重複標籤防呆與空白清洗 | 自動進行前後空白 `.trim()`，已有標籤不重複新增且不觸發多餘 Sync | ✅ 通過 |
+| **TC-TAG-07** | 已套用標籤快捷移除 | 面板顯示已套用標籤 Chips，點擊 `×` 立即從所有已選卡片中徹底移除 | ✅ 通過 |
+| **TC-TAG-08** | 多選操作延續性 | 標籤增刪後**不主動清除選取狀態**，使用者可連續標註或接著執行移動/完成 | ✅ 通過 |
+| **TC-TAG-09** | 響應式與手勢/快捷鍵 | 桌機與手機向上彈出不超出螢幕；ESC 鍵依序關閉標籤選單 ➔ 退出多選 | ✅ 通過 |
 
 ---
 
-## 3. 功能回歸測試驗收 (0 Regression Verification)
-1. **拖曳排序 (DnD Kit)**：
-   - 雙欄看板拖曳、卡片跨欄拖曳、收件匣與看板間拖曳、子任務長按拖曳排序功能均保持原生流暢。
-2. **語音輸入與 AI 解析**：
-   - `VoiceFAB` ➔ `VoiceCaptureOverlay` 狀態切換（Recording ➔ Processing ➔ Preview ➔ Error）正常運作。
-3. **視圖切換 (Views)**：
-   - 看板 (Kanban)、日期 (Calendar)、表格 (Table)、清單 (List) 切換自如，數據響應即時。
-4. **協同與認證**：
-   - 多人頭像即時渲染、邀請代碼分享與加入、訪客模式切換均無斷點。
-5. **群組協作即時通知中心 (Feature 10: Notifications & Alerts)**：
-   - **他人操作即時 Toast 浮動快訊**：其他協作成員於共享看板新增、移動、完成、刪除任務時，右上角精準彈出 4 秒自動淡出卡片。
-   - **操作者自我過濾原則 (Self-Action Exclusion)**：自身進行操作時 100% 不發送通知打擾自己，測試通過。
-   - **Navbar 鈴鐺與未讀紅點 Badge**：未讀計數與動態即時聯動，支援「全部已讀」、「一鍵清空」。
-   - **Web Notification 桌面系統推播**：支援授權切換，視窗置於背景時正常發送系統通知。
-   - **點擊定位與高亮聚焦**：點擊通知項目自動切換至所屬看板並開啟任務詳情。
-6. **電腦桌面獨立應用程式 (Feature: Desktop Standalone App & PWA)**：
-   - **Navbar「💻 安裝電腦版」專屬入口**：桌機環境下正常呈現，點擊流暢觸發安裝流程與教學彈窗。
-   - **跨瀏覽器支援**：Chrome / Edge / Brave 支援原生 prompt 彈窗；macOS Safari (Sonoma 14+) 彈出專屬「加入 Dock」3 步驟圖文導引視窗。
-   - **智慧隱藏原則**：以獨立視窗模式執行時，安裝按鈕 100% 自動隱藏，達成完全無網址列、無標籤頁的純淨看板工作台體驗。
-7. **UI 狀態遵循**：
-   - 各模組維持 5 種 UI 狀態 (Loading, Empty, Error, Success, Active)。
+## 3. 元件架構與行數稽核 (Line Count Audit)
+
+| 元件檔案路徑 | 行數 | 規範要求 | 狀態 |
+| :--- | :---: | :---: | :---: |
+| `src/features/kanban/components/BatchActionBar.tsx` | 94 | ≤ 100 行 | ✅ 通過 |
+| `src/features/kanban/components/batch/BatchTagMenu.tsx` | 39 | ≤ 100 行 | ✅ 通過 |
+| `src/features/kanban/components/batch/tag-menu/BatchTagPopoverContent.tsx` | 94 | ≤ 100 行 | ✅ 通過 |
+| `src/features/kanban/components/batch/tag-menu/BatchTagSearchInput.tsx` | 46 | ≤ 100 行 | ✅ 通過 |
+| `src/features/kanban/components/batch/tag-menu/BatchTagOptionItem.tsx` | 54 | ≤ 100 行 | ✅ 通過 |
+| `src/features/kanban/components/batch/tag-menu/BatchTagAppliedChips.tsx` | 52 | ≤ 100 行 | ✅ 通過 |
+| `src/features/kanban/components/batch/tag-menu/BatchTagMenuHeader.tsx` | 20 | ≤ 100 行 | ✅ 通過 |
+| `src/features/kanban/components/batch/tag-menu/useBatchTagMenu.ts` | 117 | (Hook/邏輯層) | ✅ 通過 |
 
 ---
 
-## 4. 驗收結論
-全域 TypeScript 型別檢查 100% 通過（`npm run build` 0 Errors 0 Warnings），所有 TSX 元件均嚴格限制在 ≤ 100 行以內，電腦桌面獨立應用與協作通知功能完美交付。
+## 4. UI 5 種狀態審查 (5 UI States Compliance)
+1. **Loading**：選單展開與收合具備 100ms 快速縮放與淡入微動畫（`fade-in zoom-in-95`），無卡頓延遲。
+2. **Empty**：無任何標籤或搜尋無結果時，給予友善引導文案「尚無標籤，輸入文字並按 Enter 建立」或「找不到符合的標籤」。
+3. **Error**：輸入純空白時不建立無效標籤，字串過濾與安全性完整防護。
+4. **Success**：標籤點擊即時勾選更新，狀態晶片動態浮現，並觸發全域雲端即時同步（`triggerSync`）。
+5. **Active / Interactive**：輸入框自動聚焦（`autoFocus`），鍵盤 Enter/ESC 操作自如，選單具備深色半透明毛玻璃質感（`backdrop-blur-2xl`），Hover 高亮平滑。
 
+---
+
+## 5. 驗收結論
+**PASS 驗收通過**。多選批次標籤管理模組功能完整、邊界保護嚴密、完全相容繁中注音輸入法與行動端佈局，已準備好交付運行。
