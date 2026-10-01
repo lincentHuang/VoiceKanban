@@ -1,88 +1,63 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
+import type { Column } from "@/core/types/task";
+import { useEdgeHoldMeter, type EdgeSide } from "@/components/layout/dnd/useEdgeHoldMeter";
 
+// 拖曳卡片停在看板左右邊緣：計量表填滿就換到上一欄／下一欄，手機上第一欄再往左是收件匣。
 export function useEdgeDragScroll(
   isDragging: boolean, isMobile: boolean,
-  scrollContainerRef: React.RefObject<HTMLDivElement | null>, onOpenInbox: () => void
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>, onOpenInbox: () => void,
+  columns: Column[]
 ) {
-  const [edgeHoverSide, setEdgeHoverSide] = useState<"left" | "right" | null>(null);
-  const edgeTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const scrollMagnetToColumn = useCallback((direction: "next" | "prev") => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const elements = Array.from(container.querySelectorAll<HTMLElement>("[data-column-id], [data-add-column-card]"));
-    if (!elements.length) return;
-
-    const width = container.clientWidth;
-    const center = container.scrollLeft + width / 2;
-
-    const target = direction === "next"
-      ? elements.find((el) => el.offsetLeft + el.offsetWidth / 2 > center + 30)
-      : [...elements].reverse().find((el) => el.offsetLeft + el.offsetWidth / 2 < center - 30);
-
-    if (target) {
-      container.scrollTo({ left: Math.max(0, target.offsetLeft - (width - target.offsetWidth) / 2), behavior: "smooth" });
-      if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
-        try { navigator.vibrate(25); } catch {}
-      }
-    }
-  }, [scrollContainerRef]);
+  // 平滑捲動要一點時間，計量表變快之後可能在上一次還沒捲完就要換下一欄；
+  // 這時要從「正要捲到的位置」往下算，不然會算出同一欄、原地不動。
+  const plannedLeftRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isDragging) {
-      if (edgeTimerRef.current) { clearTimeout(edgeTimerRef.current); edgeTimerRef.current = null; }
-      setEdgeHoverSide(null);
-      return;
-    }
+    plannedLeftRef.current = null;
+  }, [isDragging]);
 
-    const handlePointerMove = (e: PointerEvent) => {
-      const container = scrollContainerRef.current;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      if (e.clientY < rect.top - 50 || e.clientY > rect.bottom + 50) {
-        if (edgeTimerRef.current) { clearTimeout(edgeTimerRef.current); edgeTimerRef.current = null; }
-        setEdgeHoverSide(null);
+  const findDestination = (side: EdgeSide) => {
+    const container = scrollContainerRef.current;
+    if (!container) return null;
+    const from = plannedLeftRef.current ?? container.scrollLeft;
+
+    if (side === "left" && isMobile && from <= 15) return { kind: "inbox" as const };
+
+    const elements = Array.from(container.querySelectorAll<HTMLElement>("[data-column-id]"));
+    const width = container.clientWidth;
+    const center = from + width / 2;
+    const target = side === "right"
+      ? elements.find((el) => el.offsetLeft + el.offsetWidth / 2 > center + 30)
+      : [...elements].reverse().find((el) => el.offsetLeft + el.offsetWidth / 2 < center - 30);
+    if (!target) return null;
+
+    const maxLeft = container.scrollWidth - width;
+    const left = Math.min(maxLeft, Math.max(0, target.offsetLeft - (width - target.offsetWidth) / 2));
+    // 已經捲到底（桌機上最後幾欄同時看得到）就不算還有下一頁
+    if (Math.abs(left - from) < 2) return null;
+    return { kind: "column" as const, left, columnId: target.dataset.columnId };
+  };
+
+  const meter = useEdgeHoldMeter({
+    enabled: isDragging,
+    getZoneRect: () => scrollContainerRef.current?.getBoundingClientRect() ?? null,
+    getTargetLabel: (side) => {
+      const dest = findDestination(side);
+      if (!dest) return null;
+      if (dest.kind === "inbox") return "收件匣";
+      return columns.find((c) => c.id === dest.columnId)?.title || (side === "right" ? "下一欄" : "上一欄");
+    },
+    onTrigger: (side) => {
+      const dest = findDestination(side);
+      if (!dest) return;
+      if (dest.kind === "inbox") {
+        onOpenInbox();
         return;
       }
-      const edgeWidth = Math.min(65, rect.width * 0.18);
-      const isRight = e.clientX >= rect.right - edgeWidth && e.clientX <= rect.right + 30;
-      const isLeft = e.clientX <= rect.left + edgeWidth && e.clientX >= rect.left - 30;
+      plannedLeftRef.current = dest.left;
+      scrollContainerRef.current?.scrollTo({ left: dest.left, behavior: "smooth" });
+    },
+  });
 
-      if (isRight) {
-        setEdgeHoverSide("right");
-        if (!edgeTimerRef.current) edgeTimerRef.current = setTimeout(() => { scrollMagnetToColumn("next"); edgeTimerRef.current = null; }, 450);
-      } else if (isLeft) {
-        setEdgeHoverSide("left");
-        if (!edgeTimerRef.current) {
-          edgeTimerRef.current = setTimeout(() => {
-            if (isMobile && container.scrollLeft <= 15) {
-              onOpenInbox();
-              if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
-                try { navigator.vibrate(25); } catch {}
-              }
-            } else { scrollMagnetToColumn("prev"); }
-            edgeTimerRef.current = null;
-          }, 450);
-        }
-      } else {
-        if (edgeTimerRef.current) { clearTimeout(edgeTimerRef.current); edgeTimerRef.current = null; }
-        setEdgeHoverSide(null);
-      }
-    };
-
-    const handlePointerUp = () => {
-      if (edgeTimerRef.current) { clearTimeout(edgeTimerRef.current); edgeTimerRef.current = null; }
-      setEdgeHoverSide(null);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-    return () => {
-      if (edgeTimerRef.current) { clearTimeout(edgeTimerRef.current); edgeTimerRef.current = null; }
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-  }, [isDragging, isMobile, scrollContainerRef, scrollMagnetToColumn, onOpenInbox]);
-
-  return { edgeHoverSide, scrollMagnetToColumn };
+  return { meter };
 }

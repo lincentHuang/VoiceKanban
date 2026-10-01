@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { useSidebarInboxGestures } from "./sidebar/useSidebarInboxGestures";
@@ -8,6 +8,7 @@ import { InboxHeader } from "./sidebar/InboxHeader";
 import { InboxMultiSelectBar } from "./sidebar/InboxMultiSelectBar";
 import { InboxQuickAddBar } from "./sidebar/InboxQuickAddBar";
 import { InboxTaskList } from "./sidebar/InboxTaskList";
+import { EdgeHoldMeterOverlay } from "@/components/layout/dnd/EdgeHoldMeterOverlay";
 
 const INBOX_DROPPABLE_DATA = {
   type: "Column",
@@ -25,9 +26,14 @@ export const SidebarInbox: React.FC = () => {
   );
 
   const [inboxSort, setInboxSort] = useState<"date" | "priority" | "title">("date");
-  const { isMobile, handleTouchStart, handleTouchEnd } = useSidebarInboxGestures();
+  const panelRef = useRef<HTMLElement | null>(null);
+  const { isMobile, edgeMeter, handleTouchStart, handleTouchEnd } = useSidebarInboxGestures(panelRef);
 
   const { setNodeRef, isOver } = useDroppable({ id: "inbox", data: INBOX_DROPPABLE_DATA });
+  const setPanelRef = useCallback((node: HTMLElement | null) => {
+    panelRef.current = node;
+    setNodeRef(node);
+  }, [setNodeRef]);
 
   const inboxTasks = useMemo(
     () =>
@@ -61,7 +67,7 @@ export const SidebarInbox: React.FC = () => {
 
   return (
     <aside
-      ref={setNodeRef}
+      ref={setPanelRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       // 原本是 transition-all duration-300：那會連 width / padding / border / shadow
@@ -101,6 +107,7 @@ export const SidebarInbox: React.FC = () => {
         />
         <div className="h-[40px] sm:hidden shrink-0" />
       </div>
+      <EdgeHoldMeterOverlay meter={edgeMeter} />
     </aside>
   );
 };

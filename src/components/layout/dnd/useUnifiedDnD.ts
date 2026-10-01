@@ -78,6 +78,15 @@ export function useUnifiedDnD() {
           (c) => c.id !== "inbox" && c.data.current?.task?.columnId !== "inbox"
         ),
       };
+    } else if (typeof window !== "undefined" && window.innerWidth < 640) {
+      // 手機版收件匣打開時整片蓋在看板上面，底下的欄位和卡片看不到也碰不到，
+      // 不排除的話卡片明明放在收件匣上，卻會掉進被蓋住的那一欄。
+      args = {
+        ...args,
+        droppableContainers: args.droppableContainers.filter(
+          (c) => c.id === "inbox" || c.data.current?.task?.columnId === "inbox"
+        ),
+      };
     }
 
     const pointerCollisions = pointerWithin(args);

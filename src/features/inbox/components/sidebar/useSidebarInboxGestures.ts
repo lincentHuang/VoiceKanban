@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
+import { useEdgeHoldMeter } from "@/components/layout/dnd/useEdgeHoldMeter";
 
-export function useSidebarInboxGestures() {
-const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
+export function useSidebarInboxGestures(panelRef: React.RefObject<HTMLElement | null>) {
+  const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
   const isInboxSidebarOpen = useKanbanStore((s) => s.isInboxSidebarOpen);
   const setIsInboxSidebarOpen = useKanbanStore((s) => s.setIsInboxSidebarOpen);
   const setViewMode = useKanbanStore((s) => s.setViewMode);
@@ -10,7 +11,6 @@ const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
   const [isMobile, setIsMobile] = useState(false);
   const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingTask = activeDragTaskId !== null;
-  const edgeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -21,62 +21,17 @@ const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Drag near right edge -> magnet switch to Kanban on mobile
-  // 收件匣已經收起來時不能再掛這個計時器：它每 450ms 就寫一次 store，看板跟著重畫，
-  // 會把 useEdgeDragScroll「捲到下一欄」的計時器在觸發前清掉，手機上就永遠拖不到右邊。
-  useEffect(() => {
-    if (!isDraggingTask || !isMobile || !isInboxSidebarOpen) {
-      if (edgeTimerRef.current) {
-        clearTimeout(edgeTimerRef.current);
-        edgeTimerRef.current = null;
-      }
-      return;
-    }
-
-    const handlePointerMove = (e: PointerEvent) => {
-      const isNearRightEdge = e.clientX >= window.innerWidth - 50;
-      if (isNearRightEdge) {
-        if (!edgeTimerRef.current) {
-          edgeTimerRef.current = setTimeout(() => {
-            setIsInboxSidebarOpen(false);
-            setViewMode("kanban");
-            if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
-              try {
-                navigator.vibrate(25);
-              } catch {}
-            }
-            edgeTimerRef.current = null;
-          }, 450);
-        }
-      } else {
-        if (edgeTimerRef.current) {
-          clearTimeout(edgeTimerRef.current);
-          edgeTimerRef.current = null;
-        }
-      }
-    };
-
-    const handlePointerUp = () => {
-      if (edgeTimerRef.current) {
-        clearTimeout(edgeTimerRef.current);
-        edgeTimerRef.current = null;
-      }
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-    window.addEventListener("pointercancel", handlePointerUp);
-
-    return () => {
-      if (edgeTimerRef.current) {
-        clearTimeout(edgeTimerRef.current);
-        edgeTimerRef.current = null;
-      }
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-      window.removeEventListener("pointercancel", handlePointerUp);
-    };
-  }, [isDraggingTask, isMobile, isInboxSidebarOpen, setIsInboxSidebarOpen, setViewMode]);
+  // 手機上收件匣蓋住看板：拖曳中停在右邊緣，計量表填滿就收起收件匣回到看板。
+  // 收件匣收起之後不能再啟用：之後換成看板自己的計量表接手往下一欄。
+  const edgeMeter = useEdgeHoldMeter({
+    enabled: isDraggingTask && isMobile && isInboxSidebarOpen,
+    getZoneRect: () => panelRef.current?.getBoundingClientRect() ?? null,
+    getTargetLabel: (side) => (side === "right" ? "看板" : null),
+    onTrigger: () => {
+      setIsInboxSidebarOpen(false);
+      setViewMode("kanban");
+    },
+  });
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!isMobile || isDraggingTask) return;
@@ -106,6 +61,7 @@ const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
 
   return {
     isMobile,
+    edgeMeter,
     handleTouchStart,
     handleTouchEnd,
   };

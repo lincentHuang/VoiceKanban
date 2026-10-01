@@ -6,7 +6,7 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { KanbanColumn } from "./KanbanColumn";
 import { useBoardDragScroll } from "../hooks/useBoardDragScroll";
 import { useEdgeDragScroll } from "./kanban-container/useEdgeDragScroll";
-import { KanbanEdgeOverlays } from "./kanban-container/KanbanEdgeOverlays";
+import { EdgeHoldMeterOverlay } from "@/components/layout/dnd/EdgeHoldMeterOverlay";
 import { AddColumnCard } from "./kanban-container/AddColumnCard";
 import { useFilteredBoardTasks } from "./kanban-container/useFilteredBoardTasks";
 
@@ -36,12 +36,11 @@ export const KanbanContainer: React.FC = () => {
   const isInboxOpenWhileDragging = useKanbanStore((s) => s.activeDragTaskId !== null && s.isInboxSidebarOpen);
 
   const { containerRef: scrollRef, isPanning, handleMouseDown } = useBoardDragScroll({ disabled: isDragging });
-  // 必須是穩定的參考：useEdgeDragScroll 的 effect 依賴它，每次重畫都換新函式會把邊緣計時器清掉。
   const openInbox = useCallback(() => setIsInboxSidebarOpen(true), [setIsInboxSidebarOpen]);
-  // 手機上收件匣蓋住整個看板：從收件匣拖出來時，等它收起後看板邊緣才開始換欄，
-  // 不然收件匣收起的同一瞬間看板也會跟著跳到下一欄。
-  const { edgeHoverSide } = useEdgeDragScroll(
-    isDragging && !(isMobile && isInboxOpenWhileDragging), isMobile, scrollRef, openInbox
+  // 手機上收件匣蓋住整個看板：收件匣開著時由收件匣自己的計量表負責「回到看板」，
+  // 收起之後才換看板的計量表接手，兩個不會同時跑。
+  const { meter: edgeMeter } = useEdgeDragScroll(
+    isDragging && !(isMobile && isInboxOpenWhileDragging), isMobile, scrollRef, openInbox, columns
   );
 
   const columnIds = useMemo(() => columns.map((col) => col.id), [columns]);
@@ -91,7 +90,7 @@ export const KanbanContainer: React.FC = () => {
 
   return (
     <div className="relative w-full flex-1 min-h-0 overflow-hidden flex flex-col">
-      <KanbanEdgeOverlays isDragging={isDragging} edgeHoverSide={edgeHoverSide} />
+      <EdgeHoldMeterOverlay meter={edgeMeter} />
       <div
         ref={scrollRef}
         onMouseDown={handleMouseDown}
