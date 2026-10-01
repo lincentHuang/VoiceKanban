@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { Trash2 } from "lucide-react";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
@@ -17,9 +18,10 @@ export const BatchDeleteConfirmModal: React.FC<BatchDeleteConfirmModalProps> = (
 }) => {
   const { batchDeleteTasks } = useKanbanStore();
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  return (
+  // portal 到 body：BatchActionBar 外層有 transform，會讓 fixed 只蓋住 dock 本身而把對話框裁掉
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 pointer-events-auto"
       onClick={onClose}
@@ -57,6 +59,7 @@ export const BatchDeleteConfirmModal: React.FC<BatchDeleteConfirmModalProps> = (
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

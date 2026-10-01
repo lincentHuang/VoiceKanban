@@ -25,11 +25,10 @@ export const BatchActionBar: React.FC = () => {
   const hasSelection = selectedTaskIds.length > 0;
   const isVisible = isMultiSelectMode || hasSelection;
 
-  useEscapeKey(() => {
+  useEscapeKey((event) => {
+    // 選單開著時，Escape 已由 Radix Popover 處理並 preventDefault，這次按鍵不再往下清除選取
+    if (event.defaultPrevented) return;
     if (isBatchDeleteConfirm) setIsBatchDeleteConfirm(false);
-    else if (isMoveMenuOpen) setIsMoveMenuOpen(false);
-    else if (isPriorityMenuOpen) setIsPriorityMenuOpen(false);
-    else if (isTagMenuOpen) setIsTagMenuOpen(false);
     else if (hasSelection) clearSelection();
     else if (isMultiSelectMode) setIsMultiSelectMode(false);
   }, isVisible);
@@ -48,32 +47,25 @@ export const BatchActionBar: React.FC = () => {
         <BatchSelectionCount selectedCount={selectedTaskIds.length} />
 
         <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-1.5 w-full sm:w-auto pt-1.5 sm:pt-0 border-t border-slate-800/80 sm:border-t-0 overflow-x-auto no-scrollbar">
+          {/* 不在這裡手動關閉其他選單：點另一顆按鈕時，前一個 Popover 會因「點擊外部」自行關閉；
+              若改由 state 強制關閉，Radix 會把焦點還給舊按鈕，導致剛打開的新選單立刻被關掉 */}
           <BatchMoveMenu
             hasSelection={hasSelection}
             isOpen={isMoveMenuOpen}
-            setIsOpen={(open) => {
-              setIsMoveMenuOpen(open);
-              if (open) { setIsPriorityMenuOpen(false); setIsTagMenuOpen(false); }
-            }}
+            setIsOpen={setIsMoveMenuOpen}
             targetColumns={allTargetColumns}
           />
 
           <BatchPriorityMenu
             hasSelection={hasSelection}
             isOpen={isPriorityMenuOpen}
-            setIsOpen={(open) => {
-              setIsPriorityMenuOpen(open);
-              if (open) { setIsMoveMenuOpen(false); setIsTagMenuOpen(false); }
-            }}
+            setIsOpen={setIsPriorityMenuOpen}
           />
 
           <BatchTagMenu
             hasSelection={hasSelection}
             isOpen={isTagMenuOpen}
-            setIsOpen={(open) => {
-              setIsTagMenuOpen(open);
-              if (open) { setIsMoveMenuOpen(false); setIsPriorityMenuOpen(false); }
-            }}
+            setIsOpen={setIsTagMenuOpen}
           />
 
           <BatchActionButtons
