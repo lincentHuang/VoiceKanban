@@ -3,6 +3,7 @@ import { useKanbanStore } from "@/core/stores/useKanbanStore";
 
 export function useSidebarInboxGestures() {
 const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
+  const isInboxSidebarOpen = useKanbanStore((s) => s.isInboxSidebarOpen);
   const setIsInboxSidebarOpen = useKanbanStore((s) => s.setIsInboxSidebarOpen);
   const setViewMode = useKanbanStore((s) => s.setViewMode);
 
@@ -21,8 +22,10 @@ const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
   }, []);
 
   // Drag near right edge -> magnet switch to Kanban on mobile
+  // 收件匣已經收起來時不能再掛這個計時器：它每 450ms 就寫一次 store，看板跟著重畫，
+  // 會把 useEdgeDragScroll「捲到下一欄」的計時器在觸發前清掉，手機上就永遠拖不到右邊。
   useEffect(() => {
-    if (!isDraggingTask || !isMobile) {
+    if (!isDraggingTask || !isMobile || !isInboxSidebarOpen) {
       if (edgeTimerRef.current) {
         clearTimeout(edgeTimerRef.current);
         edgeTimerRef.current = null;
@@ -73,7 +76,7 @@ const activeDragTaskId = useKanbanStore((s) => s.activeDragTaskId);
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
     };
-  }, [isDraggingTask, isMobile, setIsInboxSidebarOpen, setViewMode]);
+  }, [isDraggingTask, isMobile, isInboxSidebarOpen, setIsInboxSidebarOpen, setViewMode]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!isMobile || isDraggingTask) return;

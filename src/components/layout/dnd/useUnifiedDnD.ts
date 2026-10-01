@@ -28,6 +28,7 @@ export function useUnifiedDnD() {
     dragOverLocation,
     setDragOverLocation,
     canCurrentUserEdit,
+    isInboxSidebarOpen,
   } = useKanbanStore();
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -64,6 +65,19 @@ export function useUnifiedDnD() {
         if (hit) return [{ id: hit.id, data: { droppableContainer: hit, value: 0 } }];
       }
       return closestCenter({ ...args, droppableContainers: columnContainers });
+    }
+
+    // 收件匣收起時，它和裡面的卡片都不能當放置目標。dnd-kit 只在拖曳開始時量一次位置，
+    // 從收件匣拖出來、收件匣收起之後，那些卡片的舊位置還疊在看板上；手機版收件匣本身是用
+    // translate-x 推出畫面，而量測會忽略元素自己的 transform，量起來等於蓋滿整個看板。
+    // 不排除的話，卡片在看板上放開會被吸回收件匣。
+    if (!isInboxSidebarOpen) {
+      args = {
+        ...args,
+        droppableContainers: args.droppableContainers.filter(
+          (c) => c.id !== "inbox" && c.data.current?.task?.columnId !== "inbox"
+        ),
+      };
     }
 
     const pointerCollisions = pointerWithin(args);

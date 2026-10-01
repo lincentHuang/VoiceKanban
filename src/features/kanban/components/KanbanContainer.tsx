@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { KanbanColumn } from "./KanbanColumn";
@@ -32,8 +32,17 @@ export const KanbanContainer: React.FC = () => {
   const touchStartRef = useRef({ x: 0, y: 0 });
   const isDragging = activeDragTaskId !== null;
 
+  // 只在拖曳中才可能為 true，平常開關收件匣不會讓看板重畫
+  const isInboxOpenWhileDragging = useKanbanStore((s) => s.activeDragTaskId !== null && s.isInboxSidebarOpen);
+
   const { containerRef: scrollRef, isPanning, handleMouseDown } = useBoardDragScroll({ disabled: isDragging });
-  const { edgeHoverSide } = useEdgeDragScroll(isDragging, isMobile, scrollRef, () => setIsInboxSidebarOpen(true));
+  // 必須是穩定的參考：useEdgeDragScroll 的 effect 依賴它，每次重畫都換新函式會把邊緣計時器清掉。
+  const openInbox = useCallback(() => setIsInboxSidebarOpen(true), [setIsInboxSidebarOpen]);
+  // 手機上收件匣蓋住整個看板：從收件匣拖出來時，等它收起後看板邊緣才開始換欄，
+  // 不然收件匣收起的同一瞬間看板也會跟著跳到下一欄。
+  const { edgeHoverSide } = useEdgeDragScroll(
+    isDragging && !(isMobile && isInboxOpenWhileDragging), isMobile, scrollRef, openInbox
+  );
 
   const columnIds = useMemo(() => columns.map((col) => col.id), [columns]);
   const boardTasks = useFilteredBoardTasks(tasks, activeBoardId, searchQuery, priorityFilter, tagFilter);
