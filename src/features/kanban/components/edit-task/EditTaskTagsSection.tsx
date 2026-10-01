@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { Tag } from "lucide-react";
-import { TagPicker, TagPickerTriggerButton } from "@/components/common/TagPicker";
 import { fieldButtonClass, inputClass } from "@/components/ui/input";
+import { useEditTaskTags } from "./tags/useEditTaskTags";
+import { EditTaskTagDropdown } from "./tags/EditTaskTagDropdown";
+import { EditTaskTagChips } from "./tags/EditTaskTagChips";
 
 interface EditTaskTagsSectionProps {
   tags: string[];
@@ -13,90 +15,74 @@ interface EditTaskTagsSectionProps {
 }
 
 export const EditTaskTagsSection: React.FC<EditTaskTagsSectionProps> = ({
-  tags,
-  allTags,
-  tagCounts,
-  onAddTag,
-  onRemoveTag,
+  tags, allTags, tagCounts, onAddTag, onRemoveTag,
 }) => {
-  const [tagInput, setTagInput] = useState("");
-
-  const handleToggle = (tag: string) => {
-    if (tags.includes(tag)) onRemoveTag(tag);
-    else onAddTag(tag);
-  };
-
-  const handleAdd = () => {
-    const value = tagInput.trim();
-    if (value && !tags.includes(value)) onAddTag(value);
-    setTagInput("");
-  };
+  const {
+    tagInput, setTagInput, isOpen, setIsOpen, containerRef, inputRef,
+    trimmed, options, canCreate, handleToggle, handleAdd,
+  } = useEditTaskTags({ tags, allTags, tagCounts, onAddTag, onRemoveTag });
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
-          <Tag className="w-4 h-4 text-slate-400" />
-          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">標籤管理</h4>
-        </div>
-        <TagPicker selected={tags} allTags={allTags} counts={tagCounts} onToggle={handleToggle} align="end">
-          <TagPickerTriggerButton />
-        </TagPicker>
+      {/* 標籤管理標頭（已移除右側冗餘按鈕） */}
+      <div className="flex items-center gap-2 mb-2">
+        <Tag className="w-4 h-4 text-slate-400" />
+        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">標籤管理</h4>
       </div>
 
-      <div className="flex gap-2 mb-2">
-        <input
-          type="text"
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.nativeEvent.isComposing || e.key === "Process") return;
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleAdd();
-            }
-          }}
-          placeholder="輸入標籤按 Enter..."
-          className={inputClass("md")}
-        />
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={!tagInput.trim()}
-          className={fieldButtonClass("md", "bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700")}
-        >
-          新增
-        </button>
-      </div>
-
-      {tags.length > 0 ? (
-        <div className="flex flex-wrap gap-1">
-          {tags.map((t) => (
-            <span
-              key={t}
-              className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium flex items-center gap-1"
-            >
-              #{t}
-              <button
-                onClick={() => onRemoveTag(t)}
-                aria-label={`移除標籤 ${t}`}
-                className="hover:text-rose-500 text-slate-400 text-xs cursor-pointer"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      ) : (
-        <TagPicker selected={tags} allTags={allTags} counts={tagCounts} onToggle={handleToggle}>
+      {/* 輸入框與即時下拉選單容器 */}
+      <div ref={containerRef} className="relative mb-2">
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={tagInput}
+            onFocus={() => setIsOpen(true)}
+            onClick={() => setIsOpen(true)}
+            onChange={(e) => {
+              setTagInput(e.target.value);
+              if (!isOpen) setIsOpen(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing || e.key === "Process") return;
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAdd();
+              } else if (e.key === "Escape") {
+                setIsOpen(false);
+              }
+            }}
+            placeholder="輸入標籤按 Enter..."
+            aria-expanded={isOpen}
+            aria-haspopup="listbox"
+            className={inputClass("md")}
+          />
           <button
             type="button"
-            className="w-full text-left text-[11px] text-slate-400 hover:text-orange-500 transition-colors px-1 py-0.5 cursor-pointer"
+            onClick={handleAdd}
+            disabled={!tagInput.trim()}
+            className={fieldButtonClass("md", "bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700")}
           >
-            尚未加上標籤 — 點擊瀏覽既有標籤
+            新增
           </button>
-        </TagPicker>
-      )}
+        </div>
+
+        {isOpen && (
+          <EditTaskTagDropdown
+            options={options}
+            selectedTags={tags}
+            tagCounts={tagCounts}
+            totalTagsCount={allTags.length}
+            canCreate={canCreate}
+            createValue={trimmed}
+            onToggle={handleToggle}
+            onCreate={(val) => { onAddTag(val); setTagInput(""); }}
+          />
+        )}
+      </div>
+
+      {/* 已套用標籤清單（尚未加上標籤時純淨無冗餘文字） */}
+      <EditTaskTagChips tags={tags} onRemoveTag={onRemoveTag} />
     </div>
   );
 };
