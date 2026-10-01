@@ -15,6 +15,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
     handleDragStart,
     handleDragOver,
     handleDragEnd,
+    handleDragCancel,
     activeTask,
     activeColumn,
     activeColumnTasks,
@@ -46,6 +47,7 @@ export const UnifiedDnDWorkspace: React.FC = () => {
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div className="flex-1 min-h-0 w-full flex p-2.5 pt-0 sm:pt-3 sm:p-3 items-start overflow-hidden gap-3 relative">
         <SidebarInbox />

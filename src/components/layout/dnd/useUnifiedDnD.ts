@@ -296,12 +296,23 @@ export function useUnifiedDnD() {
     moveTask(activeId, targetColumnId, 0, false);
   };
 
+  // dnd-kit 在按 Esc、touchcancel、切換 App（visibilitychange）、旋轉手機（resize）時會取消拖曳，
+  // 這時不會呼叫 handleDragEnd。不清掉拖曳狀態的話，被隱藏的卡片會一直消失到重新整理，
+  // 依賴 activeDragTaskId 的邊緣自動捲動也會一直開著。
+  const handleDragCancel = () => {
+    setActiveTask(null);
+    setActiveColumn(null);
+    setActiveDragTaskId(null);
+    setDragOverLocation(null);
+  };
+
   return {
     sensors,
     collisionDetectionStrategy,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
+    handleDragCancel,
     activeTask,
     activeColumn,
     activeColumnTasks,
