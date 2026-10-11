@@ -10,11 +10,14 @@ import {
   Calendar,
   Layers,
   FileText,
+  FileDown,
+  ClipboardCopy,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { Column, TRELLO_COLUMN_COLORS, getColumnColorConfig } from "@/core/types/task";
 import { useKanbanStore } from "@/core/stores/useKanbanStore";
 import { ColumnTransferMode } from "../../utils/columnTransfer";
+import { columnToMarkdown, downloadMarkdown } from "../../utils/columnMarkdown";
 
 export interface BoardTransferTarget {
   id: string;
@@ -64,6 +67,7 @@ export function useColumnActions({
     setActiveBoardId,
     canCurrentUserEdit,
     transferColumnToBoard,
+    tasks,
   } = useKanbanStore();
 
   const columnId = column.id;
@@ -81,6 +85,12 @@ export function useColumnActions({
     aggregateColumnToTask(columnId);
     onCloseMenu();
   };
+
+  const buildMarkdown = () =>
+    columnToMarkdown(
+      column,
+      tasks.filter((t) => t.boardId === activeBoardId && t.columnId === columnId && !t.isArchived)
+    );
 
   const primaryItems: ColumnActionItem[] = [
     {
@@ -111,6 +121,24 @@ export function useColumnActions({
       icon: Boxes,
       tone: "accent",
       onSelect: handleAggregate,
+    },
+    {
+      key: "export-md",
+      label: "匯出為 Markdown (.md)",
+      icon: FileDown,
+      onSelect: () => {
+        downloadMarkdown(column.title, buildMarkdown());
+        onCloseMenu();
+      },
+    },
+    {
+      key: "copy-md",
+      label: "複製為 Markdown",
+      icon: ClipboardCopy,
+      onSelect: () => {
+        void navigator.clipboard?.writeText(buildMarkdown()).catch(() => {});
+        onCloseMenu();
+      },
     },
   ];
 
