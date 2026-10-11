@@ -17,6 +17,7 @@ import { fetchLinkPreview, needsThumbnailRehost, persistThumbnail } from "@/feat
 import { detectPlatform, isBareUrl, normalizeSharedUrl, toCardTitle } from "@/features/bookmarks/utils/linkParser";
 import { buildLinkDescription } from "@/features/bookmarks/utils/linkDescription";
 import { ColumnTransferMode, canTransferColumn } from "@/features/kanban/utils/columnTransfer";
+import type { ImportedTaskDraft } from "@/features/kanban/utils/columnMarkdownImport";
 
 /**
  * Firebase Auth + Firestore is by far the heaviest dependency in the app, and nothing needs it
@@ -123,6 +124,8 @@ interface KanbanStoreState {
   archiveColumn: (columnId: string) => void;
   expandTaskToColumn: (taskId: string) => void;
   aggregateColumnToTask: (columnId: string) => void;
+  /** append：接在列表最後；replace：先刪掉列表裡現有的卡片再放進去 */
+  importTasksToColumn: (columnId: string, drafts: ImportedTaskDraft[], mode: "append" | "replace") => void;
   /** Moves or copies a column of the active board, with its cards, to another board. Resolves to the new column id, or null if not allowed. */
   transferColumnToBoard: (columnId: string, targetBoardId: string, mode: ColumnTransferMode) => Promise<string | null>;
 
@@ -983,6 +986,55 @@ export const useKanbanStore = create<KanbanStoreState>()(
           tasks: [...remainingTasks, ...createdTasks],
           editingTaskId: null,
         });
+        get().triggerSync();
+      },
+
+      importTasksToColumn: (columnId, drafts, mode) => {
+        const { tasks, activeBoardId, userSession } = get();
+        if (drafts.length === 0 || !get().canCurrentUserEdit(activeBoardId)) return;
+
+        const inColumn = (t: Task) => t.boardId === activeBoardId && t.columnId === columnId;
+        const removedIds = new Set(
+          mode === "replace" ? tasks.filter((t) => inColumn(t) && !t.isArchived).map((t) => t.id) : []
+        );
+        const remainingInColumn = tasks
+          .filter((t) => inColumn(t) && !removedIds.has(t.id))
+          .sort((a, b) => (a.orderKey > b.orderKey ? 1 : -1));
+
+        let lastKey = remainingInColumn.length > 0 ? remainingInColumn[remainingInColumn.length - 1].orderKey : null;
+        const now = new Date().toISOString();
+        const createdBy = {
+          uid: userSession.id,
+          name: userSession.name || "成員",
+          avatarUrl: userSession.avatarUrl || null,
+        };
+        // 一次寫入、一次同步；不逐張發 task_created，免得共享看板的家人被幾十則通知洗版
+        const imported: Task[] = drafts.map((draft, index) => {
+          lastKey = generateOrderKeyBetween(lastKey, null);
+          return {
+            ...draft,
+            id: `task-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
+            boardId: activeBoardId,
+            columnId,
+            orderKey: lastKey,
+            attachmentsCount: 0,
+            coverColor: null,
+            createdBy,
+            createdAt: now,
+            updatedAt: now,
+          };
+        });
+
+        const deletedAt = new Date().toISOString();
+        set((state) => ({
+          tasks: [...state.tasks.filter((t) => !removedIds.has(t.id)), ...imported],
+          selectedTaskIds: state.selectedTaskIds.filter((id) => !removedIds.has(id)),
+          editingTaskId: state.editingTaskId && removedIds.has(state.editingTaskId) ? null : state.editingTaskId,
+          pendingDeletedTaskIds: {
+            ...state.pendingDeletedTaskIds,
+            ...Object.fromEntries([...removedIds].map((id) => [id, deletedAt])),
+          },
+        }));
         get().triggerSync();
       },
 

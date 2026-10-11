@@ -16,6 +16,7 @@ import { ColumnBoardTransferSubmenu } from "./column-action-menu/ColumnBoardTran
 import { ColumnActionBasicItems } from "./column-action-menu/ColumnActionBasicItems";
 import { ColumnActionSheet } from "./column-action-menu/ColumnActionSheet";
 import { useColumnActions } from "./column-action-menu/useColumnActions";
+import { ColumnImportMarkdownDialog } from "./column-action-menu/ColumnImportMarkdownDialog";
 
 interface ColumnActionMenuProps {
   column: Column;
@@ -23,17 +24,28 @@ interface ColumnActionMenuProps {
   onStartRename?: () => void;
 }
 
+interface MenuWithImportProps extends ColumnActionMenuProps {
+  onImportMarkdown: () => void;
+}
+
 const TRIGGER_CLASS =
   "p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none focus:border-orange-500 cursor-pointer";
 
-const DesktopColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
+const DesktopColumnActionMenu: React.FC<MenuWithImportProps> = ({
   column,
   onAddTask,
   onStartRename,
+  onImportMarkdown,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const closeMenu = useCallback(() => setIsOpen(false), []);
-  const actions = useColumnActions({ column, onAddTask, onStartRename, onCloseMenu: closeMenu });
+  const actions = useColumnActions({
+    column,
+    onAddTask,
+    onStartRename,
+    onCloseMenu: closeMenu,
+    onImportMarkdown,
+  });
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -80,8 +92,22 @@ const DesktopColumnActionMenu: React.FC<ColumnActionMenuProps> = ({
 export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = (props) => {
   const isMobile = useIsMobile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  // 放在選單外面：選單一關就卸載，對話框得活得比它久
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const openImport = useCallback(() => setIsImportOpen(true), []);
 
-  if (!isMobile) return <DesktopColumnActionMenu {...props} />;
+  const importDialog = (
+    <ColumnImportMarkdownDialog column={props.column} open={isImportOpen} onOpenChange={setIsImportOpen} />
+  );
+
+  if (!isMobile) {
+    return (
+      <>
+        <DesktopColumnActionMenu {...props} onImportMarkdown={openImport} />
+        {importDialog}
+      </>
+    );
+  }
 
   return (
     <>
@@ -95,8 +121,9 @@ export const ColumnActionMenu: React.FC<ColumnActionMenuProps> = (props) => {
         <MoreHorizontal className="w-4 h-4" />
       </button>
       {isSheetOpen && (
-        <ColumnActionSheet {...props} onClose={() => setIsSheetOpen(false)} />
+        <ColumnActionSheet {...props} onImportMarkdown={openImport} onClose={() => setIsSheetOpen(false)} />
       )}
+      {importDialog}
     </>
   );
 };

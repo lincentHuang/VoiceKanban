@@ -12,6 +12,7 @@ import {
   FileText,
   FileDown,
   ClipboardCopy,
+  FileUp,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { Column, TRELLO_COLUMN_COLORS, getColumnColorConfig } from "@/core/types/task";
@@ -42,6 +43,7 @@ interface UseColumnActionsOptions {
   onAddTask: () => void;
   onStartRename?: () => void;
   onCloseMenu: () => void;
+  onImportMarkdown?: () => void;
 }
 
 /**
@@ -53,6 +55,7 @@ export function useColumnActions({
   onAddTask,
   onStartRename,
   onCloseMenu,
+  onImportMarkdown,
 }: UseColumnActionsOptions) {
   const {
     archiveColumn,
@@ -140,6 +143,19 @@ export function useColumnActions({
         onCloseMenu();
       },
     },
+    ...(onImportMarkdown && canCurrentUserEdit(activeBoardId)
+      ? [
+          {
+            key: "import-md",
+            label: "從 Markdown 匯入...",
+            icon: FileUp,
+            onSelect: () => {
+              onCloseMenu();
+              onImportMarkdown();
+            },
+          } satisfies ColumnActionItem,
+        ]
+      : []),
   ];
 
   const manageItems: ColumnActionItem[] = [

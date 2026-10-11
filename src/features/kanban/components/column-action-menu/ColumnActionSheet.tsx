@@ -11,6 +11,7 @@ interface ColumnActionSheetProps {
   column: Column;
   onAddTask: () => void;
   onStartRename?: () => void;
+  onImportMarkdown?: () => void;
   onClose: () => void;
 }
 
@@ -85,10 +86,11 @@ export const ColumnActionSheet: React.FC<ColumnActionSheetProps> = ({
   column,
   onAddTask,
   onStartRename,
+  onImportMarkdown,
   onClose,
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const actions = useColumnActions({ column, onAddTask, onStartRename, onCloseMenu: onClose });
+  const actions = useColumnActions({ column, onAddTask, onStartRename, onCloseMenu: onClose, onImportMarkdown });
 
   useEscapeKey(onClose);
 
